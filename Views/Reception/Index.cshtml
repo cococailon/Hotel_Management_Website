@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Trang chủ Lễ Tân";
+    Layout = "~/Views/Shared/_ReceptionLayout.cshtml";
+
+    var fullName =
+        User.FindFirst("FullName")?.Value
+        ?? User.Identity?.Name
+        ?? "Lễ Tân";
+}
+
+<div class="container-fluid">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body text-center py-5">
+
+                    <div class="mb-4">
+                        <i class="bi bi-person-badge fs-1"></i>
+                    </div>
+
+                    <h1 class="display-6 fw-semibold">
+                        Chào mừng, @fullName
+                    </h1>
+
+                    <p class="text-body-secondary fs-5 mb-0">
+                        Bạn đã đăng nhập với quyền
+                        <strong>Lễ Tân</strong>.
+                    </p>
+
+                    <p class="text-body-secondary mt-2">
+                        Đây là trang chủ của khu vực lễ tân khách sạn.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

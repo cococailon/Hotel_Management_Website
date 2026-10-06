@@ -1,0 +1,268 @@
+﻿@model Hotel_Management_Website.Models.ViewModels.Guest.GuestIndexViewModel
+
+@{
+    var isReception = User.IsInRole("Reception");
+    ViewData["Title"] = "Quản lý khách hàng đặt phòng";
+    Layout = isReception ? "~/Views/Shared/_ReceptionLayout.cshtml" : "~/Views/Shared/_AdminLayout.cshtml";
+    var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/guest-index.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quản lý khách hàng đặt phòng",
+        Description = isReception
+            ? "Xem danh sách, tìm kiếm, sắp xếp và lọc khách hàng đặt phòng."
+            : "Xem, tìm kiếm, sắp xếp, lọc, chỉnh sửa và xóa khách hàng đặt phòng theo quyền Admin.",
+        Icon = "bi-person-vcard"
+    })
+
+@if (!string.IsNullOrWhiteSpace(Model.LoadError))
+{
+    @await Html.PartialAsync(
+        "~/Views/Shared/UI/_ErrorState.cshtml",
+        new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+        {
+            Message = Model.LoadError,
+            Icon = "bi-exclamation-triangle"
+        })
+}
+else
+{
+    <section class="guest-section card border-0 shadow-sm mb-4">
+
+        <!-- ================================================= -->
+        <!-- HEADER -->
+        <!-- ================================================= -->
+
+        <div class="card-header bg-body border-bottom py-3">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-3 min-width-0">
+                    <div class="guest-section-icon" aria-hidden="true">
+                        <i class="bi bi-person-vcard"></i>
+                    </div>
+
+                    <div class="min-width-0">
+                        <h2 class="h5 mb-0 fw-semibold">Danh sách khách hàng</h2>
+                        <p class="text-body-secondary small mb-0 mt-1">
+                            Khách hàng mới được tạo cùng lịch đặt phòng mới theo quy ước hiện tại.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================= -->
+        <!-- FILTER -->
+        <!-- ================================================= -->
+
+        <form method="get"
+              asp-controller="Guest"
+              asp-action="Index"
+              class="guest-filter-form"
+              data-preserve-scroll="true">
+
+            <input type="hidden" name="Filter.CurrentPage" value="1" />
+            <input type="hidden" name="Filter.PageSize" value="@Model.Filter.PageSize" />
+
+            <div class="card-body border-bottom guest-filter-panel">
+                <div class="row g-2 g-lg-3 align-items-end">
+
+                    <div class="col-12 col-xl-4">
+                        <label for="guestSearch" class="form-label small fw-semibold">Tìm kiếm</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </span>
+                            <input id="guestSearch"
+                                   type="search"
+                                   class="form-control"
+                                   name="Filter.Search"
+                                   value="@Model.Filter.Search"
+                                   placeholder="Mã hoặc tên khách hàng"
+                                   maxlength="100"
+                                   autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <label for="guestSort" class="form-label small fw-semibold">Sắp xếp</label>
+                        <select id="guestSort" name="Filter.Sort" class="form-select">
+                            <option value="6" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Guest.GuestSortOption.LastModifiedDesc ? "selected" : null)">Ngày chỉnh sửa mới nhất</option>
+                            <option value="7" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Guest.GuestSortOption.LastModifiedAsc ? "selected" : null)">Ngày chỉnh sửa cũ nhất</option>
+                            <option value="0" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Guest.GuestSortOption.GuestCodeAsc ? "selected" : null)">Mã khách hàng từ A-Z</option>
+                            <option value="1" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Guest.GuestSortOption.GuestCodeDesc ? "selected" : null)">Mã khách hàng từ Z-A</option>
+                            <option value="2" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Guest.GuestSortOption.NameAsc ? "selected" : null)">Tên khách hàng từ A-Z</option>
+                            <option value="3" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Guest.GuestSortOption.NameDesc ? "selected" : null)">Tên khách hàng từ Z-A</option>
+                            <option value="4" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Guest.GuestSortOption.DateOfBirthAsc ? "selected" : null)">Ngày sinh từ thấp đến cao</option>
+                            <option value="5" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Guest.GuestSortOption.DateOfBirthDesc ? "selected" : null)">Ngày sinh từ cao đến thấp</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="guestSex" class="form-label small fw-semibold">Giới tính</label>
+                        <select id="guestSex" name="Filter.Sex" class="form-select">
+                            <option value="" selected="@(Model.Filter.Sex is null ? "selected" : null)">Tất cả</option>
+                            <option value="0" selected="@(Model.Filter.Sex == 0 ? "selected" : null)">Nam</option>
+                            <option value="1" selected="@(Model.Filter.Sex == 1 ? "selected" : null)">Nữ</option>
+                            <option value="2" selected="@(Model.Filter.Sex == 2 ? "selected" : null)">Khác</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-xl-3">
+                        <div class="d-flex gap-2">
+                            <button type="submit"
+                                    class="btn btn-primary flex-grow-1 guest-filter-submit"
+                                    title="Áp dụng bộ lọc">
+                                <span class="ui-button-content">
+                                    <i class="bi bi-funnel me-1" aria-hidden="true"></i>
+                                    Lọc
+                                </span>
+                                <span class="ui-button-loading d-none">
+                                    <span class="spinner-border spinner-border-sm me-1"
+                                          role="status"
+                                          aria-hidden="true"></span>
+                                    Đang lọc...
+                                </span>
+                            </button>
+
+                            <button type="submit"
+                                    name="Reset"
+                                    value="guest"
+                                    class="btn btn-outline-secondary flex-shrink-0"
+                                    title="Đặt lại bộ lọc"
+                                    aria-label="Đặt lại bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                                <span class="d-none d-sm-inline">Reset</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- ================================================= -->
+        <!-- TABLE -->
+        <!-- ================================================= -->
+
+        @if (Model.Guests.Count == 0)
+        {
+            @await Html.PartialAsync(
+                "~/Views/Shared/UI/_EmptyState.cshtml",
+                new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+                {
+                    Message = "Không tìm thấy khách hàng nào.",
+                    Icon = "bi-person-x"
+                })
+        }
+        else
+        {
+            <div class="table-responsive guest-table-responsive">
+                <table class="table table-hover table-sm align-middle mb-0 guest-table">
+                    <caption class="visually-hidden">Danh sách khách hàng đặt phòng</caption>
+                    <colgroup>
+                        <col class="guest-col-code" />
+                        <col class="guest-col-name" />
+                        <col class="guest-col-date" />
+                        <col class="guest-col-sex" />
+                        <col class="guest-col-phone" />
+                        <col class="guest-col-email" />
+                        <col class="guest-col-action" />
+                    </colgroup>
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã khách hàng</th>
+                            <th>Tên khách hàng</th>
+                            <th>Ngày sinh</th>
+                            <th>Giới tính</th>
+                            <th>SĐT</th>
+                            <th>Email</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Guests)
+                    {
+                        <tr>
+                            <td>
+                                <span class="font-monospace text-nowrap">@item.GuestCode</span>
+                            </td>
+                            <td>
+                                <span class="guest-cell-ellipsis" title="@item.Name">@item.Name</span>
+                            </td>
+                            <td class="text-nowrap">
+                                @(item.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")
+                            </td>
+                            <td class="text-nowrap">@item.SexName</td>
+                            <td>
+                                <span class="guest-cell-ellipsis" title="@(item.PhoneNumber ?? "Chưa cập nhật")">
+                                    @(string.IsNullOrWhiteSpace(item.PhoneNumber) ? "Chưa cập nhật" : item.PhoneNumber)
+                                </span>
+                            </td>
+                            <td>
+                                <span class="guest-cell-ellipsis" title="@(item.Email ?? "Chưa cập nhật")">
+                                    @(string.IsNullOrWhiteSpace(item.Email) ? "Chưa cập nhật" : item.Email)
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-center align-items-center gap-1 guest-action-group">
+                                    <a asp-controller="Guest"
+                                       asp-action="Details"
+                                       asp-route-id="@item.Id"
+                                       asp-route-returnUrl="@returnUrl"
+                                       class="btn btn-outline-primary btn-sm guest-action-btn"
+                                       title="Xem chi tiết"
+                                       aria-label="Xem chi tiết @item.GuestCode">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </a>
+
+                                    <a asp-controller="Guest"
+                                       asp-action="Edit"
+                                       asp-route-id="@item.Id"
+                                       asp-route-returnUrl="@returnUrl"
+                                       class="btn btn-outline-secondary btn-sm guest-action-btn"
+                                       title="Sửa thông tin khách hàng"
+                                       aria-label="Sửa @item.GuestCode">
+                                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                    </a>
+
+                                    @if (!isReception && item.CanDelete)
+                                    {
+                                        <form asp-controller="Guest"
+                                              asp-action="Delete"
+                                              method="post"
+                                              class="d-inline guest-delete-form"
+                                              data-guest-code="@item.GuestCode">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm guest-action-btn"
+                                                    title="Xóa khách hàng"
+                                                    aria-label="Xóa @item.GuestCode">
+                                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @await Html.PartialAsync("~/Views/Shared/UI/_Pagination.cshtml", Model.Pagination)
+    </section>
+}
+
+@section Scripts
+{
+    <script src="~/js/guest-index.js" asp-append-version="true"></script>
+}

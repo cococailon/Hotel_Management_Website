@@ -1,0 +1,108 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace Hotel_Management_Website.Models.ViewModels.Employee;
+
+public sealed class EmployeeEditViewModel : IValidatableObject
+{
+    public Guid Id { get; set; }
+
+    [Display(Name = "Mã nhân viên")]
+    [StringLength(50, ErrorMessage = "Mã nhân viên không được vượt quá {1} ký tự.")]
+    [RegularExpression(
+        @"^\S+$",
+        ErrorMessage = "Mã nhân viên không được chứa dấu cách hoặc khoảng trắng.")]
+    public string EmployeeCode { get; set; } = string.Empty;
+
+    [Display(Name = "Tên nhân viên")]
+    [Required(ErrorMessage = "Vui lòng nhập tên nhân viên.")]
+    [StringLength(100, ErrorMessage = "Tên nhân viên không được vượt quá {1} ký tự.")]
+    public string EmployeeName { get; set; } = string.Empty;
+
+    [Display(Name = "Ngày sinh")]
+    [Required(ErrorMessage = "Vui lòng chọn ngày sinh.")]
+    public DateOnly? DateOfBirth { get; set; }
+
+    [Display(Name = "Giới tính")]
+    [Required(ErrorMessage = "Vui lòng chọn giới tính.")]
+    [Range(0, 2, ErrorMessage = "Giới tính không hợp lệ.")]
+    public byte? Sex { get; set; }
+
+    [Display(Name = "Chức vụ")]
+    [Required(ErrorMessage = "Vui lòng chọn chức vụ.")]
+    [Range(0, 1, ErrorMessage = "Chức vụ không hợp lệ.")]
+    public byte? Position { get; set; }
+
+    [Display(Name = "Ngày vào làm")]
+    [Required(ErrorMessage = "Vui lòng chọn ngày vào làm.")]
+    public DateOnly? StartDate { get; set; }
+
+    [Display(Name = "Ngày nghỉ việc")]
+    public DateOnly? EndDate { get; set; }
+
+    // Trạng thái không chỉnh sửa ở màn hình này.
+    // Dùng để hiển thị và để validate EndDate theo dữ liệu hiện tại.
+    [Display(Name = "Trạng thái")]
+    [Range(0, 1, ErrorMessage = "Trạng thái không hợp lệ.")]
+    public byte Status { get; set; }
+
+    [Display(Name = "Ghi chú")]
+    [StringLength(255, ErrorMessage = "Ghi chú không được vượt quá {1} ký tự.")]
+    public string? Note { get; set; }
+
+    // Chỉ phục vụ UI để giữ nguyên trang/filter khi quay lại danh sách.
+    public string? ReturnUrl { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+
+        if (string.IsNullOrWhiteSpace(EmployeeName))
+        {
+            yield return new ValidationResult(
+                "Vui lòng nhập tên nhân viên.",
+                new[] { nameof(EmployeeName) });
+        }
+
+        if (DateOfBirth.HasValue && DateOfBirth.Value > today)
+        {
+            yield return new ValidationResult(
+                "Ngày sinh không được lớn hơn ngày hiện tại.",
+                new[] { nameof(DateOfBirth) });
+        }
+
+        if (DateOfBirth.HasValue && StartDate.HasValue && DateOfBirth.Value >= StartDate.Value)
+        {
+            yield return new ValidationResult(
+                "Ngày vào làm phải sau ngày sinh.",
+                new[] { nameof(StartDate) });
+        }
+
+        if (Status is not 0 and not 1)
+        {
+            yield return new ValidationResult(
+                "Trạng thái nhân viên không hợp lệ.",
+                new[] { nameof(Status) });
+        }
+
+        if (Status == 0 && !EndDate.HasValue)
+        {
+            yield return new ValidationResult(
+                "Nhân viên đã nghỉ việc phải có ngày nghỉ việc.",
+                new[] { nameof(EndDate) });
+        }
+
+        if (Status == 1 && EndDate.HasValue)
+        {
+            yield return new ValidationResult(
+                "Nhân viên đang làm không được có ngày nghỉ việc.",
+                new[] { nameof(EndDate) });
+        }
+
+        if (StartDate.HasValue && EndDate.HasValue && EndDate.Value < StartDate.Value)
+        {
+            yield return new ValidationResult(
+                "Ngày nghỉ việc không được trước ngày vào làm.",
+                new[] { nameof(EndDate) });
+        }
+    }
+}

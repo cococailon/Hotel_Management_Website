@@ -1,0 +1,132 @@
+﻿@model Hotel_Management_Website.Models.ViewModels.Guest.GuestEditViewModel
+
+@{
+    ViewData["Title"] = "Chỉnh sửa khách hàng";
+    Layout = User.IsInRole("Reception") ? "~/Views/Shared/_ReceptionLayout.cshtml" : "~/Views/Shared/_AdminLayout.cshtml";
+    var detailsDisabled = !Model.CanEditDetails;
+    var fullRequired = Model.RequireFullDetails;
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/guest-edit.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync("~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Chỉnh sửa khách hàng",
+        Description = "Phạm vi chỉnh sửa được xác định theo trạng thái Booking đang gắn với khách hàng.",
+        Icon = "bi-pencil-square"
+    })
+
+<form asp-controller="Guest" asp-action="Edit" method="post" class="guest-edit-form" id="guestEditForm">
+    @Html.AntiForgeryToken()
+    <input asp-for="Id" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger guest-validation-summary" role="alert"></div>
+
+    <section class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-body border-bottom py-3">
+            <div class="d-flex align-items-center gap-2">
+                <div class="guest-edit-section-icon"><i class="bi bi-shield-check"></i></div>
+                <div><h2 class="h6 mb-0 fw-semibold">Quy tắc sửa theo Booking</h2><div class="small text-body-secondary">Server luôn kiểm tra lại trạng thái Booking trước khi lưu.</div></div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="alert @(Model.RequireFullDetails ? "alert-warning" : Model.CanEditDetails ? "alert-info" : "alert-secondary") mb-0">
+                <i class="bi @(Model.RequireFullDetails ? "bi-exclamation-triangle" : "bi-info-circle") me-1"></i>
+                @Model.BookingRuleDescription
+            </div>
+        </div>
+    </section>
+
+    <section class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-body border-bottom py-3">
+            <div class="d-flex align-items-center gap-2">
+                <div class="guest-edit-section-icon"><i class="bi bi-person-vcard"></i></div>
+                <div><h2 class="h6 mb-0 fw-semibold">Thông tin khách hàng</h2><div class="small text-body-secondary">Các trường không được phép sửa sẽ bị khóa.</div></div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12 col-md-5 col-xl-3">
+                    <label asp-for="GuestCode" class="form-label">Mã khách hàng @(Model.CanEditDetails ? Html.Raw("<span class='text-danger'>*</span>") : "")</label>
+                    <input asp-for="GuestCode" class="form-control font-monospace" maxlength="50" autocomplete="off" pattern="\S+" disabled="@detailsDisabled" />
+                    <span asp-validation-for="GuestCode" class="text-danger small"></span>
+                </div>
+                <div class="col-12 col-md-7 col-xl-5">
+                    <label asp-for="Name" class="form-label">Tên khách hàng @(Model.CanEditDetails ? Html.Raw("<span class='text-danger'>*</span>") : "")</label>
+                    <input asp-for="Name" class="form-control" maxlength="100" autocomplete="name" disabled="@detailsDisabled" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+                <div class="col-12 col-md-6 col-xl-4">
+                    <label asp-for="DateOfBirth" class="form-label">Ngày sinh @(fullRequired ? Html.Raw("<span class='text-danger'>*</span>") : "")</label>
+                    <input asp-for="DateOfBirth" type="date" class="form-control" max="@DateTime.Today.ToString("yyyy-MM-dd")" disabled="@detailsDisabled" />
+                    <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label asp-for="Sex" class="form-label">Giới tính @(fullRequired ? Html.Raw("<span class='text-danger'>*</span>") : "")</label>
+                    <select asp-for="Sex" class="form-select" disabled="@detailsDisabled">
+                        <option value="">Chưa cập nhật</option><option value="0">Nam</option><option value="1">Nữ</option><option value="2">Khác</option>
+                    </select>
+                    <span asp-validation-for="Sex" class="text-danger small"></span>
+                </div>
+                <div class="col-12 col-xl-9">
+                    <label asp-for="Address" class="form-label">Địa chỉ @(fullRequired ? Html.Raw("<span class='text-danger'>*</span>") : "")</label>
+                    <input asp-for="Address" class="form-control" maxlength="255" disabled="@detailsDisabled" />
+                    <span asp-validation-for="Address" class="text-danger small"></span>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label asp-for="PhoneNumber" class="form-label">Số điện thoại</label>
+                    <input asp-for="PhoneNumber" class="form-control" maxlength="20" inputmode="tel" disabled="@detailsDisabled" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label asp-for="Email" class="form-label">Email</label>
+                    <input asp-for="Email" type="email" class="form-control" maxlength="4000" autocomplete="email" disabled="@detailsDisabled" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label asp-for="IdentityNumber" class="form-label">Số giấy tờ @(fullRequired ? Html.Raw("<span class='text-danger'>*</span>") : "")</label>
+                    <input asp-for="IdentityNumber" class="form-control" maxlength="50" disabled="@detailsDisabled" />
+                    <span asp-validation-for="IdentityNumber" class="text-danger small"></span>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label asp-for="IdentityType" class="form-label">Loại giấy tờ @(fullRequired ? Html.Raw("<span class='text-danger'>*</span>") : "")</label>
+                    <select asp-for="IdentityType" class="form-select" disabled="@detailsDisabled">
+                        <option value="">Chưa cập nhật</option><option value="0">CCCD</option><option value="1">Giấy phép lái xe</option><option value="2">Hộ chiếu</option>
+                    </select>
+                    <span asp-validation-for="IdentityType" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Note" class="form-label">Ghi chú</label>
+                    <textarea asp-for="Note" class="form-control" rows="4" maxlength="255" placeholder="Nhập ghi chú khách hàng..."></textarea>
+                    <div class="d-flex justify-content-between gap-2 mt-1"><span asp-validation-for="Note" class="text-danger small"></span><span class="small text-body-secondary text-nowrap">Tối đa 255 ký tự</span></div>
+                </div>
+            </div>
+
+            @if (Model.CanEditDetails)
+            {
+                <div class="alert alert-light border small mt-4 mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Phải nhập <strong>ít nhất Số điện thoại hoặc Email</strong>. Mã khách hàng không được chứa khoảng trắng và không được trùng với khách hàng khác.
+                    @if (Model.RequireFullDetails)
+                    {
+                        <span>Ở trạng thái <strong>Đang ở</strong>, Ngày sinh, Giới tính, Địa chỉ, Số giấy tờ và Loại giấy tờ đều bắt buộc.</span>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+
+    <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 mb-4">
+        <a asp-controller="Guest" asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+        <button type="submit" class="btn btn-primary" data-ui-submit><i class="bi bi-check2-circle me-1"></i>Lưu thay đổi</button>
+    </div>
+</form>
+
+@section Scripts
+{
+    <partial name="~/Views/Shared/_ValidationScriptsPartial.cshtml" />
+    <script src="~/js/guest-edit.js" asp-append-version="true"></script>
+}

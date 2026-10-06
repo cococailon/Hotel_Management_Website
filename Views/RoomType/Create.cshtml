@@ -1,0 +1,238 @@
+﻿@model Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeCreateViewModel
+
+@{
+    ViewData["Title"] = "Tạo loại phòng";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/roomtype-form.css" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Tạo loại phòng",
+        Description = "Tạo loại phòng mới và cấu hình tiện nghi, dịch vụ đi kèm.",
+        Icon = "bi-plus-square"
+    })
+
+<div class="roomtype-form-page">
+    <form id="roomTypeCreateForm"
+          asp-controller="RoomType"
+          asp-action="Create"
+          method="post"
+          novalidate
+          data-native-validation="true">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="roomtype-form-section-icon"><i class="bi bi-door-open" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">Thông tin loại phòng</h2>
+                        <p class="text-body-secondary small mb-0">Thông tin chính của loại phòng.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-4">
+                        <label asp-for="RoomTypeCode" class="form-label required">Mã loại phòng</label>
+                        <input asp-for="RoomTypeCode" class="form-control" id="roomTypeCode" maxlength="50" autocomplete="off" />
+                        <span asp-validation-for="RoomTypeCode" class="text-danger"></span>
+                        <div class="form-text">Có thể để trống để hệ thống tự sinh mã. Nếu nhập tay, mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.</div>
+                    </div>
+                    <div class="col-12 col-lg-8">
+                        <label asp-for="RoomTypeName" class="form-label required">Tên loại phòng</label>
+                        <input asp-for="RoomTypeName" class="form-control" maxlength="100" autocomplete="off" placeholder="Ví dụ: Phòng Deluxe" />
+                        <span asp-validation-for="RoomTypeName" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label asp-for="MaxAdults" class="form-label required">Tổng người lớn</label>
+                        <input asp-for="MaxAdults" type="number" min="1" max="100" class="form-control" />
+                        <span asp-validation-for="MaxAdults" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label asp-for="MaxChildren" class="form-label required">Tổng trẻ em</label>
+                        <input asp-for="MaxChildren" type="number" min="0" max="100" class="form-control" />
+                        <span asp-validation-for="MaxChildren" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label asp-for="PricePerNight" class="form-label required">Giá một đêm</label>
+                        <div class="input-group">
+                            <input asp-for="PricePerNight" type="number" min="0.01" step="0.01" class="form-control" />
+                            <span class="input-group-text">₫</span>
+                        </div>
+                        <span asp-validation-for="PricePerNight" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label asp-for="DepositPercent" class="form-label required">Cọc</label>
+                        <div class="input-group">
+                            <input asp-for="DepositPercent" type="number" min="0" max="100" step="0.01" class="form-control" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <span asp-validation-for="DepositPercent" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <label asp-for="Area" class="form-label required">Diện tích</label>
+                        <div class="input-group">
+                            <input asp-for="Area" type="number" min="0.01" max="99999.99" step="0.01" class="form-control" />
+                            <span class="input-group-text">m²</span>
+                        </div>
+                        <span asp-validation-for="Area" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="roomtype-form-section-icon"><i class="bi bi-card-text" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">Mô tả và ghi chú</h2>
+                        <p class="text-body-secondary small mb-0">Thông tin bổ sung cho loại phòng.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <label asp-for="Description" class="form-label">Mô tả</label>
+                    <textarea asp-for="Description" class="form-control" maxlength="255" rows="4" placeholder="Mô tả ngắn về loại phòng..."></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="Note" class="form-label">Ghi chú</label>
+                    <textarea asp-for="Note" class="form-control" maxlength="255" rows="4" placeholder="Ghi chú nội bộ nếu có..."></textarea>
+                    <span asp-validation-for="Note" class="text-danger"></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4 roomtype-association-card" data-roomtype-association="amenity">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="roomtype-form-section-icon"><i class="bi bi-stars" aria-hidden="true"></i></div>
+                        <div>
+                            <h2 class="h5 mb-1 fw-semibold">Tiện nghi</h2>
+                            <p class="text-body-secondary small mb-0">Chỉ thêm tiện nghi đang hoạt động và chưa bị xóa.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center roomtype-association-picker">
+                        <select id="amenityPicker" class="form-select form-select-sm">
+                            <option value="">-- Chọn tiện nghi --</option>
+                            @foreach (var item in Model.AvailableAmenities)
+                            {
+                                <option value="@item.Id" data-code="@item.Code" data-name="@item.Name">@item.Code - @item.Name</option>
+                            }
+                        </select>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-add-association="amenity">
+                            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Thêm
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="amenityRows" class="roomtype-association-list">
+                    @for (var i = 0; i < Model.Amenities.Count; i++)
+                    {
+                        var selected = Model.AvailableAmenities.FirstOrDefault(x => x.Id == Model.Amenities[i].ItemId);
+                        <div class="roomtype-association-row" data-association-row>
+                            <input type="hidden" name="Amenities[@i].AssignmentId" value="@Model.Amenities[i].AssignmentId" />
+                            <input type="hidden" name="Amenities[@i].ItemId" value="@Model.Amenities[i].ItemId" data-association-item />
+                            <div class="flex-grow-1 min-width-0">
+                                <div class="fw-semibold">@(selected?.Code ?? Model.Amenities[i].ItemId?.ToString()) - @(selected?.Name ?? "Tiện nghi đã chọn")</div>
+                            </div>
+                            <select class="form-select form-select-sm roomtype-association-status" name="Amenities[@i].IsActive" data-association-status>
+                                <option value="true" selected="@(Model.Amenities[i].IsActive ? "selected" : null)">Đang hoạt động</option>
+                                <option value="false" selected="@(!Model.Amenities[i].IsActive ? "selected" : null)">Dừng hoạt động</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-danger btn-sm roomtype-remove-association" data-remove-association title="Xóa tiện nghi">
+                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+                <div id="amenityEmpty" class="text-body-secondary small @(Model.Amenities.Count == 0 ? "" : "d-none")">Chưa thêm tiện nghi nào.</div>
+                <span asp-validation-for="Amenities" class="text-danger"></span>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4 roomtype-association-card" data-roomtype-association="service">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="roomtype-form-section-icon"><i class="bi bi-cone-striped" aria-hidden="true"></i></div>
+                        <div>
+                            <h2 class="h5 mb-1 fw-semibold">Dịch vụ</h2>
+                            <p class="text-body-secondary small mb-0">Chỉ thêm dịch vụ đang hoạt động và chưa bị xóa.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center roomtype-association-picker">
+                        <select id="servicePicker" class="form-select form-select-sm">
+                            <option value="">-- Chọn dịch vụ --</option>
+                            @foreach (var item in Model.AvailableServices)
+                            {
+                                <option value="@item.Id" data-code="@item.Code" data-name="@item.Name">@item.Code - @item.Name</option>
+                            }
+                        </select>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-add-association="service">
+                            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Thêm
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="serviceRows" class="roomtype-association-list">
+                    @for (var i = 0; i < Model.Services.Count; i++)
+                    {
+                        var selected = Model.AvailableServices.FirstOrDefault(x => x.Id == Model.Services[i].ItemId);
+                        <div class="roomtype-association-row" data-association-row>
+                            <input type="hidden" name="Services[@i].AssignmentId" value="@Model.Services[i].AssignmentId" />
+                            <input type="hidden" name="Services[@i].ItemId" value="@Model.Services[i].ItemId" data-association-item />
+                            <div class="flex-grow-1 min-width-0">
+                                <div class="fw-semibold">@(selected?.Code ?? Model.Services[i].ItemId?.ToString()) - @(selected?.Name ?? "Dịch vụ đã chọn")</div>
+                                @if (selected?.UnitPrice is not null)
+                                {
+                                    <div class="small text-body-secondary">@selected.UnitPrice.Value.ToString("N0") ₫ @selected.PriceUnitType</div>
+                                }
+                            </div>
+                            <select class="form-select form-select-sm roomtype-association-status" name="Services[@i].IsActive" data-association-status>
+                                <option value="true" selected="@(Model.Services[i].IsActive ? "selected" : null)">Đang hoạt động</option>
+                                <option value="false" selected="@(!Model.Services[i].IsActive ? "selected" : null)">Dừng hoạt động</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-danger btn-sm roomtype-remove-association" data-remove-association title="Xóa dịch vụ">
+                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+                <div id="serviceEmpty" class="text-body-secondary small @(Model.Services.Count == 0 ? "" : "d-none")">Chưa thêm dịch vụ nào.</div>
+                <span asp-validation-for="Services" class="text-danger"></span>
+            </div>
+        </section>
+
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mb-4">
+            <a asp-controller="RoomType" asp-action="Index" class="btn btn-outline-secondary roomtype-form-cancel-btn">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Quay lại danh sách
+            </a>
+            <button type="submit" class="btn btn-primary" id="roomTypeCreateSubmitButton">
+                <span class="ui-button-content"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Tạo loại phòng</span>
+                <span class="ui-button-loading d-none"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Đang tạo...</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/native-validation.js" asp-append-version="true"></script>
+    <script src="~/js/roomtype-form.js" asp-append-version="true"></script>
+}

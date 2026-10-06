@@ -1,0 +1,102 @@
+/* =========================================================
+   HOTEL MANAGEMENT - STATISTICS
+   ========================================================= */
+
+.statistics-filter-card,
+.statistics-kpi-card,
+.statistics-status-card,
+.statistics-highlight-card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: .9rem;
+}
+
+.statistics-kpi-value {
+    font-size: clamp(1.35rem, 2vw, 1.9rem);
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    overflow-wrap: anywhere;
+}
+
+.statistics-kpi-value span {
+    font-size: .78em;
+    font-weight: 600;
+}
+
+.statistics-number {
+    font-size: 1.65rem;
+    line-height: 1.1;
+    font-weight: 700;
+}
+
+.statistics-mini-value-label,
+.statistics-resource-label {
+    color: var(--bs-secondary-color);
+    font-size: .78rem;
+    font-weight: 600;
+}
+
+.statistics-mini-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-top: .2rem;
+    overflow-wrap: anywhere;
+}
+
+.statistics-payment-box {
+    border: 1px solid var(--bs-border-color);
+    border-radius: .8rem;
+    background: var(--bs-tertiary-bg);
+    padding: .85rem 1rem;
+}
+
+.statistics-list-row {
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    padding: .7rem 0;
+}
+
+.statistics-list-row:last-child {
+    border-bottom: 0;
+}
+
+.statistics-bar-row {
+    padding: .45rem 0 .7rem;
+}
+
+.statistics-progress {
+    height: .48rem;
+    border-radius: 999px;
+}
+
+.statistics-table {
+    min-width: 760px;
+}
+
+.statistics-table th,
+.statistics-table td {
+    padding: .75rem .9rem;
+}
+
+.statistics-max-name {
+    max-width: 250px;
+}
+
+.statistics-footnote {
+    line-height: 1.6;
+}
+
+@media (max-width: 767.98px) {
+    .statistics-table {
+        min-width: 680px;
+    }
+
+    .statistics-max-name {
+        max-width: 190px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        scroll-behavior: auto !important;
+    }
+}

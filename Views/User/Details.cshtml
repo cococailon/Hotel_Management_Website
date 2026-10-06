@@ -1,0 +1,178 @@
+@model Hotel_Management_Website.Models.ViewModels.User.UserDetailsViewModel
+
+@{
+    ViewData["Title"] = "Chi tiết tài khoản";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var returnUrl = ViewData["ReturnUrl"] as string;
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/user-details.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Chi tiết tài khoản",
+        Description = "Xem đầy đủ thông tin và trạng thái của tài khoản.",
+        Icon = "bi-person-vcard"
+    })
+
+<div class="user-detail-page">
+
+    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2 mb-4">
+        <a href="@( !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Action("Index", "User") )"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            Quay lại danh sách
+        </a>
+    </div>
+
+    <section class="card border-0 shadow-sm user-detail-summary mb-4">
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-center">
+                <div class="col-12 col-lg-auto">
+                    <div class="user-detail-avatar" aria-hidden="true">
+                        <i class="bi bi-person-lock"></i>
+                    </div>
+                </div>
+                <div class="col-12 col-lg">
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 mb-2">
+                        <h1 class="h4 fw-semibold mb-0 user-detail-name" title="@Model.UserName">
+                            @Model.UserName
+                        </h1>
+                        <span class="badge @Model.StatusBadgeClass">@Model.StatusName</span>
+                        <span class="badge text-bg-light border">@Model.RoleName</span>
+                    </div>
+                    <div class="text-body-secondary">
+                        <span class="font-monospace">@Model.UserCode</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="user-detail-section-icon" aria-hidden="true">
+                            <i class="bi bi-person-lines-fill"></i>
+                        </div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Thông tin tài khoản</h2>
+                            <div class="small text-body-secondary">Thông tin định danh và quyền truy cập</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <div class="user-detail-label">Mã tài khoản</div>
+                            <div class="user-detail-value font-monospace">@Model.UserCode</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="user-detail-label">Tên đăng nhập</div>
+                            <div class="user-detail-value user-detail-breakable">@Model.UserName</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="user-detail-label">Vai trò</div>
+                            <div class="user-detail-value">@Model.RoleName</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="user-detail-label">Trạng thái</div>
+                            <div class="user-detail-value"><span class="badge @Model.StatusBadgeClass">@Model.StatusName</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="user-detail-section-icon" aria-hidden="true">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Nhân viên được gán</h2>
+                            <div class="small text-body-secondary">Liên kết giữa tài khoản và hồ sơ nhân viên</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <div class="user-detail-label">Mã nhân viên</div>
+                            <div class="user-detail-value font-monospace">@(string.IsNullOrWhiteSpace(Model.EmployeeCode) ? "Chưa gán" : Model.EmployeeCode)</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="user-detail-label">Tên nhân viên</div>
+                            <div class="user-detail-value user-detail-breakable">@(string.IsNullOrWhiteSpace(Model.EmployeeName) ? "Chưa gán" : Model.EmployeeName)</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="user-detail-section-icon" aria-hidden="true">
+                            <i class="bi bi-sticky"></i>
+                        </div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Ghi chú</h2>
+                            <div class="small text-body-secondary">Thông tin bổ sung về tài khoản</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (string.IsNullOrWhiteSpace(Model.Note))
+                    {
+                        <div class="text-body-secondary">Không có ghi chú</div>
+                    }
+                    else
+                    {
+                        <div class="user-detail-note">@Model.Note</div>
+                    }
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="user-detail-section-icon" aria-hidden="true">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Thông tin thời gian</h2>
+                            <div class="small text-body-secondary">Lịch sử tạo và cập nhật tài khoản</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="user-detail-label">Ngày tạo</div>
+                            <div class="user-detail-value">@Model.CreatedAt</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="user-detail-label">Ngày chỉnh sửa gần nhất</div>
+                            <div class="user-detail-value">@Model.LastModifiedAt</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+</div>

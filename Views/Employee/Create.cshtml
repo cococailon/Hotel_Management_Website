@@ -1,0 +1,586 @@
+@model Hotel_Management_Website.Models.ViewModels.Employee.EmployeeCreateViewModel
+
+@{
+    ViewData["Title"] = "Thêm nhân viên";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var today = DateOnly.FromDateTime(DateTime.Today);
+    var selectedPosition = Model.Position == 1
+        ? "Buồng Phòng"
+        : "Lễ Tân";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/employee-create.css" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Thêm nhân viên",
+        Description = "Tạo hồ sơ nhân viên mới cho khách sạn.",
+        Icon = "bi-person-plus"
+    })
+
+<div class="employee-create-page">
+
+    <form id="employeeCreateForm"
+          asp-controller="Employee"
+          asp-action="Create"
+          method="post"
+          novalidate>
+
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly"
+             class="alert alert-danger"
+             role="alert">
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- BASIC INFORMATION -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="employee-create-section-icon">
+                        <i class="bi bi-person-vcard" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Thông tin cơ bản
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Thông tin định danh và cá nhân của nhân viên.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-4">
+
+                    <!-- EmployeeCode -->
+                    <div class="col-12 col-lg-6">
+
+                        <label asp-for="EmployeeCode"
+                               class="form-label required">
+                            Mã nhân viên
+                        </label>
+
+                        <input asp-for="EmployeeCode"
+                               class="form-control"
+                               autocomplete="off"
+                               maxlength="50"
+                               placeholder="Ví dụ: NV001" />
+
+                        <div class="form-text">
+                            Có thể để trống để hệ thống tự sinh mã. Nếu nhập tay, mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.
+                        </div>
+
+                        <span asp-validation-for="EmployeeCode"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- EmployeeName -->
+                    <div class="col-12 col-lg-6">
+
+                        <label asp-for="EmployeeName"
+                               class="form-label required">
+                            Tên nhân viên
+                        </label>
+
+                        <input asp-for="EmployeeName"
+                               class="form-control"
+                               autocomplete="off"
+                               maxlength="100"
+                               placeholder="Nhập họ và tên nhân viên" />
+
+                        <span asp-validation-for="EmployeeName"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- DateOfBirth -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="DateOfBirth"
+                               class="form-label required">
+                            Ngày sinh
+                        </label>
+
+                        <input asp-for="DateOfBirth"
+                               type="date"
+                               class="form-control"
+                               max='@today.ToString("yyyy-MM-dd")' />
+
+                        <span asp-validation-for="DateOfBirth"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- Sex -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="Sex"
+                               class="form-label required">
+                            Giới tính
+                        </label>
+
+                        <select asp-for="Sex"
+                                class="form-select">
+
+                            <option value="">
+                                -- Chọn giới tính --
+                            </option>
+
+                            <option value="0">Nam</option>
+                            <option value="1">Nữ</option>
+                            <option value="2">Khác</option>
+
+                        </select>
+
+                        <span asp-validation-for="Sex"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================================== -->
+        <!-- WORK INFORMATION -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="employee-create-section-icon">
+                        <i class="bi bi-briefcase" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Thông tin công việc
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Bộ phận, ngày làm việc và trạng thái hiện tại.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-4">
+
+                    <!-- Position -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="Position"
+                               class="form-label required">
+                            Bộ phận / Chức vụ
+                        </label>
+
+                        <select asp-for="Position"
+                                class="form-select">
+
+                            <option value="0">Lễ Tân</option>
+                            <option value="1">Buồng Phòng</option>
+
+                        </select>
+
+                        <span asp-validation-for="Position"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- StartDate -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="StartDate"
+                               class="form-label required">
+                            Ngày vào làm
+                        </label>
+
+                        <input asp-for="StartDate"
+                               type="date"
+                               class="form-control" />
+
+                        <span asp-validation-for="StartDate"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="Status"
+                               class="form-label required">
+                            Trạng thái
+                        </label>
+
+                        <select asp-for="Status"
+                                class="form-select"
+                                id="employeeStatus">
+
+                            <option value="1">Đang làm</option>
+                            <option value="0">Đã nghỉ</option>
+
+                        </select>
+
+                        <span asp-validation-for="Status"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- EndDate -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="EndDate"
+                               class="form-label">
+                            Ngày nghỉ việc
+                        </label>
+
+                        <input asp-for="EndDate"
+                               type="date"
+                               class="form-control"
+                               id="employeeEndDate" />
+
+                        <div class="form-text">
+                            Bắt buộc nếu trạng thái là Đã nghỉ.
+                        </div>
+
+                        <span asp-validation-for="EndDate"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================================== -->
+        <!-- NOTE -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="employee-create-section-icon">
+                        <i class="bi bi-sticky" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Ghi chú
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Thông tin bổ sung về nhân viên nếu cần.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <label asp-for="Note"
+                       class="form-label">
+                    Ghi chú
+                </label>
+
+                <textarea asp-for="Note"
+                          class="form-control"
+                          rows="4"
+                          maxlength="255"
+                          placeholder="Nhập ghi chú nếu có..."></textarea>
+
+                <div class="d-flex justify-content-between gap-2 mt-1">
+                    <span asp-validation-for="Note"
+                          class="text-danger">
+                    </span>
+
+                    <span class="form-text ms-auto">
+                        Tối đa 255 ký tự.
+                    </span>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================================== -->
+        <!-- ACTIONS -->
+        <!-- ===================================================== -->
+
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mb-4">
+
+            <a asp-controller="Employee"
+               asp-action="Index"
+               class="btn btn-outline-secondary employee-create-cancel-btn">
+
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+                Quay lại danh sách
+
+            </a>
+
+            <button type="submit"
+                    class="btn btn-primary"
+                    id="employeeCreateSubmitButton">
+
+                <span class="ui-button-content">
+                    <i class="bi bi-person-plus me-1" aria-hidden="true"></i>
+                    Tạo nhân viên
+                </span>
+
+                <span class="ui-button-loading d-none">
+                    <span class="spinner-border spinner-border-sm me-1"
+                          role="status"
+                          aria-hidden="true"></span>
+                    Đang tạo...
+                </span>
+
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            "use strict";
+
+            const form = document.getElementById("employeeCreateForm");
+            const submitButton = document.getElementById("employeeCreateSubmitButton");
+            const statusSelect = document.getElementById("employeeStatus");
+            const endDateInput = document.getElementById("employeeEndDate");
+            const confirmModal = document.getElementById("uiConfirmModal");
+
+            if (!form || !submitButton || !statusSelect || !endDateInput || !confirmModal) {
+                return;
+            }
+
+            let confirmedSubmit = false;
+            let isSubmitting = false;
+
+            const syncEndDateState = () => {
+                const isWorking = statusSelect.value === "1";
+
+                if (isWorking) {
+                    endDateInput.value = "";
+                    endDateInput.disabled = true;
+                    endDateInput.classList.remove("is-invalid");
+                } else {
+                    endDateInput.disabled = false;
+                }
+            };
+
+            const setFieldError = (fieldName, message) => {
+                const input = document.getElementById(fieldName);
+                const messageElement = document.querySelector(`[data-valmsg-for="${fieldName}"]`);
+
+                if (messageElement) {
+                    messageElement.textContent = message || "";
+                    messageElement.classList.toggle("field-validation-error", Boolean(message));
+                    messageElement.classList.toggle("field-validation-valid", !message);
+                }
+
+                if (input) {
+                    input.classList.toggle("input-validation-error", Boolean(message));
+                    input.classList.toggle("is-invalid", Boolean(message));
+                }
+            };
+
+            const clearBusinessErrors = () => {
+                ["DateOfBirth", "StartDate", "EndDate"].forEach(fieldName => {
+                    setFieldError(fieldName, "");
+                });
+            };
+
+            const validateBusinessRules = () => {
+                clearBusinessErrors();
+
+                const dobInput = document.getElementById("DateOfBirth");
+                const startInput = document.getElementById("StartDate");
+
+                const dob = dobInput?.value || "";
+                const start = startInput?.value || "";
+                const end = endDateInput.value || "";
+                const today = new Date().toISOString().slice(0, 10);
+                const status = statusSelect.value;
+
+                if (dob && dob > today) {
+                    setFieldError("DateOfBirth", "Ngày sinh không được lớn hơn ngày hiện tại.");
+                    dobInput?.focus();
+                    return false;
+                }
+
+                if (dob && start && dob >= start) {
+                    setFieldError("StartDate", "Ngày vào làm phải sau ngày sinh.");
+                    startInput?.focus();
+                    return false;
+                }
+
+                if (status === "0" && !end) {
+                    setFieldError("EndDate", "Nhân viên đã nghỉ việc phải có ngày nghỉ việc.");
+                    endDateInput.focus();
+                    return false;
+                }
+
+                if (status === "1" && end) {
+                    setFieldError("EndDate", "Nhân viên đang làm không được có ngày nghỉ việc.");
+                    endDateInput.focus();
+                    return false;
+                }
+
+                if (start && end && end < start) {
+                    setFieldError("EndDate", "Ngày nghỉ việc không được trước ngày vào làm.");
+                    endDateInput.focus();
+                    return false;
+                }
+
+                return true;
+            };
+
+            statusSelect.addEventListener("change", () => {
+                syncEndDateState();
+                setFieldError("EndDate", "");
+            });
+
+            document.getElementById("DateOfBirth")?.addEventListener("change", () => {
+                setFieldError("DateOfBirth", "");
+                setFieldError("StartDate", "");
+            });
+
+            document.getElementById("StartDate")?.addEventListener("change", () => {
+                setFieldError("StartDate", "");
+            });
+
+            endDateInput.addEventListener("change", () => {
+                setFieldError("EndDate", "");
+            });
+
+            syncEndDateState();
+
+            form.addEventListener("submit", function (event) {
+                if (confirmedSubmit) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                if (isSubmitting) {
+                    return;
+                }
+
+                // Validate DataAnnotation/jQuery trước.
+                if (
+                    window.jQuery &&
+                    typeof window.jQuery.fn.validate === "function" &&
+                    !window.jQuery(form).valid()
+                ) {
+                    return;
+                }
+
+                const employeeCode = document.getElementById("EmployeeCode")?.value?.trim() || "";
+                if (employeeCode && /\s/.test(employeeCode)) {
+                    setFieldError("EmployeeCode", "Mã nhân viên không được chứa dấu cách hoặc khoảng trắng.");
+                    document.getElementById("EmployeeCode")?.focus();
+                    return;
+                }
+
+                // Sau validation cơ bản mới kiểm tra business rule.
+                if (!validateBusinessRules()) {
+                    return;
+                }
+
+                const employeeName =
+                    document.getElementById("EmployeeName")?.value?.trim()
+                    || "nhân viên này";
+
+                window.HotelUI?.showConfirm({
+                    title: "Xác nhận tạo nhân viên",
+                    message: `Bạn có chắc muốn tạo nhân viên "${employeeName}" không?`,
+                    note: "Sau khi xác nhận, thông tin nhân viên sẽ được lưu vào hệ thống.",
+                    confirmText: "Tạo nhân viên",
+                    icon: "bi-person-plus",
+                    variant: "primary",
+                    onConfirm: function () {
+                        isSubmitting = true;
+                        confirmedSubmit = true;
+
+                        window.HotelUI?.setButtonLoading(
+                            submitButton,
+                            true,
+                            "Đang tạo..."
+                        );
+
+                        if (typeof form.requestSubmit === "function") {
+                            form.requestSubmit(submitButton);
+                        } else {
+                            HTMLFormElement.prototype.submit.call(form);
+                        }
+                    }
+                });
+            });
+
+            window.addEventListener("pageshow", function () {
+                confirmedSubmit = false;
+                isSubmitting = false;
+
+                window.HotelUI?.setButtonLoading(
+                    submitButton,
+                    false
+                );
+
+                syncEndDateState();
+            });
+        })();
+    </script>
+}

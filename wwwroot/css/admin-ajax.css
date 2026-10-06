@@ -1,0 +1,98 @@
+/* ========================================================= */
+/* GLOBAL AJAX NAVIGATION                                    */
+/* ========================================================= */
+
+#admin-page-loading {
+    will-change: transform, opacity;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    z-index: 99999;
+    background: var(--bs-primary, #0d6efd);
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: left center;
+    pointer-events: none;
+    transition: opacity .15s ease, transform .25s ease;
+}
+
+
+    /* ========================================================= */
+    /* LOADING                                                    */
+    /* ========================================================= */
+
+    #admin-page-loading.is-visible {
+        opacity: 1;
+        transform: scaleX(.7);
+        animation: hotelAjaxLoading 1s linear infinite !important;
+        -webkit-animation: hotelAjaxLoading 1s linear infinite !important;
+    }
+
+
+@keyframes hotelAjaxLoading {
+
+    from {
+        transform: scaleX(.15);
+    }
+
+    to {
+        transform: scaleX(.95);
+    }
+}
+
+
+/* ========================================================= */
+/* CONTENT LOADING                                            */
+/* ========================================================= */
+
+html.ajax-navigation-loading
+.app-header a {
+    pointer-events: none;
+}
+
+
+html.ajax-navigation-loading
+.app-sidebar a {
+    pointer-events: none;
+}
+
+
+html.ajax-navigation-loading
+#app-main-content {
+    cursor: progress;
+    opacity: .65;
+}
+
+
+/* ========================================================= */
+/* MAIN CONTENT TRANSITION                                    */
+/* ========================================================= */
+
+#app-main-content {
+    transition: opacity .08s ease;
+}
+
+/* Đảm bảo spinner luôn chạy kể cả khi môi trường bật reduced-motion. */
+.hm-loading-overlay .spinner-border,
+.ui-button-loading .spinner-border,
+#uiLoadingOverlay .spinner-border {
+    -webkit-animation: hotelUiSpinner .75s linear infinite !important;
+    animation: hotelUiSpinner .75s linear infinite !important;
+    will-change: transform;
+}
+
+@-webkit-keyframes hotelUiSpinner {
+    to {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes hotelUiSpinner {
+    to {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}

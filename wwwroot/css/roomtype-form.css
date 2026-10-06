@@ -1,0 +1,95 @@
+/* =========================================================
+   ROOMTYPE CREATE / EDIT
+   Visual standard: Employee Management
+   ========================================================= */
+
+.roomtype-form-page {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.roomtype-form-page .card-header {
+    padding: 1rem 1.25rem;
+}
+
+.roomtype-form-page .card-body {
+    padding: 1.25rem;
+}
+
+.roomtype-form-section-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .7rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.05rem;
+}
+
+.roomtype-form-page .form-label.required::after {
+    content: " *";
+    color: var(--bs-danger);
+}
+
+.roomtype-form-page .text-danger:empty {
+    display: none;
+}
+
+.roomtype-form-page .form-control:focus,
+.roomtype-form-page .form-select:focus,
+.roomtype-form-page textarea:focus {
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
+}
+
+.roomtype-form-page textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.roomtype-form-page .form-text {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.roomtype-form-cancel-btn {
+    min-width: 180px;
+}
+
+.roomtype-readonly-box {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    padding: .45rem .75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-tertiary-bg);
+    font-weight: 500;
+}
+
+.roomtype-association-picker { width:min(100%, 420px); }
+.roomtype-association-picker .form-select { min-width:0; }
+.roomtype-association-list { display:flex; flex-direction:column; gap:.65rem; }
+.roomtype-association-row { display:flex; align-items:center; gap:.75rem; padding:.75rem; border:1px solid var(--bs-border-color); border-radius:var(--bs-border-radius); background:var(--bs-body-bg); }
+.roomtype-association-status { width:180px; flex:0 0 180px; }
+.roomtype-remove-association { flex:0 0 36px; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; }
+
+@media (max-width: 767.98px) {
+    .roomtype-form-page .card-header,
+    .roomtype-form-page .card-body {
+        padding: 1rem;
+    }
+
+    .roomtype-form-cancel-btn {
+        width: 100%;
+    }
+
+    #roomTypeCreateSubmitButton,
+    #roomTypeEditSubmitButton {
+        width: 100%;
+    }
+}

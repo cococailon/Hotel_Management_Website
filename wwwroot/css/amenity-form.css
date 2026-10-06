@@ -1,0 +1,89 @@
+/* =========================================================
+   AMENITY CREATE / EDIT
+   Visual standard: Employee Management
+   ========================================================= */
+
+.amenity-form-page {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.amenity-form-page .card-header {
+    padding: 1rem 1.25rem;
+}
+
+.amenity-form-page .card-body {
+    padding: 1.25rem;
+}
+
+.amenity-form-section-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .7rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.05rem;
+}
+
+.amenity-form-page .form-label.required::after {
+    content: " *";
+    color: var(--bs-danger);
+}
+
+.amenity-form-page .text-danger:empty {
+    display: none;
+}
+
+.amenity-form-page .form-control:focus,
+.amenity-form-page .form-select:focus,
+.amenity-form-page textarea:focus {
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
+}
+
+.amenity-form-page textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.amenity-form-page .form-text {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.amenity-form-cancel-btn {
+    min-width: 180px;
+}
+
+.amenity-readonly-box {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    padding: .45rem .75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-tertiary-bg);
+    font-weight: 500;
+}
+.amenity-validation-summary:empty { display:none; }
+
+@media (max-width: 767.98px) {
+    .amenity-form-page .card-header,
+    .amenity-form-page .card-body {
+        padding: 1rem;
+    }
+
+    .amenity-form-cancel-btn {
+        width: 100%;
+    }
+
+    #amenityCreateSubmitButton,
+    #amenityEditSubmitButton {
+        width: 100%;
+    }
+}

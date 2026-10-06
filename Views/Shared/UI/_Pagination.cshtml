@@ -1,0 +1,478 @@
+﻿@using Microsoft.AspNetCore.WebUtilities
+@model Hotel_Management_Website.Models.ViewModels.UI.PaginationViewModel
+
+@if (Model.TotalItems > 0)
+{
+    var totalPages = Math.Max(Model.TotalPages, 1);
+
+    var currentPage = Math.Clamp(
+        Model.CurrentPage,
+        1,
+        totalPages);
+
+    // =========================================================
+    // PAGE SIZE OPTIONS
+    // =========================================================
+
+    var pageSizeOptions = new[] { 10, 20, 50 };
+
+
+    // =========================================================
+    // CREATE PAGE URL
+    // =========================================================
+
+    string BuildPageUrl(int page)
+    {
+        var parameters =
+            new Dictionary<string, string?>(
+                Model.QueryParameters);
+
+        parameters[Model.PageParam] =
+            page.ToString();
+
+        parameters[Model.PageSizeParam] =
+            Model.PageSize.ToString();
+
+        return QueryHelpers.AddQueryString(
+            Model.BaseUrl,
+            parameters);
+    }
+
+
+    // =========================================================
+    // CREATE PAGE SIZE URL
+    //
+    // Khi đổi page size:
+    // - Page = 1
+    // - PageSize = giá trị mới
+    // =========================================================
+
+    string BuildPageSizeUrl(int pageSize)
+    {
+        var parameters =
+            new Dictionary<string, string?>(
+                Model.QueryParameters);
+
+        parameters[Model.PageParam] =
+            "1";
+
+        parameters[Model.PageSizeParam] =
+            pageSize.ToString();
+
+        return QueryHelpers.AddQueryString(
+            Model.BaseUrl,
+            parameters);
+    }
+
+
+    // =========================================================
+    // PAGE NUMBER WINDOW
+    // =========================================================
+
+    var pageNumbers = new List<int>();
+
+    if (totalPages <= 7)
+    {
+        for (
+            var page = 1;
+            page <= totalPages;
+            page++)
+        {
+            pageNumbers.Add(page);
+        }
+    }
+    else
+    {
+        pageNumbers.Add(1);
+
+        var startPage =
+            Math.Max(
+                2,
+                currentPage - 1);
+
+        var endPage =
+            Math.Min(
+                totalPages - 1,
+                currentPage + 1);
+
+        if (currentPage <= 3)
+        {
+            startPage = 2;
+            endPage = 4;
+        }
+        else if (currentPage >= totalPages - 2)
+        {
+            startPage = totalPages - 3;
+            endPage = totalPages - 1;
+        }
+
+        if (startPage > 2)
+        {
+            pageNumbers.Add(-1);
+        }
+
+        for (
+            var page = startPage;
+            page <= endPage;
+            page++)
+        {
+            pageNumbers.Add(page);
+        }
+
+        if (endPage < totalPages - 1)
+        {
+            pageNumbers.Add(-1);
+        }
+
+        pageNumbers.Add(totalPages);
+    }
+
+
+    // =========================================================
+    // PREVIOUS / NEXT
+    // =========================================================
+
+    var previousUrl =
+        BuildPageUrl(currentPage - 1);
+
+    var nextUrl =
+        BuildPageUrl(currentPage + 1);
+
+
+    // =========================================================
+    // FIRST / LAST
+    // =========================================================
+
+    var firstUrl =
+        BuildPageUrl(1);
+
+    var lastUrl =
+        BuildPageUrl(totalPages);
+
+
+    // =========================================================
+    // AJAX NAVIGATION HELPER
+    // =========================================================
+
+    string AjaxLinkAttributes()
+    {
+        return "data-ajax-pagination=\"true\"";
+    }
+
+    <div class="ui-pagination m-3">
+
+        <div class="d-flex flex-column flex-lg-row
+                    align-items-stretch
+                    align-items-lg-center
+                    justify-content-between
+                    gap-3">
+
+            <!-- ================================================= -->
+            <!-- LEFT -->
+            <!-- ================================================= -->
+
+            <div class="d-flex flex-column
+                        flex-sm-row
+                        align-items-start
+                        align-items-sm-center
+                        gap-3">
+
+                <!-- ============================================= -->
+                <!-- RESULT INFO -->
+                <!-- ============================================= -->
+
+                <div class="small text-body-secondary text-nowrap">
+
+                    Hiển thị
+
+                    <strong>
+                        @Model.FirstItemIndex
+                    </strong>
+
+                    –
+
+                    <strong>
+                        @Model.LastItemIndex
+                    </strong>
+
+                    /
+
+                    <strong>
+                        @Model.TotalItems
+                    </strong>
+
+                    @(string.IsNullOrWhiteSpace(Model.ItemLabel) ? "bản ghi" : Model.ItemLabel)
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- PAGE SIZE -->
+                <!-- ============================================= -->
+
+                <div class="d-flex align-items-center gap-2">
+
+                    <label for="pageSize-@Model.PageParam.Replace(".", "-")"
+                           class="small text-body-secondary text-nowrap mb-0">
+
+                        Hiển thị:
+
+                    </label>
+
+
+                    <select id="pageSize-@Model.PageParam.Replace(".", "-")"
+                            class="form-select form-select-sm"
+                            style="width: auto;"
+                            onchange="HotelPagination.changePageSize(this)">
+
+                        @foreach (var pageSize in pageSizeOptions)
+                        {
+                            var pageSizeUrl =
+                                BuildPageSizeUrl(pageSize);
+
+                            <option value="@pageSizeUrl"
+                                    selected="@(Model.PageSize == pageSize)">
+
+                                @pageSize / trang
+
+                            </option>
+                        }
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- RIGHT -->
+            <!-- ================================================= -->
+
+            <div class="d-flex flex-column
+                        flex-sm-row
+                        align-items-sm-center
+                        justify-content-sm-end
+                        gap-2">
+
+                <!-- ============================================= -->
+                <!-- CURRENT PAGE -->
+                <!-- ============================================= -->
+
+                <div class="small text-body-secondary text-nowrap">
+
+                    Trang
+                    <strong>
+                        @currentPage
+                    </strong>
+                    /
+                    <strong>
+                        @totalPages
+                    </strong>
+
+                </div>
+
+
+                <nav aria-label="Phân trang">
+
+                    <ul class="pagination pagination-sm mb-0">
+
+
+                        <!-- ================================================= -->
+                        <!-- FIRST -->
+                        <!-- ================================================= -->
+
+                        <li class="page-item
+                            @(currentPage <= 1
+                                ? "disabled"
+                                : "")">
+
+                            @if (currentPage > 1)
+                            {
+                                <a class="page-link"
+                                   href="@firstUrl"
+                                   data-ajax-pagination="true"
+                                   aria-label="Trang đầu">
+
+                                    <i class="bi bi-chevron-bar-left"
+                                       aria-hidden="true"></i>
+
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="page-link"
+                                      aria-hidden="true">
+
+                                    <i class="bi bi-chevron-bar-left"></i>
+
+                                </span>
+                            }
+
+                        </li>
+
+
+                        <!-- ================================================= -->
+                        <!-- PREVIOUS -->
+                        <!-- ================================================= -->
+
+                        <li class="page-item
+                            @(Model.HasPreviousPage
+                                ? ""
+                                : "disabled")">
+
+                            @if (Model.HasPreviousPage)
+                            {
+                                <a class="page-link"
+                                   href="@previousUrl"
+                                   data-ajax-pagination="true"
+                                   aria-label="Trang trước">
+
+                                    <i class="bi bi-chevron-left"
+                                       aria-hidden="true"></i>
+
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="page-link"
+                                      aria-hidden="true">
+
+                                    <i class="bi bi-chevron-left"></i>
+
+                                </span>
+                            }
+
+                        </li>
+
+
+                        <!-- ================================================= -->
+                        <!-- PAGE NUMBERS -->
+                        <!-- ================================================= -->
+
+                        @foreach (var page2 in pageNumbers)
+                        {
+                            if (page2 == -1)
+                            {
+                                <li class="page-item disabled"
+                                    aria-hidden="true">
+
+                                    <span class="page-link">
+                                        …
+                                    </span>
+
+                                </li>
+                            }
+                            else
+                            {
+                                var pageUrl =
+                                    BuildPageUrl(page2);
+
+                                <li class="page-item
+                                    @(page2 == currentPage
+                                        ? "active"
+                                        : "")">
+
+                                    @if (page2 == currentPage)
+                                    {
+                                        <span class="page-link"
+                                              aria-current="page">
+
+                                            @page2
+
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <a class="page-link"
+                                           href="@pageUrl"
+                                           data-ajax-pagination="true"
+                                           aria-label="Trang @page2">
+
+                                            @page2
+
+                                        </a>
+                                    }
+
+                                </li>
+                            }
+                        }
+
+
+                        <!-- ================================================= -->
+                        <!-- NEXT -->
+                        <!-- ================================================= -->
+
+                        <li class="page-item
+                            @(Model.HasNextPage
+                                ? ""
+                                : "disabled")">
+
+                            @if (Model.HasNextPage)
+                            {
+                                <a class="page-link"
+                                   href="@nextUrl"
+                                   data-ajax-pagination="true"
+                                   aria-label="Trang sau">
+
+                                    <i class="bi bi-chevron-right"
+                                       aria-hidden="true"></i>
+
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="page-link"
+                                      aria-hidden="true">
+
+                                    <i class="bi bi-chevron-right"></i>
+
+                                </span>
+                            }
+
+                        </li>
+
+
+                        <!-- ================================================= -->
+                        <!-- LAST -->
+                        <!-- ================================================= -->
+
+                        <li class="page-item
+                            @(currentPage >= totalPages
+                                ? "disabled"
+                                : "")">
+
+                            @if (currentPage < totalPages)
+                            {
+                                <a class="page-link"
+                                   href="@lastUrl"
+                                   data-ajax-pagination="true"
+                                   aria-label="Trang cuối">
+
+                                    <i class="bi bi-chevron-bar-right"
+                                       aria-hidden="true"></i>
+
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="page-link"
+                                      aria-hidden="true">
+
+                                    <i class="bi bi-chevron-bar-right"></i>
+
+                                </span>
+                            }
+
+                        </li>
+
+                    </ul>
+
+                </nav>
+
+            </div>
+
+        </div>
+
+    </div>
+}

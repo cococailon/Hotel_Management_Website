@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+
+<html lang="vi">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>
+        @ViewData["Title"] - Hotel Management
+    </title>
+
+
+    <!-- ===================================================== -->
+    <!-- BOOTSTRAP -->
+    <!-- ===================================================== -->
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+
+    <!-- ===================================================== -->
+    <!-- BOOTSTRAP ICONS -->
+    <!-- ===================================================== -->
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+
+
+    <!-- ===================================================== -->
+    <!-- ADMINLTE 4.9.1 -->
+    <!-- ===================================================== -->
+
+    <link rel="stylesheet"
+          href="~/lib/admin-lte/css/adminlte.min.css" />
+
+
+    <!-- ===================================================== -->
+    <!-- LOGIN CUSTOM CSS -->
+    <!-- ===================================================== -->
+
+    <style>
+
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            min-height: 100vh;
+        }
+
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 430px;
+        }
+
+        .login-brand {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .login-loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.65);
+            cursor: wait;
+        }
+
+        [data-bs-theme="dark"] .login-loading-overlay {
+            background: rgba(0, 0, 0, 0.55);
+        }
+
+    </style>
+
+</head>
+
+
+<body class="bg-body-tertiary">
+
+
+    <!-- ===================================================== -->
+    <!-- PAGE CONTENT -->
+    <!-- ===================================================== -->
+    @RenderBody()
+
+
+    <!-- ===================================================== -->
+    <!-- JQUERY -->
+    <!-- jquery.validate cần jQuery -->
+    <!-- ===================================================== -->
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+
+    <!-- ===================================================== -->
+    <!-- BOOTSTRAP -->
+    <!-- ===================================================== -->
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <!-- ===================================================== -->
+    <!-- ADMINLTE 4.9.1 -->
+    <!-- ===================================================== -->
+
+    <script src="~/lib/admin-lte/js/adminlte.min.js"></script>
+
+
+    <!-- ===================================================== -->
+    <!-- VIEW-SPECIFIC SCRIPTS -->
+    <!-- ===================================================== -->
+    @await RenderSectionAsync(
+    "Scripts",
+        required: false)
+
+</body>
+
+</html>

@@ -1,0 +1,89 @@
+/* =========================================================
+   SERVICE CREATE / EDIT
+   Visual standard: Employee Management
+   ========================================================= */
+
+.service-form-page {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.service-form-page .card-header {
+    padding: 1rem 1.25rem;
+}
+
+.service-form-page .card-body {
+    padding: 1.25rem;
+}
+
+.service-form-section-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .7rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.05rem;
+}
+
+.service-form-page .form-label.required::after {
+    content: " *";
+    color: var(--bs-danger);
+}
+
+.service-form-page .text-danger:empty {
+    display: none;
+}
+
+.service-form-page .form-control:focus,
+.service-form-page .form-select:focus,
+.service-form-page textarea:focus {
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
+}
+
+.service-form-page textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.service-form-page .form-text {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.service-form-cancel-btn {
+    min-width: 180px;
+}
+
+.service-readonly-box {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    padding: .45rem .75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-tertiary-bg);
+    font-weight: 500;
+}
+.service-validation-summary:empty { display:none; }
+
+@media (max-width: 767.98px) {
+    .service-form-page .card-header,
+    .service-form-page .card-body {
+        padding: 1rem;
+    }
+
+    .service-form-cancel-btn {
+        width: 100%;
+    }
+
+    #serviceCreateSubmitButton,
+    #serviceEditSubmitButton {
+        width: 100%;
+    }
+}

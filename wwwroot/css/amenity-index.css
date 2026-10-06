@@ -1,0 +1,121 @@
+/* =========================================================
+   AMENITY LIST
+   UI System / AdminLTE 4.9.1 / Bootstrap 5
+   Visual standard: Employee Management
+   ========================================================= */
+
+.amenity-section {
+    overflow: hidden;
+}
+
+.amenity-section-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .75rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.1rem;
+}
+
+.amenity-section .card-header .btn {
+    white-space: nowrap;
+}
+
+.amenity-filter-panel {
+    background: var(--bs-body-bg);
+}
+
+.amenity-table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.amenity-table {
+    min-width: 1250px;
+    table-layout: fixed;
+}
+
+.amenity-table th,
+.amenity-table td {
+    padding: .7rem .75rem;
+}
+
+.amenity-table th {
+    white-space: nowrap;
+    font-size: .82rem;
+}
+
+.amenity-table td {
+    font-size: .9rem;
+}
+
+.amenity-cell-ellipsis {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.amenity-action-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+}
+
+.amenity-action-btn i {
+    font-size: 1rem;
+}
+
+.amenity-action-group {
+    min-width: 76px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.amenity-action-btn[data-allowed="false"] {
+    opacity: .6;
+}
+
+.amenity-status-badge {
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.min-width-0 {
+    min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+    .amenity-section .card-header .btn {
+        flex: 1 1 auto;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .amenity-section-icon {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+    }
+
+    .amenity-table th,
+    .amenity-table td {
+        padding: .65rem .65rem;
+    }
+}
+
+.amenity-col-code { width: 175px; }
+.amenity-col-name { width: 335px; }
+.amenity-col-status { width: 290px; }
+.amenity-col-date { width: 195px; }
+.amenity-col-action { width: 215px; }

@@ -1,0 +1,209 @@
+@model Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeIndexViewModel
+
+@{
+    var isReception = User.IsInRole("Reception");
+    ViewData["Title"] = "Quản lý loại phòng";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+
+    var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/roomtype-index.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quản lý loại phòng",
+        Description = isReception
+            ? "Xem danh sách, tìm kiếm, sắp xếp và lọc các loại phòng."
+            : "Xem, tìm kiếm, sắp xếp, lọc và quản lý trạng thái các loại phòng.",
+        Icon = "bi-door-open"
+    })
+
+@if (!string.IsNullOrWhiteSpace(Model.LoadError))
+{
+    @await Html.PartialAsync(
+        "~/Views/Shared/UI/_ErrorState.cshtml",
+        new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+        {
+            Message = Model.LoadError,
+            Icon = "bi-exclamation-triangle"
+        })
+}
+else
+{
+    <form method="get"
+          asp-controller="RoomType"
+          asp-action="Index"
+          class="roomtype-filter-form"
+          data-preserve-scroll="true">
+
+        <input type="hidden" name="Filter.CurrentPage" value="1" />
+        <input type="hidden" name="Filter.PageSize" value="@Model.Filter.PageSize" />
+
+        <section class="roomtype-section card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-3 min-width-0">
+                        <div class="roomtype-section-icon" aria-hidden="true">
+                            <i class="bi bi-door-open"></i>
+                        </div>
+                        <div class="min-width-0">
+                            <h2 class="h5 mb-1 fw-semibold">Danh sách loại phòng</h2>
+                        </div>
+                    </div>
+@if (!isReception)
+                    {
+                        <a asp-controller="RoomType" asp-action="Create" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+                            Tạo loại phòng
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <div class="card-body border-bottom roomtype-filter-panel">
+                <div class="row g-2 g-lg-3 align-items-end">
+                    <div class="col-12 col-xl-4">
+                        <label for="roomTypeSearch" class="form-label small fw-semibold">Tìm kiếm</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body"><i class="bi bi-search" aria-hidden="true"></i></span>
+                            <input id="roomTypeSearch" type="search" class="form-control" name="Filter.Search"
+                                   value="@Model.Filter.Search" placeholder="Mã hoặc tên loại phòng" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <label for="roomTypeSort" class="form-label small fw-semibold">Sắp xếp</label>
+                        <select id="roomTypeSort" name="Filter.Sort" class="form-select">
+                            @await Html.PartialAsync("~/Views/RoomType/_SortOptions.cshtml", Model.Filter.Sort)
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="roomTypeStatus" class="form-label small fw-semibold">Trạng thái</label>
+                        <select id="roomTypeStatus" name="Filter.IsActive" class="form-select">
+                            <option value="" selected="@(Model.Filter.IsActive is null ? "selected" : null)">Tất cả</option>
+                            <option value="true" selected="@(Model.Filter.IsActive == true ? "selected" : null)">Đang hoạt động</option>
+                            <option value="false" selected="@(Model.Filter.IsActive == false ? "selected" : null)">Dừng hoạt động</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-xl-3">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1 roomtype-filter-submit">
+                                <span class="ui-button-content">
+                                    <i class="bi bi-funnel me-1" aria-hidden="true"></i>
+                                    Lọc
+                                </span>
+                                <span class="ui-button-loading d-none">
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    Đang lọc...
+                                </span>
+                            </button>
+                            <button type="submit" name="Reset" value="roomtype" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.RoomTypes.Count == 0)
+            {
+                @await Html.PartialAsync(
+                    "~/Views/Shared/UI/_EmptyState.cshtml",
+                    new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+                    {
+                        Message = "Không tìm thấy loại phòng nào.",
+                        Icon = "bi-door-closed"
+                    })
+            }
+            else
+            {
+                @await Html.PartialAsync("~/Views/RoomType/_RoomTypeTable.cshtml", Model)
+            }
+
+            @await Html.PartialAsync("~/Views/Shared/UI/_Pagination.cshtml", Model.Pagination)
+        </section>
+    </form>
+
+    <form id="roomTypeDeleteForm" asp-controller="RoomType" asp-action="Delete" method="post" class="d-none">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="roomTypeDeleteId" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+    </form>
+
+    <form id="roomTypeDeactivateForm" asp-controller="RoomType" asp-action="Deactivate" method="post" class="d-none">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="roomTypeDeactivateId" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+    </form>
+
+    <form id="roomTypeActivateForm" asp-controller="RoomType" asp-action="Activate" method="post" class="d-none">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="roomTypeActivateId" />
+        <input type="hidden" name="reopenRooms" id="roomTypeReopenRooms" value="false" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+    </form>
+
+    <div class="modal fade" id="roomTypeActivateModal" tabindex="-1" aria-labelledby="roomTypeActivateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="roomTypeActivateModalLabel">Xác nhận mở hoạt động</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3" id="roomTypeActivateMessage"></p>
+                    <div class="form-check border rounded p-3">
+                        <input class="form-check-input" type="checkbox" id="roomTypeReopenRoomsCheckbox" />
+                        <label class="form-check-label fw-semibold" for="roomTypeReopenRoomsCheckbox">
+                            Mở hoạt động luôn các phòng đang dừng hoạt động của loại phòng này
+                        </label>
+                        <div class="form-text">Chỉ các phòng chưa bị xóa và đang IsActive = false mới được mở lại.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-success" id="roomTypeActivateConfirmButton">
+                        <i class="bi bi-play-circle me-1" aria-hidden="true"></i> Mở hoạt động
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts
+{
+    <script>
+        (() => {
+            "use strict";
+
+            const form = document.querySelector(".roomtype-filter-form");
+            if (!form || form.dataset.ajaxFilterBound === "true") return;
+
+            form.dataset.ajaxFilterBound = "true";
+            let submitted = false;
+
+            form.addEventListener("submit", () => {
+                if (submitted) return;
+                submitted = true;
+
+                const submitButton = form.querySelector(".roomtype-filter-submit");
+                if (submitButton && window.HotelUI?.setButtonLoading) {
+                    window.HotelUI.setButtonLoading(
+                        submitButton,
+                        true,
+                        "Đang lọc..."
+                    );
+                }
+            });
+        })();
+    </script>
+    <script src="~/js/roomtype-index.js" asp-append-version="true"></script>
+}

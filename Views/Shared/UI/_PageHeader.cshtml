@@ -1,0 +1,20 @@
+@model Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+
+<div class="hm-page-header mb-4">
+    <div class="d-flex align-items-start gap-3">
+        @if (!string.IsNullOrWhiteSpace(Model.Icon))
+        {
+            <div class="hm-page-header-icon">
+                <i class="bi @Model.Icon" aria-hidden="true"></i>
+            </div>
+        }
+
+        <div>
+            <h1 class="h3 mb-1 fw-semibold">@Model.Title</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.Description))
+            {
+                <p class="text-body-secondary mb-0">@Model.Description</p>
+            }
+        </div>
+    </div>
+</div>

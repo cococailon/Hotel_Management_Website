@@ -1,0 +1,331 @@
+@model Hotel_Management_Website.Models.ViewModels.Bill.BillDetailsViewModel
+@using System.Globalization
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+
+@{
+    Layout = null;
+    var culture = CultureInfo.GetCultureInfo("vi-VN");
+
+    var hotelName = Configuration["InvoiceHotel:Name"];
+    var hotelAddress = Configuration["InvoiceHotel:Address"];
+    var hotelTaxCode = Configuration["InvoiceHotel:TaxCode"];
+    var hotelPhone = Configuration["InvoiceHotel:Phone"];
+    var hotelEmail = Configuration["InvoiceHotel:Email"];
+
+    var roomSubtotal = Model.Details.Sum(detail =>
+        Math.Max(0m,
+            detail.TotalPrice -
+            detail.Services.Sum(service => service.TotalPrice) -
+            detail.AdditionalFees.Sum(fee => fee.TotalFee)));
+    var serviceSubtotal = Model.Details.Sum(detail => detail.Services.Sum(service => service.TotalPrice));
+    var feeSubtotal = Model.Details.Sum(detail => detail.AdditionalFees.Sum(fee => fee.TotalFee));
+    var totalAmount = Model.TotalAmount ?? Model.Details.Sum(x => x.TotalPrice);
+    var depositAmount = Model.DepositAmount;
+    var finalAmount = Model.FinalAmount;
+    var stayStart = Model.BookingActualCheckInAt ?? Model.BookingExpectedCheckInAt;
+    var stayEnd = Model.BookingActualCheckOutAt ?? Model.BookingExpectedCheckOutAt;
+    var stayNights = 0;
+    if (stayStart.HasValue && stayEnd.HasValue)
+    {
+        stayNights = Math.Max(0, (stayEnd.Value.Date - stayStart.Value.Date).Days);
+    }
+
+    string DisplayOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
+    string DisplayMoney(decimal value) => value.ToString("N0", culture) + " ₫";
+    string DisplayDecimal(decimal value) => value.ToString("N2", culture);
+
+    string DisplayRoom(Hotel_Management_Website.Models.ViewModels.Bill.BillDetailItemViewModel item)
+    {
+        if (string.IsNullOrWhiteSpace(item.RoomCode) && string.IsNullOrWhiteSpace(item.RoomName))
+            return "Phòng chưa được gán";
+        if (string.IsNullOrWhiteSpace(item.RoomName))
+            return item.RoomCode;
+        if (string.IsNullOrWhiteSpace(item.RoomCode))
+            return item.RoomName;
+        return $"{item.RoomCode} · {item.RoomName}";
+    }
+
+    string DisplayRoomType(Hotel_Management_Website.Models.ViewModels.Bill.BillDetailItemViewModel item)
+    {
+        if (string.IsNullOrWhiteSpace(item.RoomTypeCode) && string.IsNullOrWhiteSpace(item.RoomTypeName))
+            return "Không xác định";
+        if (string.IsNullOrWhiteSpace(item.RoomTypeName))
+            return item.RoomTypeCode;
+        if (string.IsNullOrWhiteSpace(item.RoomTypeCode))
+            return item.RoomTypeName;
+        return $"{item.RoomTypeCode} · {item.RoomTypeName}";
+    }
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hóa đơn @Model.BillCode</title>
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/bill-print.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="print-toolbar no-print">
+        <div class="print-toolbar-inner">
+            <div class="print-toolbar-title">
+                <i class="bi bi-receipt" aria-hidden="true"></i>
+                <span>Xem trước hóa đơn</span>
+            </div>
+            <div class="print-toolbar-actions">
+                <button type="button" class="print-btn print-btn-primary" onclick="window.print()">
+                    <span class="print-btn-icon">⎙</span>
+                    In hóa đơn
+                </button>
+                <button type="button" class="print-btn" onclick="window.close()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="invoice-sheet" aria-label="Hóa đơn thanh toán">
+        <header class="invoice-header">
+            <div class="invoice-seller">
+                <div class="invoice-brand-name">@DisplayOrDash(hotelName)</div>
+                <div class="invoice-seller-line"><strong>Địa chỉ:</strong> @DisplayOrDash(hotelAddress)</div>
+                <div class="invoice-seller-line"><strong>Mã số thuế:</strong> <span class="mono">@DisplayOrDash(hotelTaxCode)</span></div>
+                <div class="invoice-seller-line"><strong>Điện thoại:</strong> @DisplayOrDash(hotelPhone)</div>
+                <div class="invoice-seller-line"><strong>Email:</strong> @DisplayOrDash(hotelEmail)</div>
+            </div>
+
+            <div class="invoice-title-block">
+                <div class="invoice-title">HÓA ĐƠN THANH TOÁN</div>
+                <div class="invoice-title-subtitle">HOTEL / LODGING INVOICE</div>
+                <div class="invoice-status @(Model.Status == 0 ? "is-success" : "is-failed")">
+                    @Model.StatusName.ToUpperInvariant()
+                </div>
+            </div>
+        </header>
+
+        <section class="invoice-top-meta">
+            <div class="invoice-id-panel">
+                <div class="id-panel-row"><span>Số hóa đơn</span><strong class="invoice-code mono">@Model.BillCode</strong></div>
+                <div class="id-panel-row"><span>Ngày lập</span><strong>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</strong></div>
+                <div class="id-panel-row"><span>Ngày thanh toán</span><strong>@(Model.PaidAt.HasValue ? Model.PaidAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : "Chưa thanh toán")</strong></div>
+            </div>
+
+            <div class="invoice-id-panel">
+                <div class="id-panel-row"><span>Mã Booking</span><strong class="mono">@DisplayOrDash(Model.BookingCode)</strong></div>
+                <div class="id-panel-row"><span>Loại Booking</span><strong>@DisplayOrDash(Model.BookingTypeName)</strong></div>
+                <div class="id-panel-row"><span>Trạng thái</span><strong>@DisplayOrDash(Model.StatusName)</strong></div>
+            </div>
+        </section>
+
+        <section class="invoice-dual-section">
+            <div class="party-card">
+                <div class="invoice-section-title">BÊN BÁN — KHÁCH SẠN</div>
+                <div class="party-name">@DisplayOrDash(hotelName)</div>
+                <div class="party-line"><strong>Địa chỉ:</strong> @DisplayOrDash(hotelAddress)</div>
+                <div class="party-line"><strong>MST:</strong> <span class="mono">@DisplayOrDash(hotelTaxCode)</span></div>
+                <div class="party-line"><strong>Điện thoại:</strong> @DisplayOrDash(hotelPhone)</div>
+                <div class="party-line"><strong>Email:</strong> @DisplayOrDash(hotelEmail)</div>
+            </div>
+
+            <div class="party-card">
+                <div class="invoice-section-title">BÊN MUA — KHÁCH HÀNG</div>
+                <div class="party-name">@DisplayOrDash(Model.GuestName)</div>
+                <div class="party-line"><strong>Mã khách hàng:</strong> <span class="mono">@DisplayOrDash(Model.GuestCode)</span></div>
+                <div class="party-line"><strong>Địa chỉ:</strong> @DisplayOrDash(Model.GuestAddress)</div>
+                <div class="party-line"><strong>Số giấy tờ:</strong> <span class="mono">@DisplayOrDash(Model.GuestIdentityNumber)</span> <span class="muted">(@DisplayOrDash(Model.GuestIdentityTypeName))</span></div>
+                <div class="party-line"><strong>SĐT:</strong> @DisplayOrDash(Model.GuestPhoneNumber) <span class="separator">|</span> <strong>Email:</strong> @DisplayOrDash(Model.GuestEmail)</div>
+            </div>
+        </section>
+
+        <section class="invoice-section">
+            <div class="invoice-section-title">THỜI GIAN LƯU TRÚ</div>
+            <div class="invoice-meta-grid compact-meta">
+                <div class="invoice-meta-card">
+                    <div class="meta-row"><span>Check-in dự kiến</span><strong>@(Model.BookingExpectedCheckInAt.HasValue ? Model.BookingExpectedCheckInAt.Value.ToString("dd/MM/yyyy HH:mm") : "—")</strong></div>
+                    <div class="meta-row"><span>Check-out dự kiến</span><strong>@(Model.BookingExpectedCheckOutAt.HasValue ? Model.BookingExpectedCheckOutAt.Value.ToString("dd/MM/yyyy HH:mm") : "—")</strong></div>
+                    <div class="meta-row"><span>Check-in thực tế</span><strong>@(Model.BookingActualCheckInAt.HasValue ? Model.BookingActualCheckInAt.Value.ToString("dd/MM/yyyy HH:mm") : "—")</strong></div>
+                    <div class="meta-row"><span>Check-out thực tế</span><strong>@(Model.BookingActualCheckOutAt.HasValue ? Model.BookingActualCheckOutAt.Value.ToString("dd/MM/yyyy HH:mm") : "—")</strong></div>
+                </div>
+
+                <div class="invoice-meta-card stay-summary-card">
+                    <div class="meta-row"><span>Số đêm lưu trú</span><strong>@(stayNights > 0 ? stayNights.ToString("N0", culture) : "—")</strong></div>
+                    <div class="meta-row"><span>Tổng tiền hóa đơn</span><strong>@DisplayMoney(totalAmount)</strong></div>
+                    <div class="meta-row"><span>Đã đặt cọc</span><strong>@DisplayMoney(depositAmount)</strong></div>
+                    <div class="meta-row"><span>Còn phải thanh toán</span><strong>@DisplayMoney(finalAmount)</strong></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="invoice-section">
+            <div class="invoice-section-title">CHI TIẾT HÀNG HÓA / DỊCH VỤ</div>
+            <table class="invoice-table">
+                <thead>
+                    <tr>
+                        <th class="col-no">STT</th>
+                        <th class="col-desc">Tên hàng hóa / dịch vụ</th>
+                        <th class="col-qty">SL</th>
+                        <th class="col-unit">Đơn giá</th>
+                        <th class="col-time">Thời gian sử dụng / diễn giải</th>
+                        <th class="col-money">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model.Details.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" class="empty-row">Không có chi tiết hóa đơn.</td>
+                    </tr>
+                }
+                else
+                {
+                    var rowNo = 1;
+                    foreach (var detail in Model.Details)
+                    {
+                        var serviceTotal = detail.Services.Sum(x => x.TotalPrice);
+                        var feeTotal = detail.AdditionalFees.Sum(x => x.TotalFee);
+                        var roomBaseAmount = Math.Max(0m, detail.TotalPrice - serviceTotal - feeTotal);
+                        var roomUnitPrice = stayNights > 0
+                            ? Math.Round(roomBaseAmount / stayNights, 2, MidpointRounding.AwayFromZero)
+                            : roomBaseAmount;
+
+                        <tr class="room-main-row">
+                            <td class="text-center">@rowNo</td>
+                            <td>
+                                <strong>Tiền phòng — @DisplayRoom(detail)</strong>
+                                <div class="subtext">@DisplayRoomType(detail)</div>
+                                @if (detail.Adults.HasValue || detail.Children.HasValue)
+                                {
+                                    <div class="subtext">@(detail.Adults ?? 0) người lớn · @(detail.Children ?? 0) trẻ em</div>
+                                }
+                            </td>
+                            <td class="text-center">1 phòng</td>
+                            <td class="money">@DisplayMoney(roomUnitPrice)</td>
+                            <td>
+                                @if (stayStart.HasValue && stayEnd.HasValue)
+                                {
+                                    <div>@stayStart.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                    <div class="subtext">đến @stayEnd.Value.ToString("dd/MM/yyyy HH:mm") · @Math.Max(1, stayNights) đêm</div>
+                                }
+                                else
+                                {
+                                    <span>Tiền phòng theo Bill</span>
+                                }
+                            </td>
+                            <td class="money">@DisplayMoney(roomBaseAmount)</td>
+                        </tr>
+
+                        foreach (var service in detail.Services)
+                        {
+                            <tr class="sub-row">
+                                <td></td>
+                                <td>
+                                    <strong>Dịch vụ — @DisplayOrDash(service.ServiceName)</strong>
+                                    @if (!string.IsNullOrWhiteSpace(service.ServiceCode))
+                                    {
+                                        <div class="subtext">Mã DV: @service.ServiceCode</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(service.Note))
+                                    {
+                                        <div class="subtext">@service.Note</div>
+                                    }
+                                </td>
+                                <td class="text-center">1 lần</td>
+                                <td class="money">@DisplayMoney(service.TotalPrice)</td>
+                                <td>@service.UsedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="money">@DisplayMoney(service.TotalPrice)</td>
+                            </tr>
+                        }
+
+                        foreach (var fee in detail.AdditionalFees)
+                        {
+                            <tr class="sub-row">
+                                <td></td>
+                                <td>
+                                    <strong>Phí phát sinh — @DisplayOrDash(fee.FeeName)</strong>
+                                    <div class="subtext">@fee.FeeTypeName@(string.IsNullOrWhiteSpace(fee.Description) ? string.Empty : $" · {fee.Description}")</div>
+                                </td>
+                                <td class="text-center">1 khoản</td>
+                                <td class="money">@DisplayMoney(fee.TotalFee)</td>
+                                <td>Trong thời gian lưu trú</td>
+                                <td class="money">@DisplayMoney(fee.TotalFee)</td>
+                            </tr>
+                        }
+
+                        rowNo++;
+                    }
+                }
+                </tbody>
+            </table>
+        </section>
+
+        <section class="invoice-summary">
+            <div class="summary-note">
+                @if (!string.IsNullOrWhiteSpace(Model.Note))
+                {
+                    <div class="invoice-section-title">GHI CHÚ HÓA ĐƠN</div>
+                    <div class="note-box">@Model.Note</div>
+                }
+                <div class="invoice-section-title summary-payment-title">THANH TOÁN</div>
+                <div class="payment-group">
+                    <div class="payment-block">
+                        <div class="payment-block-title">TIỀN ĐẶT CỌC</div>
+                        <div class="payment-row"><span>Số tiền</span><strong>@DisplayMoney(depositAmount)</strong></div>
+                        <div class="payment-row"><span>Hình thức</span><strong>@(Model.DepositPaymentMethod.HasValue ? (Model.DepositPaymentMethod.Value == 1 ? "Chuyển khoản" : "Tiền mặt") : (depositAmount > 0 ? "Chưa ghi nhận" : "Không thu cọc"))</strong></div>
+                        <div class="payment-row"><span>Mã giao dịch</span><strong class="mono wrap">@DisplayOrDash(Model.DepositReferenceCode)</strong></div>
+                        @if (Model.DepositPaymentDate.HasValue)
+                        {
+                            <div class="payment-row"><span>Thời gian</span><strong>@Model.DepositPaymentDate.Value.ToString("dd/MM/yyyy HH:mm")</strong></div>
+                        }
+                    </div>
+
+                    <div class="payment-block">
+                        <div class="payment-block-title">THANH TOÁN SỐ TIỀN CÒN LẠI</div>
+                        <div class="payment-row"><span>Số tiền</span><strong>@DisplayMoney(finalAmount)</strong></div>
+                        <div class="payment-row"><span>Hình thức</span><strong>@(Model.Status == 0 ? (Model.PaymentMethod == 1 ? "Chuyển khoản" : "Tiền mặt") : "Thanh toán thất bại")</strong></div>
+                        <div class="payment-row"><span>Mã giao dịch</span><strong class="mono wrap">@(Model.Status == 0 ? DisplayOrDash(Model.ReferenceCode) : "—")</strong></div>
+                        @if (Model.PaidAt.HasValue)
+                        {
+                            <div class="payment-row"><span>Thời gian</span><strong>@Model.PaidAt.Value.ToString("dd/MM/yyyy HH:mm")</strong></div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-box">
+                <div class="summary-row"><span>Tiền phòng</span><strong>@DisplayMoney(roomSubtotal)</strong></div>
+                <div class="summary-row"><span>Dịch vụ</span><strong>@DisplayMoney(serviceSubtotal)</strong></div>
+                <div class="summary-row"><span>Phí phát sinh</span><strong>@DisplayMoney(feeSubtotal)</strong></div>
+                <div class="summary-divider"></div>
+                <div class="summary-row"><span>TỔNG CỘNG</span><strong>@DisplayMoney(totalAmount)</strong></div>
+                <div class="summary-row"><span>Đã đặt cọc</span><strong>- @DisplayMoney(depositAmount)</strong></div>
+                <div class="summary-divider"></div>
+                <div class="summary-row grand"><span>CÒN PHẢI THANH TOÁN</span><strong>@DisplayMoney(finalAmount)</strong></div>
+            </div>
+        </section>
+
+        <section class="signature-grid">
+            <div class="signature-box">
+                <div class="signature-title">KHÁCH HÀNG</div>
+                <div class="signature-subtitle">(Ký, ghi rõ họ tên)</div>
+                <div class="signature-space"></div>
+                <div class="signature-name">@DisplayOrDash(Model.GuestName)</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-title">NGƯỜI LẬP HÓA ĐƠN</div>
+                <div class="signature-subtitle">(Ký, ghi rõ họ tên)</div>
+                <div class="signature-space"></div>
+                <div class="signature-name">____________________________</div>
+            </div>
+        </section>
+
+        <footer class="invoice-footer">
+            <div class="footer-thank-you">Cảm ơn Quý khách đã lưu trú.</div>
+            <div class="footer-small">Vui lòng kiểm tra thông tin hóa đơn trước khi ký nhận và lưu trữ.</div>
+        </footer>
+    </main>
+
+    <script>
+        document.title = 'Hóa đơn ' + @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BillCode));
+    </script>
+</body>
+</html>

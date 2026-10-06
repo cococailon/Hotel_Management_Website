@@ -1,0 +1,349 @@
+@model Hotel_Management_Website.Models.ViewModels.Booking.BookingIndexViewModel
+
+@{
+    ViewData["Title"] = "Quản lý đặt phòng";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/booking-index.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quản lý đặt phòng",
+        Description = "Xem danh sách và chi tiết các đặt phòng của khách sạn.",
+        Icon = "bi-calendar-check"
+    })
+
+@if (!string.IsNullOrWhiteSpace(Model.LoadError))
+{
+    @await Html.PartialAsync(
+        "~/Views/Shared/UI/_ErrorState.cshtml",
+        new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+        {
+            Message = Model.LoadError,
+            Icon = "bi-exclamation-triangle"
+        })
+}
+else
+{
+    <section class="booking-section card border-0 shadow-sm mb-4">
+        <div class="card-header bg-body border-bottom py-3">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-3 min-width-0">
+                    <div class="booking-section-icon" aria-hidden="true">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="min-width-0">
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <h2 class="h5 mb-0 fw-semibold">Danh sách đặt phòng</h2>
+                            <span class="badge text-bg-secondary booking-count-badge">
+                                @Model.TotalCount.ToString("N0") đặt phòng
+                            </span>
+                        </div>
+                        <p class="text-body-secondary small mb-0 mt-1">
+                            Tìm kiếm theo mã đặt phòng hoặc mã khách hàng, sắp xếp và lọc theo trạng thái.
+                        </p>
+                    </div>
+                </div>
+
+                @if (User.IsInRole("Reception") || User.IsInRole("Admin"))
+                {
+                    <a asp-controller="Booking"
+                       asp-action="Create"
+                       class="btn btn-primary align-self-stretch align-self-md-center">
+                        <i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>
+                        Tạo lịch đặt phòng
+                    </a>
+                }
+            </div>
+        </div>
+
+        <form method="get"
+              asp-controller="Booking"
+              asp-action="Index"
+              class="booking-filter-form"
+              data-preserve-scroll="true">
+            <div class="card-body border-bottom booking-filter-panel">
+                <div class="row g-2 g-lg-3 align-items-end">
+                    <div class="col-12 col-xl-5">
+                        <label for="bookingSearch" class="form-label small fw-semibold">Tìm kiếm</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </span>
+                            <input id="bookingSearch"
+                                   type="search"
+                                   class="form-control"
+                                   name="Filter.Search"
+                                   value="@Model.Filter.Search"
+                                   placeholder="Mã đặt phòng hoặc mã khách hàng"
+                                   autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <label for="bookingSort" class="form-label small fw-semibold">Sắp xếp</label>
+                        <select id="bookingSort" name="Filter.Sort" class="form-select">
+                            <option value="0" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.BookingCodeAsc ? "selected" : null)">Mã đặt phòng: A-Z</option>
+                            <option value="1" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.BookingCodeDesc ? "selected" : null)">Mã đặt phòng: Z-A</option>
+                            <option value="2" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.CreatedAtDesc ? "selected" : null)">Ngày tạo: mới nhất</option>
+                            <option value="3" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.CreatedAtAsc ? "selected" : null)">Ngày tạo: cũ nhất</option>
+                            <option value="4" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.LastModifiedDesc ? "selected" : null)">Ngày chỉnh sửa: mới nhất</option>
+                            <option value="5" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.LastModifiedAsc ? "selected" : null)">Ngày chỉnh sửa: cũ nhất</option>
+                            <option value="6" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.ExpectedCheckInDesc ? "selected" : null)">Check in dự tính: mới nhất</option>
+                            <option value="7" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.ExpectedCheckInAsc ? "selected" : null)">Check in dự tính: cũ nhất</option>
+                            <option value="8" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.ExpectedCheckOutDesc ? "selected" : null)">Check out dự tính: mới nhất</option>
+                            <option value="9" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.ExpectedCheckOutAsc ? "selected" : null)">Check out dự tính: cũ nhất</option>
+                            <option value="10" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.TotalAdultsAsc ? "selected" : null)">Tổng người lớn: thấp đến cao</option>
+                            <option value="11" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Booking.BookingSortOption.TotalAdultsDesc ? "selected" : null)">Tổng người lớn: cao đến thấp</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="bookingStatus" class="form-label small fw-semibold">Trạng thái</label>
+                        <select id="bookingStatus" name="Filter.Status" class="form-select">
+                            <option value="" selected="@(Model.Filter.Status is null ? "selected" : null)">Tất cả</option>
+                            <option value="0" selected="@(Model.Filter.Status == 0 ? "selected" : null)">Chờ xác nhận</option>
+                            <option value="1" selected="@(Model.Filter.Status == 1 ? "selected" : null)">Chờ check in</option>
+                            <option value="2" selected="@(Model.Filter.Status == 2 ? "selected" : null)">Đang ở</option>
+                            <option value="3" selected="@(Model.Filter.Status == 3 ? "selected" : null)">Đã check out</option>
+                            <option value="4" selected="@(Model.Filter.Status == 4 ? "selected" : null)">Xác nhận thất bại</option>
+                            <option value="5" selected="@(Model.Filter.Status == 5 ? "selected" : null)">Check in thất bại</option>
+                            <option value="6" selected="@(Model.Filter.Status == 6 ? "selected" : null)">Check out thất bại</option>
+                            <option value="7" selected="@(Model.Filter.Status == 7 ? "selected" : null)">Khách hủy trước check in</option>
+                            <option value="8" selected="@(Model.Filter.Status == 8 ? "selected" : null)">Vắng mặt</option>
+                            <option value="9" selected="@(Model.Filter.Status == 9 ? "selected" : null)">Khách sạn hủy</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-xl-1">
+                        <div class="d-flex gap-2 justify-content-xl-end">
+                            <button type="submit" class="btn btn-primary flex-grow-1 flex-xl-grow-0 booking-filter-submit" title="Áp dụng bộ lọc">
+                                <span class="ui-button-content">
+                                    <i class="bi bi-funnel me-1" aria-hidden="true"></i>
+                                    <span class="d-xl-none d-xxl-inline">Lọc</span>
+                                </span>
+                                <span class="ui-button-loading d-none">
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    Đang lọc...
+                                </span>
+                            </button>
+                            <button type="submit" name="Reset" value="booking" class="btn btn-outline-secondary" title="Đặt lại bộ lọc" aria-label="Đặt lại bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="Filter.CurrentPage" value="1" />
+                <input type="hidden" name="Filter.PageSize" value="@Model.Filter.PageSize" />
+            </div>
+        </form>
+
+        @if (Model.Bookings.Count == 0)
+        {
+            @await Html.PartialAsync(
+                "~/Views/Shared/UI/_EmptyState.cshtml",
+                new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+                {
+                    Message = "Không có đặt phòng nào để hiển thị.",
+                    Description = "Danh sách đặt phòng hiện đang trống.",
+                    Icon = "bi-calendar-x"
+                })
+        }
+        else
+        {
+            <div class="booking-table-responsive">
+                <table class="table table-hover align-middle mb-0 booking-table">
+                    <thead>
+                        <tr>
+                            <th class="booking-col-code">Mã đặt phòng</th>
+                            <th class="booking-col-guest">Loại</th>
+                            <th class="booking-col-guest">Mã khách hàng</th>
+                            <th class="booking-col-datetime">Check in dự tính</th>
+                            <th class="booking-col-datetime">Check out dự tính</th>
+                            <th class="booking-col-people text-center">Người lớn / trẻ em</th>
+                            <th class="booking-col-status">Trạng thái</th>
+                            <th class="booking-col-action text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in Model.Bookings)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="booking-cell-ellipsis font-monospace fw-semibold" title="@booking.BookingCode">
+                                        @booking.BookingCode
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge @booking.BookingTypeBadgeClass booking-type-badge">
+                                        @booking.BookingTypeName
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(booking.GuestCode))
+                                    {
+                                        <span class="text-body-secondary">—</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="booking-cell-ellipsis font-monospace" title="@booking.GuestCode">
+                                            @booking.GuestCode
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="booking-datetime">
+                                        @booking.ExpectedCheckInAt.ToString("dd/MM/yyyy")
+                                        <span class="text-body-secondary">@booking.ExpectedCheckInAt.ToString("HH:mm")</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="booking-datetime">
+                                        @booking.ExpectedCheckOutAt.ToString("dd/MM/yyyy")
+                                        <span class="text-body-secondary">@booking.ExpectedCheckOutAt.ToString("HH:mm")</span>
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge text-bg-light border text-body">
+                                        @booking.TotalAdults
+                                        <i class="bi bi-person-fill ms-1 me-1" aria-hidden="true"></i>
+                                        /
+                                        @booking.TotalChildren
+                                        <i class="bi bi-balloon ms-1" aria-hidden="true"></i>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge @booking.StatusBadgeClass booking-status-badge">
+                                        @booking.StatusName
+                                    </span>
+                                </td>
+                                <td class="text-end booking-actions-cell">
+                                    <div class="booking-action-group justify-content-end">
+                                        <a asp-controller="Booking"
+                                           asp-action="Details"
+                                           asp-route-id="@booking.Id"
+                                           class="btn btn-outline-primary booking-action-btn"
+                                           title="Xem chi tiết"
+                                           aria-label="Xem chi tiết @booking.BookingCode">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </a>
+
+                                        @if (User.IsInRole("Reception") || User.IsInRole("Admin"))
+                                        {
+                                            <a asp-controller="Booking"
+                                               asp-action="Edit"
+                                               asp-route-id="@booking.Id"
+                                               class="btn btn-outline-warning booking-action-btn"
+                                               title="Chỉnh sửa lịch đặt phòng"
+                                               aria-label="Chỉnh sửa @booking.BookingCode">
+                                                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                            </a>
+
+                                            <a asp-controller="Booking"
+                                               asp-action="Flow"
+                                               asp-route-id="@booking.Id"
+                                               class="btn btn-outline-secondary booking-action-btn"
+                                               title="Quản lý luồng đặt phòng"
+                                               aria-label="Quản lý luồng @booking.BookingCode">
+                                                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                                            </a>
+
+                                            @if (User.IsInRole("Admin") && booking.Status is 4 or 5 or 7 or 8 or 9)
+                                            {
+                                                <form asp-controller="Booking"
+                                                      asp-action="Delete"
+                                                      method="post"
+                                                      class="booking-delete-form"
+                                                      data-booking-code="@booking.BookingCode">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@booking.Id" />
+                                                    <button type="submit"
+                                                            class="btn btn-outline-danger booking-action-btn booking-delete-btn"
+                                                            title="Xóa lịch đặt phòng"
+                                                            aria-label="Xóa lịch đặt phòng @booking.BookingCode">
+                                                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @await Html.PartialAsync(
+            "~/Views/Shared/UI/_Pagination.cshtml",
+            Model.Pagination)
+    </section>
+}
+@section Scripts
+{
+    <script>
+        (() => {
+            "use strict";
+
+            const form = document.querySelector(".booking-filter-form");
+            if (!form || form.dataset.ajaxBound === "true") {
+                return;
+            }
+
+            form.dataset.ajaxBound = "true";
+
+            form.addEventListener("submit", function (event) {
+                const submitter = event.submitter;
+
+                if (!submitter || submitter.name !== "Filter.CurrentPage") {
+                    const pageField = form.querySelector('[name="Filter.CurrentPage"]');
+                    if (pageField) {
+                        pageField.value = "1";
+                    }
+                }
+
+                if (submitter?.classList.contains("booking-filter-submit")) {
+                    HotelUI.setButtonLoading(
+                        submitter,
+                        true,
+                        "Đang tải..."
+                    );
+                }
+            });
+
+
+            document.querySelectorAll(".booking-delete-form").forEach((deleteForm) => {
+                deleteForm.addEventListener("submit", (event) => {
+                    event.preventDefault();
+
+                    const bookingCode = deleteForm.dataset.bookingCode || "lịch đặt phòng này";
+                    const submit = () => deleteForm.submit();
+                    const showConfirm = window.HotelUI?.showConfirm;
+
+                    if (typeof showConfirm === "function") {
+                        showConfirm({
+                            title: "Xác nhận xóa lịch đặt phòng",
+                            message: `Bạn có chắc chắn muốn xóa Booking ${bookingCode}?`,
+                            note: "Booking, khách hàng, các BookingRoom, dịch vụ và phí phát sinh liên quan sẽ được đánh dấu đã xóa. Thao tác này chỉ dành cho Admin và không thể khôi phục từ giao diện hiện tại.",
+                            variant: "danger",
+                            confirmText: "Xóa lịch đặt phòng",
+                            onConfirm: submit
+                        });
+                    } else if (window.confirm(`Bạn có chắc chắn muốn xóa Booking ${bookingCode}?`)) {
+                        submit();
+                    }
+                });
+            });
+        })();
+    </script>
+}

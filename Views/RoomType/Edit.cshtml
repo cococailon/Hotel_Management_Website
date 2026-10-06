@@ -1,0 +1,288 @@
+﻿@model Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeEditViewModel
+
+@{
+    ViewData["Title"] = "Sửa loại phòng";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/roomtype-form.css" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Sửa loại phòng",
+        Description = $"Cập nhật thông tin loại phòng {Model.RoomTypeCode}.",
+        Icon = "bi-pencil-square"
+    })
+
+<div class="roomtype-form-page">
+    <form id="roomTypeEditForm"
+          asp-controller="RoomType"
+          asp-action="Edit"
+          method="post"
+          data-ajax="false"
+          data-has-active-bookings="@(Model.HasActiveBookings ? "true" : "false")"
+          novalidate
+          data-native-validation="true">
+        @Html.AntiForgeryToken()
+        <input asp-for="Id" type="hidden" />
+        <input asp-for="ReturnUrl" type="hidden" />
+        <input asp-for="IsActive" type="hidden" />
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+        @if (Model.HasActiveBookings)
+        {
+            <div class="alert alert-warning d-flex gap-2 align-items-start" role="alert">
+                <i class="bi bi-exclamation-triangle mt-1" aria-hidden="true"></i>
+                <div>
+                    <strong>Loại phòng đang có Booking hoạt động.</strong>
+                    Tổng người lớn, tổng trẻ em, giá một đêm, cọc và trạng thái không được thay đổi cho đến khi không còn Booking ở trạng thái Chờ xác nhận, Chờ check in hoặc Đang ở.
+                </div>
+            </div>
+        }
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="roomtype-form-section-icon"><i class="bi bi-door-open" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">Thông tin loại phòng</h2>
+                        <p class="text-body-secondary small mb-0">Mã loại phòng chỉ không được sửa khi đang có Booking hoạt động.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-4">
+                        <label asp-for="RoomTypeCode" class="form-label required">Mã loại phòng</label>
+                        @if (Model.HasActiveBookings)
+                        {
+                            <input type="hidden" asp-for="RoomTypeCode" />
+                            <input class="form-control bg-body-secondary" value="@Model.RoomTypeCode" readonly aria-readonly="true" />
+                            <div class="form-text">Loại phòng đang có Booking hoạt động nên mã không được thay đổi.</div>
+                        }
+                        else
+                        {
+                            <input asp-for="RoomTypeCode" class="form-control" maxlength="50" autocomplete="off" spellcheck="false" />
+                            <div class="form-text">Mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.</div>
+                            <span asp-validation-for="RoomTypeCode" class="text-danger"></span>
+                        }
+                    </div>
+                    <div class="col-12 col-lg-8">
+                        <label asp-for="RoomTypeName" class="form-label required">Tên loại phòng</label>
+                        <input asp-for="RoomTypeName" class="form-control" maxlength="100" />
+                        <span asp-validation-for="RoomTypeName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label asp-for="MaxAdults" class="form-label required">Tổng người lớn</label>
+                        @if (Model.HasActiveBookings)
+                        {
+                            <input type="hidden" name="MaxAdults" value="@Model.MaxAdults" />
+                        }
+                        <input asp-for="MaxAdults" type="number" min="1" max="100" class="form-control" disabled="@(Model.HasActiveBookings ? "disabled" : null)" />
+                        <span asp-validation-for="MaxAdults" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label asp-for="MaxChildren" class="form-label required">Tổng trẻ em</label>
+                        @if (Model.HasActiveBookings)
+                        {
+                            <input type="hidden" name="MaxChildren" value="@Model.MaxChildren" />
+                        }
+                        <input asp-for="MaxChildren" type="number" min="0" max="100" class="form-control" disabled="@(Model.HasActiveBookings ? "disabled" : null)" />
+                        <span asp-validation-for="MaxChildren" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label asp-for="PricePerNight" class="form-label required">Giá một đêm</label>
+                        <div class="input-group">
+                            @if (Model.HasActiveBookings)
+                            {
+                                <input type="hidden" name="PricePerNight" value="@Model.PricePerNight" />
+                            }
+                            <input asp-for="PricePerNight" type="number" min="0.01" step="0.01" class="form-control" disabled="@(Model.HasActiveBookings ? "disabled" : null)" />
+                            <span class="input-group-text">₫</span>
+                        </div>
+                        <span asp-validation-for="PricePerNight" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label asp-for="DepositPercent" class="form-label required">Cọc</label>
+                        <div class="input-group">
+                            @if (Model.HasActiveBookings)
+                            {
+                                <input type="hidden" name="DepositPercent" value="@Model.DepositPercent" />
+                            }
+                            <input asp-for="DepositPercent" type="number" min="0" max="100" step="0.01" class="form-control" disabled="@(Model.HasActiveBookings ? "disabled" : null)" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <span asp-validation-for="DepositPercent" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <label asp-for="Area" class="form-label required">Diện tích</label>
+                        <div class="input-group">
+                            <input asp-for="Area" type="number" min="0.01" max="99999.99" step="0.01" class="form-control" />
+                            <span class="input-group-text">m²</span>
+                        </div>
+                        <span asp-validation-for="Area" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="roomtype-form-section-icon"><i class="bi bi-card-text" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">Mô tả và ghi chú</h2>
+                        <p class="text-body-secondary small mb-0">Hai trường này có thể sửa bất kỳ lúc nào.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <label asp-for="Description" class="form-label">Mô tả</label>
+                    <textarea asp-for="Description" class="form-control" maxlength="255" rows="4"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="Note" class="form-label">Ghi chú</label>
+                    <textarea asp-for="Note" class="form-control" maxlength="255" rows="4"></textarea>
+                    <span asp-validation-for="Note" class="text-danger"></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4 roomtype-association-card" data-roomtype-association="amenity">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="roomtype-form-section-icon"><i class="bi bi-stars" aria-hidden="true"></i></div>
+                        <div>
+                            <h2 class="h5 mb-1 fw-semibold">Tiện nghi</h2>
+                            <p class="text-body-secondary small mb-0">Có thể thêm, xóa hoặc đổi trạng thái. Khi có Booking hoạt động, không thể xóa hoặc đổi trạng thái tiện nghi đang có.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center roomtype-association-picker">
+                        <select id="amenityPicker" class="form-select form-select-sm" @(Model.HasActiveBookings ? "disabled" : null)>
+                            <option value="">-- Chọn tiện nghi --</option>
+                            @foreach (var item in Model.AvailableAmenities)
+                            {
+                                <option value="@item.Id" data-code="@item.Code" data-name="@item.Name">@item.Code - @item.Name</option>
+                            }
+                        </select>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-add-association="amenity" @(Model.HasActiveBookings ? "disabled" : null)><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Thêm</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="amenityRows" class="roomtype-association-list">
+                    @for (var i = 0; i < Model.Amenities.Count; i++)
+                    {
+                        var current = Model.CurrentAmenities.FirstOrDefault(x => x.ItemId == Model.Amenities[i].ItemId);
+                        <div class="roomtype-association-row" data-association-row>
+                            <input type="hidden" name="Amenities[@i].AssignmentId" value="@Model.Amenities[i].AssignmentId" />
+                            <input type="hidden" name="Amenities[@i].ItemId" value="@Model.Amenities[i].ItemId" data-association-item />
+                            <div class="flex-grow-1 min-width-0">
+                                <div class="fw-semibold">@(current?.Code ?? Model.Amenities[i].ItemId?.ToString()) - @(current?.Name ?? "Tiện nghi đã chọn")</div>
+                                @if (current is { MasterIsActive: false } or { MasterIsDeleted: true })
+                                {
+                                    <div class="small text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Master tiện nghi hiện không hoạt động hoặc đã bị xóa.</div>
+                                }
+                            </div>
+                            @if (Model.HasActiveBookings)
+                            {
+                                <input type="hidden" name="Amenities[@i].IsActive" value="@Model.Amenities[i].IsActive.ToString().ToLowerInvariant()" />
+                            }
+                            <select class="form-select form-select-sm roomtype-association-status" name="Amenities[@i].IsActive" data-association-status @(Model.HasActiveBookings ? "disabled" : null)>
+                                <option value="true" selected="@(Model.Amenities[i].IsActive ? "selected" : null)" disabled="@(current is not null && !current.IsActive && (!current.MasterIsActive || current.MasterIsDeleted) ? "disabled" : null)">Đang hoạt động</option>
+                                <option value="false" selected="@(!Model.Amenities[i].IsActive ? "selected" : null)">Dừng hoạt động</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-danger btn-sm roomtype-remove-association" data-remove-association title="Xóa tiện nghi" @(Model.HasActiveBookings ? "disabled" : null)><i class="bi bi-trash3" aria-hidden="true"></i></button>
+                        </div>
+                    }
+                </div>
+                <div id="amenityEmpty" class="text-body-secondary small @(Model.Amenities.Count == 0 ? "" : "d-none")">Chưa thêm tiện nghi nào.</div>
+                <span asp-validation-for="Amenities" class="text-danger"></span>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4 roomtype-association-card" data-roomtype-association="service">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="roomtype-form-section-icon"><i class="bi bi-cone-striped" aria-hidden="true"></i></div>
+                        <div>
+                            <h2 class="h5 mb-1 fw-semibold">Dịch vụ</h2>
+                            <p class="text-body-secondary small mb-0">Có thể thêm, xóa hoặc đổi trạng thái. Khi có Booking hoạt động, không thể xóa hoặc đổi trạng thái dịch vụ đang có.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center roomtype-association-picker">
+                        <select id="servicePicker" class="form-select form-select-sm" @(Model.HasActiveBookings ? "disabled" : null)>
+                            <option value="">-- Chọn dịch vụ --</option>
+                            @foreach (var item in Model.AvailableServices)
+                            {
+                                <option value="@item.Id" data-code="@item.Code" data-name="@item.Name">@item.Code - @item.Name</option>
+                            }
+                        </select>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-add-association="service" @(Model.HasActiveBookings ? "disabled" : null)><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Thêm</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="serviceRows" class="roomtype-association-list">
+                    @for (var i = 0; i < Model.Services.Count; i++)
+                    {
+                        var current = Model.CurrentServices.FirstOrDefault(x => x.ItemId == Model.Services[i].ItemId);
+                        <div class="roomtype-association-row" data-association-row>
+                            <input type="hidden" name="Services[@i].AssignmentId" value="@Model.Services[i].AssignmentId" />
+                            <input type="hidden" name="Services[@i].ItemId" value="@Model.Services[i].ItemId" data-association-item />
+                            <div class="flex-grow-1 min-width-0">
+                                <div class="fw-semibold">@(current?.Code ?? Model.Services[i].ItemId?.ToString()) - @(current?.Name ?? "Dịch vụ đã chọn")</div>
+                                @if (current?.UnitPrice is not null)
+                                {
+                                    <div class="small text-body-secondary">@current.UnitPrice.Value.ToString("N0") ₫ @current.PriceUnitType</div>
+                                }
+                                @if (current is { MasterIsActive: false } or { MasterIsDeleted: true })
+                                {
+                                    <div class="small text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Master dịch vụ hiện không hoạt động hoặc đã bị xóa.</div>
+                                }
+                            </div>
+                            @if (Model.HasActiveBookings)
+                            {
+                                <input type="hidden" name="Services[@i].IsActive" value="@Model.Services[i].IsActive.ToString().ToLowerInvariant()" />
+                            }
+                            <select class="form-select form-select-sm roomtype-association-status" name="Services[@i].IsActive" data-association-status @(Model.HasActiveBookings ? "disabled" : null)>
+                                <option value="true" selected="@(Model.Services[i].IsActive ? "selected" : null)" disabled="@(current is not null && !current.IsActive && (!current.MasterIsActive || current.MasterIsDeleted) ? "disabled" : null)">Đang hoạt động</option>
+                                <option value="false" selected="@(!Model.Services[i].IsActive ? "selected" : null)">Dừng hoạt động</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-danger btn-sm roomtype-remove-association" data-remove-association title="Xóa dịch vụ" @(Model.HasActiveBookings ? "disabled" : null)><i class="bi bi-trash3" aria-hidden="true"></i></button>
+                        </div>
+                    }
+                </div>
+                <div id="serviceEmpty" class="text-body-secondary small @(Model.Services.Count == 0 ? "" : "d-none")">Chưa thêm dịch vụ nào.</div>
+                <span asp-validation-for="Services" class="text-danger"></span>
+            </div>
+        </section>
+
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mb-4">
+            <a asp-controller="RoomType" asp-action="Index" class="btn btn-outline-secondary roomtype-form-cancel-btn">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Quay lại danh sách
+            </a>
+            <button type="submit" class="btn btn-primary" id="roomTypeEditSubmitButton">
+                <span class="ui-button-content"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>Lưu thay đổi</span>
+                <span class="ui-button-loading d-none"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Đang lưu...</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/native-validation.js" asp-append-version="true"></script>
+    <script src="~/js/roomtype-form.js" asp-append-version="true"></script>
+}

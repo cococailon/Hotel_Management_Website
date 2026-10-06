@@ -1,0 +1,79 @@
+/* =========================================================
+   EMPLOYEE EDIT
+   Hotel Management UI System
+   ========================================================= */
+
+.employee-edit-page {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.employee-edit-page .card-header {
+    padding: 1rem 1.25rem;
+}
+
+.employee-edit-page .card-body {
+    padding: 1.25rem;
+}
+
+.employee-edit-section-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .7rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.05rem;
+}
+
+.employee-edit-page .form-label.required::after {
+    content: " *";
+    color: var(--bs-danger);
+}
+
+.employee-edit-page .text-danger:empty {
+    display: none;
+}
+
+.employee-edit-page .form-control:focus,
+.employee-edit-page .form-select:focus,
+.employee-edit-page textarea:focus {
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
+}
+
+.employee-edit-readonly-box {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    padding: .45rem .75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-tertiary-bg);
+    font-weight: 500;
+}
+
+.employee-edit-page textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.employee-edit-cancel-btn {
+    min-width: 180px;
+}
+
+@media (max-width: 767.98px) {
+    .employee-edit-page .card-header,
+    .employee-edit-page .card-body {
+        padding: 1rem;
+    }
+
+    .employee-edit-cancel-btn,
+    #employeeEditSubmitButton {
+        width: 100%;
+    }
+}

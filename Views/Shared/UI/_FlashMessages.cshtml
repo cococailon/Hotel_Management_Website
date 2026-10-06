@@ -1,0 +1,13 @@
+@{
+    var successMessage = TempData["SuccessMessage"] as string;
+    var errorMessage = TempData["ErrorMessage"] as string;
+}
+
+@if (!string.IsNullOrWhiteSpace(successMessage) || !string.IsNullOrWhiteSpace(errorMessage))
+{
+    <div id="uiFlashMessages"
+         class="d-none"
+         aria-hidden="true"
+         data-success-message="@(successMessage ?? string.Empty)"
+         data-error-message="@(errorMessage ?? string.Empty)"></div>
+}

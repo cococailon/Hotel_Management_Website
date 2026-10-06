@@ -1,0 +1,56 @@
+/* =========================================================
+   ROOM CREATE / EDIT
+   ========================================================= */
+
+.room-form-page { max-width: 1100px; margin: 0 auto; }
+.room-form-page .card-header { padding: 1rem 1.25rem; }
+.room-form-page .card-body { padding: 1.25rem; }
+.room-form-section-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .7rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.05rem;
+}
+.room-form-page .form-label.required::after { content: " *"; color: var(--bs-danger); }
+.room-form-page textarea { resize: vertical; min-height: 110px; }
+.room-form-page .form-control:focus,
+.room-form-page .form-select:focus,
+.room-form-page textarea:focus {
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
+}
+.room-form-readonly-box {
+    min-height: 38px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .6rem;
+    width: 100%;
+    padding: .45rem .75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-tertiary-bg);
+}
+.room-active-switch .form-check-input { cursor: pointer; }
+.room-position-suggestion {
+    margin-top: .35rem;
+    min-height: 1.25rem;
+    font-size: .78rem;
+    color: var(--bs-secondary-color);
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+.room-form-cancel-btn { min-width: 170px; }
+.room-form-submit-btn { min-width: 180px; }
+
+@media (max-width: 767.98px) {
+    .room-form-page .card-header,
+    .room-form-page .card-body { padding: 1rem; }
+    .room-form-cancel-btn,
+    .room-form-submit-btn { width: 100%; }
+}

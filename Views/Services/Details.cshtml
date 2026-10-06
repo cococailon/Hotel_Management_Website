@@ -1,0 +1,205 @@
+@model Hotel_Management_Website.Models.ViewModels.Service.ServiceDetailsViewModel
+
+@{
+    var isReception = User.IsInRole("Reception");
+    ViewData["Title"] = "Chi tiết dịch vụ";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/service-details.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Chi tiết dịch vụ",
+        Description = "Xem đầy đủ thông tin và trạng thái của dịch vụ.",
+        Icon = "bi-cone-striped"
+    })
+
+<div class="service-detail-page">
+    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2 mb-4">
+        <a asp-controller="Services" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            Quay lại danh sách
+        </a>
+
+        @if (!isReception)
+        {
+        <a asp-controller="Services"
+           asp-action="Edit"
+           asp-route-id="@Model.Id"
+           class="btn btn-primary">
+            <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>
+            Sửa dịch vụ
+        </a>
+        }
+    </div>
+
+    @if (Model.HasActiveBookings)
+    {
+        <div class="alert alert-warning d-flex gap-2 align-items-start mb-4">
+            <i class="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true"></i>
+            <div>
+                <div class="fw-semibold">Dịch vụ đang được dùng bởi loại phòng có Booking hoạt động.</div>
+                <div class="small">Các thay đổi nghiệp vụ của mã, tên, đơn giá, đơn vị và trạng thái sẽ bị giới hạn theo quy định hệ thống.</div>
+            </div>
+        </div>
+    }
+
+    <section class="card border-0 shadow-sm service-detail-summary mb-4">
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-center">
+                <div class="col-12 col-lg-auto">
+                    <div class="service-detail-avatar" aria-hidden="true">
+                        <i class="bi bi-cone-striped"></i>
+                    </div>
+                </div>
+                <div class="col-12 col-lg">
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 mb-2">
+                        <h1 class="h4 fw-semibold mb-0 service-detail-name" title="@Model.ServiceName">@Model.ServiceName</h1>
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge text-bg-success">Đang hoạt động</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Dừng hoạt động</span>
+                        }
+                    </div>
+                    <div class="text-body-secondary">
+                        <span class="font-monospace">@Model.ServiceCode</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="service-detail-section-icon" aria-hidden="true"><i class="bi bi-cone-striped"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Thông tin dịch vụ</h2>
+                            <div class="small text-body-secondary">Thông tin cấu hình cơ bản</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <div class="service-detail-label">Mã dịch vụ</div>
+                            <div class="service-detail-value font-monospace service-detail-breakable">@Model.ServiceCode</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="service-detail-label">Tên dịch vụ</div>
+                            <div class="service-detail-value service-detail-breakable">@Model.ServiceName</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="service-detail-label">Trạng thái hoạt động</div>
+                            <div class="service-detail-value">
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge text-bg-success">Đang hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary">Dừng hoạt động</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="service-detail-section-icon" aria-hidden="true"><i class="bi bi-cash-stack"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Giá dịch vụ</h2>
+                            <div class="small text-body-secondary">Thông tin chi phí của dịch vụ</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <div class="service-detail-label">Đơn giá</div>
+                            <div class="service-detail-value">
+                                @(Model.UnitPrice.GetValueOrDefault() <= 0 ? "Miễn phí" : Model.UnitPrice.Value.ToString("N2") + " ₫")
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="service-detail-label">Đơn vị</div>
+                            <div class="service-detail-value service-detail-breakable">
+                                @(string.IsNullOrWhiteSpace(Model.PriceUnitType) ? "Không có đơn vị" : Model.PriceUnitType)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="service-detail-section-icon" aria-hidden="true"><i class="bi bi-card-text"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Mô tả và ghi chú</h2>
+                            <div class="small text-body-secondary">Thông tin bổ sung về dịch vụ</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-6">
+                            <div class="service-detail-label">Mô tả</div>
+                            <div class="service-detail-value service-detail-note">@(string.IsNullOrWhiteSpace(Model.Description) ? "Không có mô tả" : Model.Description)</div>
+                        </div>
+                        <div class="col-12 col-xl-6">
+                            <div class="service-detail-label">Ghi chú</div>
+                            <div class="service-detail-value service-detail-note">@(string.IsNullOrWhiteSpace(Model.Note) ? "Không có ghi chú" : Model.Note)</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="service-detail-section-icon" aria-hidden="true"><i class="bi bi-clock-history"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Thông tin thời gian</h2>
+                            <div class="small text-body-secondary">Thông tin audit của dịch vụ</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="service-detail-label">Ngày tạo</div>
+                            <div class="service-detail-value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="service-detail-label">Ngày chỉnh sửa gần nhất</div>
+                            <div class="service-detail-value">@Model.LastModifiedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

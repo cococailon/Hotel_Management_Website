@@ -1,0 +1,429 @@
+@model Hotel_Management_Website.Models.ViewModels.User.UserListSectionViewModel
+
+@{
+    var key = Model.Role switch
+    {
+        0 => "Admin",
+        1 => "Reception",
+        2 => "Housekeeping",
+        _ => "Unknown"
+    };
+
+    var keySlug = key.ToLowerInvariant();
+
+    var returnUrl =
+        Context.Request.PathBase +
+        Context.Request.Path +
+        Context.Request.QueryString;
+}
+
+<section class="user-section card border-0 shadow-sm mb-4">
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <div class="card-header bg-body border-bottom py-3">
+
+        <div class="d-flex flex-column flex-md-row
+                    align-items-md-center
+                    justify-content-between
+                    gap-2">
+
+            <div class="d-flex align-items-center gap-3 min-width-0">
+
+                <div class="user-section-icon" aria-hidden="true">
+                    <i class="bi @Model.Icon"></i>
+                </div>
+
+                <div class="min-width-0">
+
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+
+                        <h2 class="h5 mb-0 fw-semibold">
+                            @Model.Title
+                        </h2>
+
+                    </div>
+
+                    <p class="text-body-secondary small mb-0 mt-1">
+                        @Model.Description
+                    </p>
+
+                </div>
+
+            </div>
+
+            @if (Model.ShowCreate)
+            {
+                <div class="d-flex flex-wrap align-items-center gap-2">
+
+                    <a asp-controller="User"
+                       asp-action="Create"
+                       asp-route-role="@Model.Role"
+                       class="btn btn-primary btn-sm">
+
+                        <i class="bi bi-person-plus me-1"
+                           aria-hidden="true"></i>
+
+                        Tạo tài khoản
+
+                    </a>
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- FILTER -->
+    <!-- ================================================= -->
+
+    <form method="get"
+          asp-controller="User"
+          asp-action="Index"
+          class="user-filter-form"
+          data-preserve-scroll="true">
+
+        <div class="card-body border-bottom user-filter-panel">
+
+            <div class="row g-2 g-lg-3 align-items-end">
+
+                <div class="col-12 col-xl-4">
+
+                    <label class="form-label small fw-semibold"
+                           for="@($"{keySlug}-search")">
+                        Tìm kiếm
+                    </label>
+
+                    <div class="input-group">
+
+                        <span class="input-group-text bg-body">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                        </span>
+
+                        <input id="@($"{keySlug}-search")"
+                               type="search"
+                               class="form-control"
+                               name="@($"{key}.Search")"
+                               value="@Model.Filter.Search"
+                               placeholder="Mã tài khoản hoặc tên đăng nhập"
+                               autocomplete="off" />
+
+                    </div>
+
+                </div>
+
+                <div class="col-12 col-md-6 col-xl-3">
+
+                    <label class="form-label small fw-semibold"
+                           for="@($"{keySlug}-sort")">
+                        Sắp xếp
+                    </label>
+
+                    <select id="@($"{keySlug}-sort")"
+                            name="@($"{key}.Sort")"
+                            class="form-select">
+
+                        @await Html.PartialAsync(
+                            "~/Views/User/_UserSortOptions.cshtml",
+                            Model.Filter.Sort)
+
+                    </select>
+
+                </div>
+
+                <div class="col-12 col-md-6 col-xl-2">
+
+                    <label class="form-label small fw-semibold"
+                           for="@($"{keySlug}-status")">
+                        Trạng thái
+                    </label>
+
+                    <select id="@($"{keySlug}-status")"
+                            name="@($"{key}.IsActive")"
+                            class="form-select">
+
+                        <option value=""
+                                selected="@(Model.Filter.IsActive is null ? "selected" : null)">
+                            Tất cả
+                        </option>
+
+                        <option value="1"
+                                selected="@(Model.Filter.IsActive == 1 ? "selected" : null)">
+                            Đang hoạt động
+                        </option>
+
+                        <option value="0"
+                                selected="@(Model.Filter.IsActive == 0 ? "selected" : null)">
+                            Dừng hoạt động
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="col-12 col-xl-3">
+
+                    <div class="d-flex gap-2">
+
+                        <button type="submit"
+                                class="btn btn-primary flex-grow-1 user-filter-submit"
+                                title="Áp dụng bộ lọc">
+
+                            <span class="ui-button-content">
+                                <i class="bi bi-funnel me-1" aria-hidden="true"></i>
+                                Lọc
+                            </span>
+
+                            <span class="ui-button-loading d-none">
+                                <span class="spinner-border spinner-border-sm me-1"
+                                      role="status"
+                                      aria-hidden="true"></span>
+                                Đang lọc...
+                            </span>
+
+                        </button>
+
+                        <button type="submit"
+                                name="ResetSection"
+                                value="@keySlug"
+                                class="btn btn-outline-secondary flex-shrink-0"
+                                title="Đặt lại bộ lọc">
+
+                            <i class="bi bi-arrow-counterclockwise"
+                               aria-hidden="true"></i>
+
+                            <span class="d-none d-sm-inline">Reset</span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </form>
+
+
+    <!-- ================================================= -->
+    <!-- TABLE -->
+    <!-- ================================================= -->
+
+    <div class="user-table-wrap">
+
+        @if (Model.Users.Count == 0)
+        {
+            @await Html.PartialAsync(
+                "~/Views/Shared/UI/_EmptyState.cshtml",
+                new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+                {
+                    Message = "Không tìm thấy tài khoản nào.",
+                    Icon = "bi-person-x"
+                })
+        }
+        else
+        {
+            <div class="table-responsive user-table-responsive">
+
+                <table class="table table-hover table-sm align-middle mb-0 user-table">
+
+                    <caption class="visually-hidden">
+                        Danh sách tài khoản @Model.Title
+                    </caption>
+
+                    <colgroup>
+                        <col class="user-col-code" />
+                        <col class="user-col-name" />
+                        <col class="user-col-status" />
+
+                        @if (Model.Role is 1 or 2)
+                        {
+                            <col class="user-col-employee" />
+                        }
+
+                        <col class="user-col-updated" />
+                        <col class="user-col-action" />
+                    </colgroup>
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>Mã tài khoản</th>
+                            <th>Tên đăng nhập</th>
+                            <th>Trạng thái</th>
+
+                            @if (Model.Role is 1 or 2)
+                            {
+                                <th>Mã nhân viên</th>
+                            }
+
+                            <th>Ngày chỉnh sửa</th>
+                            <th class="text-center">Thao tác</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var user in Model.Users)
+                        {
+                            <tr>
+
+                                <td>
+                                    <span class="user-cell-ellipsis font-monospace fw-semibold"
+                                          title="@user.UserCode">
+                                        @user.UserCode
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="user-cell-ellipsis fw-semibold"
+                                          title="@user.UserName">
+                                        @user.UserName
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @if (user.IsActive)
+                                    {
+                                        <span class="badge text-bg-success user-status-badge">
+                                            Đang hoạt động
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary user-status-badge">
+                                            Dừng hoạt động
+                                        </span>
+                                    }
+                                </td>
+
+                                @if (Model.Role is 1 or 2)
+                                {
+                                    <td class="text-nowrap">
+                                        @(string.IsNullOrWhiteSpace(user.EmployeeCode) ? "—" : user.EmployeeCode)
+                                    </td>
+                                }
+
+                                <td class="text-nowrap">
+                                    @user.LastModifiedAt.ToString("dd/MM/yyyy HH:mm:ss")
+                                </td>
+
+                                <td>
+
+                                    <div class="d-flex align-items-center justify-content-center gap-1 user-action-group">
+
+                                        <!-- XEM -->
+                                        <a asp-controller="User"
+                                           asp-action="Details"
+                                           asp-route-id="@user.Id"
+                                           asp-route-returnUrl="@returnUrl"
+                                           class="btn btn-sm btn-outline-primary user-action-btn"
+                                           title="Xem chi tiết tài khoản"
+                                           aria-label="Xem chi tiết tài khoản @user.UserName">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </a>
+
+                                        <!-- SỬA -->
+                                        <a asp-controller="User"
+                                           asp-action="Edit"
+                                           asp-route-id="@user.Id"
+                                           asp-route-returnUrl="@returnUrl"
+                                           class="btn btn-sm btn-outline-secondary user-action-btn"
+                                           title="Sửa tài khoản"
+                                           aria-label="Sửa tài khoản @user.UserName">
+                                            <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                        </a>
+
+                                        @if (user.IsActive)
+                                        {
+                                            <!-- KHÓA -->
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-warning user-action-btn user-lock-btn"
+                                                    data-user-action="lock"
+                                                    data-user-id="@user.Id"
+                                                    data-user-name="@user.UserName"
+                                                    data-return-url="@returnUrl"
+                                                    title="Khóa tài khoản"
+                                                    aria-label="Khóa tài khoản @user.UserName">
+                                                <span class="ui-button-content">
+                                                    <i class="bi bi-lock" aria-hidden="true"></i>
+                                                </span>
+                                                <span class="ui-button-loading d-none">
+                                                    <span class="spinner-border spinner-border-sm"
+                                                          role="status"
+                                                          aria-hidden="true"></span>
+                                                </span>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <!-- MỞ LẠI -->
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-success user-action-btn user-reopen-btn"
+                                                    data-user-action="reopen"
+                                                    data-user-id="@user.Id"
+                                                    data-user-name="@user.UserName"
+                                                    data-return-url="@returnUrl"
+                                                    title="Mở lại tài khoản"
+                                                    aria-label="Mở lại tài khoản @user.UserName">
+                                                <span class="ui-button-content">
+                                                    <i class="bi bi-unlock" aria-hidden="true"></i>
+                                                </span>
+                                                <span class="ui-button-loading d-none">
+                                                    <span class="spinner-border spinner-border-sm"
+                                                          role="status"
+                                                          aria-hidden="true"></span>
+                                                </span>
+                                            </button>
+
+                                            <!-- XÓA -->
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger user-action-btn user-delete-btn"
+                                                    data-user-action="delete"
+                                                    data-user-id="@user.Id"
+                                                    data-user-name="@user.UserName"
+                                                    data-return-url="@returnUrl"
+                                                    title="Xóa tài khoản"
+                                                    aria-label="Xóa tài khoản @user.UserName">
+                                                <span class="ui-button-content">
+                                                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                                                </span>
+                                                <span class="ui-button-loading d-none">
+                                                    <span class="spinner-border spinner-border-sm"
+                                                          role="status"
+                                                          aria-hidden="true"></span>
+                                                </span>
+                                            </button>
+                                        }
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            @await Html.PartialAsync(
+                "~/Views/Shared/UI/_Pagination.cshtml",
+                Model.Pagination)
+        }
+
+    </div>
+
+</section>

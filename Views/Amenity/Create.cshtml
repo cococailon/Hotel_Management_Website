@@ -1,0 +1,130 @@
+﻿@model Hotel_Management_Website.Models.ViewModels.Amenity.AmenityCreateViewModel
+
+﻿@{
+    ViewData["Title"] = "Tạo tiện nghi";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/amenity-form.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Tạo tiện nghi",
+        Description = "Tạo tiện nghi mới để có thể gán cho các loại phòng.",
+        Icon = "bi-stars"
+    })
+
+<div class="amenity-form-page">
+    <form id="amenityCreateForm"
+          asp-controller="Amenity"
+          asp-action="Create"
+          method="post"
+          novalidate
+          data-native-validation="true"
+          data-ajax="false"
+          data-amenity-form="create">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger amenity-validation-summary" role="alert"></div>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="amenity-form-section-icon" aria-hidden="true"><i class="bi bi-stars"></i></div>
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">Thông tin tiện nghi</h2>
+                        <p class="text-body-secondary small mb-0">Thông tin chính của tiện nghi.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="AmenityCode" class="form-label required">Mã tiện nghi</label>
+                        <input asp-for="AmenityCode"
+                               class="form-control"
+                               maxlength="50"
+                               autocomplete="off"
+                               spellcheck="false" />
+                        <span asp-validation-for="AmenityCode" class="text-danger"></span>
+                        <div class="form-text">Mặc định tự sinh theo dạng <strong>TN + số</strong>. Có thể nhập thủ công nhưng không được chứa khoảng trắng.</div>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="AmenityName" class="form-label required">Tên tiện nghi</label>
+                        <input asp-for="AmenityName"
+                               class="form-control"
+                               maxlength="100"
+                               autocomplete="off"
+                               placeholder="Ví dụ: Wi-Fi" />
+                        <span asp-validation-for="AmenityName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="IsActive" class="form-label">Trạng thái</label>
+                        <select asp-for="IsActive" class="form-select">
+                            <option value="true">Đang hoạt động</option>
+                            <option value="false">Dừng hoạt động</option>
+                        </select>
+                        <span asp-validation-for="IsActive" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="amenity-form-section-icon" aria-hidden="true"><i class="bi bi-card-text"></i></div>
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">Mô tả và ghi chú</h2>
+                        <p class="text-body-secondary small mb-0">Thông tin bổ sung cho tiện nghi.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <label asp-for="Description" class="form-label">Mô tả</label>
+                    <textarea asp-for="Description" class="form-control" maxlength="255" rows="4" placeholder="Mô tả ngắn về tiện nghi..."></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="Note" class="form-label">Ghi chú</label>
+                    <textarea asp-for="Note" class="form-control" maxlength="255" rows="4" placeholder="Ghi chú nội bộ nếu có..."></textarea>
+                    <span asp-validation-for="Note" class="text-danger"></span>
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mb-4">
+            <a asp-controller="Amenity"
+               asp-action="Index"
+               class="btn btn-outline-secondary amenity-form-cancel-btn">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+                Quay lại danh sách
+            </a>
+
+            <button type="submit" class="btn btn-primary" id="amenityCreateSubmitButton">
+                <span class="ui-button-content">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+                    Tạo tiện nghi
+                </span>
+                <span class="ui-button-loading d-none">
+                    <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                    Đang tạo...
+                </span>
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/native-validation.js" asp-append-version="true"></script>
+    <script src="~/js/amenity-form.js" asp-append-version="true"></script>
+}

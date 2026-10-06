@@ -1,0 +1,337 @@
+@model Hotel_Management_Website.Models.ViewModels.Amenity.AmenityIndexViewModel
+
+@{
+    var isReception = User.IsInRole("Reception");
+    ViewData["Title"] = "Quản lý tiện nghi";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+
+    var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/amenity-index.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quản lý tiện nghi",
+        Description = isReception
+            ? "Xem danh sách, tìm kiếm, sắp xếp và lọc các tiện nghi."
+            : "Xem, tìm kiếm, sắp xếp, lọc và quản lý trạng thái tiện nghi.",
+        Icon = "bi-stars"
+    })
+
+@if (!string.IsNullOrWhiteSpace(Model.LoadError))
+{
+    @await Html.PartialAsync(
+        "~/Views/Shared/UI/_ErrorState.cshtml",
+        new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+        {
+            Message = Model.LoadError,
+            Icon = "bi-exclamation-triangle"
+        })
+}
+else
+{
+    <form method="get"
+          asp-controller="Amenity"
+          asp-action="Index"
+          class="amenity-filter-form"
+          data-preserve-scroll="true">
+
+        <input type="hidden" name="Filter.CurrentPage" value="1" />
+        <input type="hidden" name="Filter.PageSize" value="@Model.Filter.PageSize" />
+
+        <section class="amenity-section card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-3 min-width-0">
+                        <div class="amenity-section-icon" aria-hidden="true">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                        <div class="min-width-0">
+                            <h2 class="h5 mb-1 fw-semibold">Danh sách tiện nghi</h2>
+                        </div>
+                    </div>
+                    @if (!isReception)
+                    {
+                    <a asp-controller="Amenity" asp-action="Create" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+                        Tạo tiện nghi
+                    </a>
+                    }
+                </div>
+            </div>
+
+            <div class="card-body border-bottom amenity-filter-panel">
+                <div class="row g-2 g-lg-3 align-items-end">
+                    <div class="col-12 col-xl-4">
+                        <label for="amenitySearch" class="form-label small fw-semibold">Tìm kiếm</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body"><i class="bi bi-search" aria-hidden="true"></i></span>
+                            <input id="amenitySearch"
+                                   type="search"
+                                   class="form-control"
+                                   name="Filter.Search"
+                                   value="@Model.Filter.Search"
+                                   placeholder="Mã hoặc tên tiện nghi"
+                                   autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <label for="amenitySort" class="form-label small fw-semibold">Sắp xếp</label>
+                        <select id="amenitySort" name="Filter.Sort" class="form-select">
+                            <option value="0" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Amenity.AmenitySortOption.AmenityCodeAsc ? "selected" : null)">Mã tiện nghi A-Z</option>
+                            <option value="1" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Amenity.AmenitySortOption.AmenityCodeDesc ? "selected" : null)">Mã tiện nghi Z-A</option>
+                            <option value="2" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Amenity.AmenitySortOption.AmenityNameAsc ? "selected" : null)">Tên tiện nghi A-Z</option>
+                            <option value="3" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Amenity.AmenitySortOption.AmenityNameDesc ? "selected" : null)">Tên tiện nghi Z-A</option>
+                            <option value="4" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Amenity.AmenitySortOption.LastModifiedDesc ? "selected" : null)">Ngày chỉnh sửa mới nhất</option>
+                            <option value="5" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Amenity.AmenitySortOption.LastModifiedAsc ? "selected" : null)">Ngày chỉnh sửa cũ nhất</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="amenityStatus" class="form-label small fw-semibold">Trạng thái</label>
+                        <select id="amenityStatus" name="Filter.Status" class="form-select">
+                            <option value="" selected="@(Model.Filter.Status is null ? "selected" : null)">Tất cả</option>
+                            <option value="true" selected="@(Model.Filter.Status == true ? "selected" : null)">Đang hoạt động</option>
+                            <option value="false" selected="@(Model.Filter.Status == false ? "selected" : null)">Dừng hoạt động</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-xl-3">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1 amenity-filter-submit">
+                                <span class="ui-button-content">
+                                    <i class="bi bi-funnel me-1" aria-hidden="true"></i>
+                                    Lọc
+                                </span>
+                                <span class="ui-button-loading d-none">
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    Đang lọc...
+                                </span>
+                            </button>
+                            <button type="submit"
+                                    name="Reset"
+                                    value="amenity"
+                                    class="btn btn-outline-secondary"
+                                    title="Đặt lại bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Amenities.Count == 0)
+            {
+                @await Html.PartialAsync(
+                    "~/Views/Shared/UI/_EmptyState.cshtml",
+                    new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+                    {
+                        Message = "Không tìm thấy tiện nghi nào.",
+                        Icon = "bi-stars"
+                    })
+            }
+            else
+            {
+                <div class="table-responsive amenity-table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0 amenity-table">
+                        <caption class="visually-hidden">Danh sách tiện nghi</caption>
+                        <colgroup>
+                            <col class="amenity-col-code" />
+                            <col class="amenity-col-name" />
+                            <col class="amenity-col-status" />
+                            <col class="amenity-col-date" />
+                            <col class="amenity-col-action" />
+                        </colgroup>
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã tiện nghi</th>
+                                <th>Tên tiện nghi</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày chỉnh sửa</th>
+                                <th class="text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Amenities)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="amenity-cell-ellipsis font-monospace fw-semibold" title="@item.AmenityCode">@item.AmenityCode</span>
+                                </td>
+                                <td>
+                                    <span class="amenity-cell-ellipsis fw-semibold" title="@item.AmenityName">@item.AmenityName</span>
+                                </td>
+                                <td>
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="badge text-bg-success amenity-status-badge">Đang hoạt động</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary amenity-status-badge">Dừng hoạt động</span>
+                                    }
+                                </td>
+                                <td class="text-nowrap">@item.LastModifiedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    <div class="d-flex justify-content-center align-items-center gap-1 amenity-action-group">
+                                        <a asp-controller="Amenity"
+                                           asp-action="Details"
+                                           asp-route-id="@item.Id"
+                                           asp-route-returnUrl="@returnUrl"
+                                           class="btn btn-outline-primary btn-sm amenity-action-btn"
+                                           title="Xem chi tiết"
+                                           aria-label="Xem chi tiết @item.AmenityCode">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </a>
+
+                                        @if (!isReception)
+                                        {
+                                            <a asp-controller="Amenity"
+                                           asp-action="Edit"
+                                           asp-route-id="@item.Id"
+                                           asp-route-returnUrl="@returnUrl"
+                                           class="btn btn-outline-secondary btn-sm amenity-action-btn"
+                                           title="Sửa tiện nghi"
+                                               aria-label="Sửa @item.AmenityCode">
+                                                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                        </a>
+
+                                        @if (item.IsActive)
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-outline-warning btn-sm amenity-action-btn"
+                                                    data-amenity-action="deactivate"
+                                                    data-id="@item.Id"
+                                                    data-name="@item.AmenityCode - @item.AmenityName"
+                                                    data-allowed="@(!item.HasActiveBookings)"
+                                                    title= "Dừng hoạt động"
+                                                    aria-label="Dừng hoạt động @item.AmenityCode">
+                                                <i class="bi bi-pause-circle" aria-hidden="true"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-outline-success btn-sm amenity-action-btn"
+                                                    data-amenity-action="activate"
+                                                    data-id="@item.Id"
+                                                    data-name="@item.AmenityCode - @item.AmenityName"
+                                                    data-allowed="@(!item.HasActiveBookings)"
+                                                    title="Mở hoạt động"
+                                                    aria-label="Mở hoạt động @item.AmenityCode">
+                                                <i class="bi bi-play-circle" aria-hidden="true"></i>
+                                            </button>
+
+                                            <button type="button"
+                                                    class="btn btn-outline-danger btn-sm amenity-action-btn"
+                                                    data-amenity-action="delete"
+                                                    data-id="@item.Id"
+                                                    data-name="@item.AmenityCode - @item.AmenityName"
+                                                    data-allowed="@(!item.HasActiveBookings)"
+                                                    title="Xóa tiện nghi"
+                                                    aria-label="Xóa @item.AmenityCode">
+                                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                                            </button>
+                                        }
+                                        }
+
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @await Html.PartialAsync("~/Views/Shared/UI/_Pagination.cshtml", Model.Pagination)
+        </section>
+    </form>
+
+    <form id="amenityDeactivateForm" asp-controller="Amenity" asp-action="Deactivate" method="post" class="d-none" data-ajax="false">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="amenityDeactivateId" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+    </form>
+
+    <form id="amenityActivateForm" asp-controller="Amenity" asp-action="Activate" method="post" class="d-none" data-ajax="false">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="amenityActivateId" />
+        <input type="hidden" name="reactivateAssociations" id="amenityReactivateAssociations" value="false" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+    </form>
+
+    <form id="amenityDeleteForm" asp-controller="Amenity" asp-action="Delete" method="post" class="d-none" data-ajax="false">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="amenityDeleteId" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+    </form>
+
+    <div class="modal fade" id="amenityActivateModal" tabindex="-1" aria-labelledby="amenityActivateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="amenityActivateModalLabel">Xác nhận mở hoạt động</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3" id="amenityActivateMessage"></p>
+                    <div class="form-check border rounded p-3">
+                        <input class="form-check-input" type="checkbox" id="amenityReactivateAssociationsCheckbox" />
+                        <label class="form-check-label fw-semibold" for="amenityReactivateAssociationsCheckbox">
+                            Mở hoạt động lại toàn bộ tiện nghi trong các loại phòng
+                        </label>
+                        <div class="form-text">
+                            Chỉ các RoomTypeAmenities chưa bị xóa và đang dừng hoạt động mới được mở lại.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-success" id="amenityActivateConfirmButton">
+                        <i class="bi bi-play-circle me-1" aria-hidden="true"></i>Mở hoạt động
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts
+{
+    <script>
+        (() => {
+            "use strict";
+
+            const form = document.querySelector(".amenity-filter-form");
+            if (!form || form.dataset.ajaxFilterBound === "true") return;
+
+            form.dataset.ajaxFilterBound = "true";
+            let submitted = false;
+
+            form.addEventListener("submit", () => {
+                if (submitted) return;
+                submitted = true;
+
+                const submitButton = form.querySelector(".amenity-filter-submit");
+                if (submitButton && window.HotelUI?.setButtonLoading) {
+                    window.HotelUI.setButtonLoading(
+                        submitButton,
+                        true,
+                        "Đang lọc..."
+                    );
+                }
+            });
+        })();
+    </script>
+    <script src="~/js/amenity-index.js" asp-append-version="true"></script>
+}

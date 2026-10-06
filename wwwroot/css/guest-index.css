@@ -1,0 +1,106 @@
+/* =========================================================
+   GUEST LIST
+   UI System / AdminLTE 4.9.1 / Bootstrap 5
+   Visual standard: Employee / User / RoomType management
+   ========================================================= */
+
+.guest-section {
+    overflow: hidden;
+}
+
+.guest-section-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .75rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.1rem;
+}
+
+.guest-filter-panel {
+    background: var(--bs-body-bg);
+}
+
+.guest-table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.guest-table {
+    min-width: 1100px;
+    table-layout: fixed;
+}
+
+.guest-table th,
+.guest-table td {
+    padding: .7rem .75rem;
+}
+
+.guest-table th {
+    white-space: nowrap;
+    font-size: .82rem;
+}
+
+.guest-table td {
+    font-size: .9rem;
+}
+
+.guest-cell-ellipsis {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.guest-action-group {
+    min-width: 112px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.guest-action-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+}
+
+.guest-col-code { width: 145px; }
+.guest-col-name { width: 220px; }
+.guest-col-date { width: 125px; }
+.guest-col-sex { width: 100px; }
+.guest-col-phone { width: 160px; }
+.guest-col-email { width: 245px; }
+.guest-col-action { width: 125px; }
+
+.min-width-0 {
+    min-width: 0;
+}
+
+@media (max-width: 1199.98px) {
+    .guest-table {
+        min-width: 1040px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .guest-section-icon {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+    }
+
+    .guest-table th,
+    .guest-table td {
+        padding: .65rem;
+    }
+}

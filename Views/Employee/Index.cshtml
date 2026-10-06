@@ -1,0 +1,1518 @@
+@model Hotel_Management_Website.Models.ViewModels.Employee.EmployeeIndexViewModel
+
+@{
+    ViewData["Title"] = "Quản lý nhân viên";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/employee-index.css" />
+}
+
+@await Html.PartialAsync(
+"~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quản lý nhân viên",
+        Description = "Xem danh sách nhân viên theo bộ phận, tìm kiếm, sắp xếp và lọc.",
+        Icon = "bi-people"
+    })
+
+@if (!string.IsNullOrWhiteSpace(Model.LoadError))
+{
+    @await Html.PartialAsync(
+    "~/Views/Shared/UI/_ErrorState.cshtml",
+        new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+        {
+            Message = Model.LoadError,
+            Icon = "bi-exclamation-triangle"
+        })
+}
+else
+{
+    <!-- ===================================================== -->
+    <!-- RECEPTION -->
+    <!-- ===================================================== -->
+
+    <form id="receptionFilterForm"
+          class="employee-filter-form"
+          method="get"
+          asp-controller="Employee"
+          asp-action="Index">
+
+        <section class="employee-section card border-0 shadow-sm mb-4">
+
+            <!-- ================================================= -->
+            <!-- HEADER -->
+            <!-- ================================================= -->
+
+            <div class="card-header bg-body border-bottom py-3">
+
+                <div class="d-flex flex-column flex-md-row
+                                align-items-md-center
+                                justify-content-between
+                                gap-2">
+
+                    <div class="d-flex align-items-center gap-3 min-width-0">
+
+                        <div class="employee-section-icon"
+                             aria-hidden="true">
+
+                            <i class="bi bi-person-vcard"></i>
+
+                        </div>
+
+                        <div class="min-width-0">
+
+                            <h2 class="h5 mb-1 fw-semibold">
+                                Lễ Tân
+                            </h2>
+
+                            <p class="text-body-secondary small mb-0">
+                                @Model.Reception.Description
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="d-flex flex-wrap
+                                    align-items-center
+                                    gap-2">
+
+                        <a asp-controller="Employee"
+                           asp-action="Create"
+                           asp-route-position="0"
+                           class="btn btn-primary btn-sm">
+
+                            <i class="bi bi-person-plus me-1"
+                               aria-hidden="true"></i>
+
+                            Thêm nhân viên
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- FILTER -->
+            <!-- ================================================= -->
+
+            <div class="card-body border-bottom employee-filter-panel">
+
+                <div class="row g-2 g-lg-3 align-items-end">
+
+                    <!-- SEARCH -->
+
+                    <div class="col-12 col-xl-4">
+
+                        <label for="receptionSearch"
+                               class="form-label small fw-semibold">
+
+                            Tìm kiếm
+
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text bg-body">
+
+                                <i class="bi bi-search"
+                                   aria-hidden="true"></i>
+
+                            </span>
+
+                            <input id="receptionSearch"
+                                   type="search"
+                                   class="form-control"
+                                   name="Reception.Search"
+                                   value="@Model.Reception.Filter.Search"
+                                   placeholder="Tên hoặc mã nhân viên"
+                                   autocomplete="off" />
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- SORT -->
+
+                    <div class="col-12 col-md-6 col-xl-3">
+
+                        <label for="receptionSort"
+                               class="form-label small fw-semibold">
+
+                            Sắp xếp
+
+                        </label>
+
+                        <select id="receptionSort"
+                                name="Reception.Sort"
+                                class="form-select">
+
+                            @await Html.PartialAsync(
+                            "~/Views/Employee/_SortOptions.cshtml",
+                                                Model.Reception.Filter.Sort)
+
+                    </select>
+
+                </div>
+
+
+                <!-- SEX -->
+
+                <div class="col-12 col-md-3 col-xl-2">
+
+                    <label for="receptionSex"
+                           class="form-label small fw-semibold">
+
+                        Giới tính
+
+                    </label>
+
+                    <select id="receptionSex"
+                            name="Reception.Sex"
+                            class="form-select">
+
+                        <option value=""
+                                selected="@(Model.Reception.Filter.Sex is null ? "selected" : null)">
+                            Tất cả
+                        </option>
+
+                        <option value="0"
+                                selected="@(Model.Reception.Filter.Sex == 0 ? "selected" : null)">
+                            Nam
+                        </option>
+
+                        <option value="1"
+                                selected="@(Model.Reception.Filter.Sex == 1 ? "selected" : null)">
+                            Nữ
+                        </option>
+
+                        <option value="2"
+                                selected="@(Model.Reception.Filter.Sex == 2 ? "selected" : null)">
+                            Khác
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- STATUS -->
+
+                <div class="col-12 col-md-3 col-xl-2">
+
+                    <label for="receptionStatus"
+                           class="form-label small fw-semibold">
+
+                        Trạng thái
+
+                    </label>
+
+                    <select id="receptionStatus"
+                            name="Reception.Status"
+                            class="form-select">
+
+                        <option value=""
+                                selected="@(Model.Reception.Filter.Status is null ? "selected" : null)">
+                            Tất cả
+                        </option>
+
+                        <option value="0"
+                                selected="@(Model.Reception.Filter.Status == 0 ? "selected" : null)">
+                            Đã nghỉ
+                        </option>
+
+                        <option value="1"
+                                selected="@(Model.Reception.Filter.Status == 1 ? "selected" : null)">
+                            Đang làm
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- ACTION -->
+
+                <div class="col-12 col-xl-1">
+
+                    <div class="d-flex gap-2 justify-content-xl-end">
+
+                        <button type="submit"
+                                class="btn btn-primary flex-grow-1 flex-xl-grow-0 employee-filter-submit"
+                                title="Áp dụng bộ lọc Lễ Tân">
+
+                            <span class="ui-button-content">
+
+                                <i class="bi bi-funnel me-1"
+                                   aria-hidden="true"></i>
+
+                                <span class="d-xl-none d-xxl-inline">
+                                    Lọc
+                                </span>
+
+                            </span>
+
+                            <span class="ui-button-loading d-none">
+
+                                <span class="spinner-border spinner-border-sm"
+                                      role="status"
+                                      aria-hidden="true"></span>
+
+                                Đang lọc...
+
+                            </span>
+
+                        </button>
+
+
+                        <button type="submit"
+                                name="ResetSection"
+                                value="reception"
+                                class="btn btn-outline-secondary"
+                                title="Đặt lại bộ lọc Lễ Tân"
+                                aria-label="Đặt lại bộ lọc Lễ Tân">
+
+                            <i class="bi bi-arrow-counterclockwise"
+                               aria-hidden="true"></i>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- PRESERVE HOUSEKEEPING FILTER -->
+        <!-- ================================================= -->
+
+        <input type="hidden"
+               name="Housekeeping.Search"
+               value="@Model.Housekeeping.Filter.Search" />
+
+        <input type="hidden"
+               name="Housekeeping.Sort"
+               value="@((byte)Model.Housekeeping.Filter.Sort)" />
+
+
+        @if (Model.Housekeeping.Filter.Sex.HasValue)
+            {
+                <input type="hidden"
+                       name="Housekeeping.Sex"
+                       value="@Model.Housekeeping.Filter.Sex.Value" />
+            }
+
+
+            @if (Model.Housekeeping.Filter.Status.HasValue)
+            {
+                <input type="hidden"
+                       name="Housekeeping.Status"
+                       value="@Model.Housekeeping.Filter.Status.Value" />
+            }
+
+
+            <input type="hidden"
+                   name="Housekeeping.CurrentPage"
+                   value="@Model.Housekeeping.Filter.CurrentPage" />
+
+            <input type="hidden"
+                   name="Housekeeping.PageSize"
+                   value="@Model.Housekeeping.Filter.PageSize" />
+
+
+            <!-- ================================================= -->
+            <!-- RECEPTION TABLE -->
+            <!-- ================================================= -->
+            @await Html.PartialAsync(
+            "~/Views/Employee/_EmployeeTable.cshtml",
+                Model.Reception)
+
+    </section>
+
+</form>
+
+
+
+<!-- ===================================================== -->
+<!-- HOUSEKEEPING -->
+<!-- ===================================================== -->
+
+<form id="housekeepingFilterForm"
+      class="employee-filter-form"
+      method="get"
+      asp-controller="Employee"
+      asp-action="Index">
+
+    <section class="employee-section card border-0 shadow-sm mb-4">
+
+        <!-- ================================================= -->
+        <!-- HEADER -->
+        <!-- ================================================= -->
+
+        <div class="card-header bg-body border-bottom py-3">
+
+            <div class="d-flex flex-column flex-md-row
+                            align-items-md-center
+                            justify-content-between
+                            gap-2">
+
+                <div class="d-flex align-items-center gap-3 min-width-0">
+
+                    <div class="employee-section-icon"
+                         aria-hidden="true">
+
+                        <i class="bi bi-house-check"></i>
+
+                    </div>
+
+                    <div class="min-width-0">
+
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Buồng Phòng
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            @Model.Housekeeping.Description
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="d-flex flex-wrap
+                                align-items-center
+                                gap-2">
+
+                    <a asp-controller="Employee"
+                       asp-action="Create"
+                       asp-route-position="1"
+                       class="btn btn-primary btn-sm">
+
+                        <i class="bi bi-person-plus me-1"
+                           aria-hidden="true"></i>
+
+                        Thêm nhân viên
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- FILTER -->
+        <!-- ================================================= -->
+
+        <div class="card-body border-bottom employee-filter-panel">
+
+            <div class="row g-2 g-lg-3 align-items-end">
+
+                <!-- SEARCH -->
+
+                <div class="col-12 col-xl-4">
+
+                    <label for="housekeepingSearch"
+                           class="form-label small fw-semibold">
+
+                        Tìm kiếm
+
+                    </label>
+
+                    <div class="input-group">
+
+                        <span class="input-group-text bg-body">
+
+                            <i class="bi bi-search"
+                               aria-hidden="true"></i>
+
+                        </span>
+
+                        <input id="housekeepingSearch"
+                               type="search"
+                               class="form-control"
+                               name="Housekeeping.Search"
+                               value="@Model.Housekeeping.Filter.Search"
+                               placeholder="Tên hoặc mã nhân viên"
+                               autocomplete="off" />
+
+                    </div>
+
+                </div>
+
+
+                <!-- SORT -->
+
+                <div class="col-12 col-md-6 col-xl-3">
+
+                    <label for="housekeepingSort"
+                           class="form-label small fw-semibold">
+
+                        Sắp xếp
+
+                    </label>
+
+                    <select id="housekeepingSort"
+                            name="Housekeeping.Sort"
+                            class="form-select">
+
+                        @await Html.PartialAsync(
+                                                "~/Views/Employee/_SortOptions.cshtml",
+                                                Model.Housekeeping.Filter.Sort)
+
+                    </select>
+
+                </div>
+
+
+                <!-- SEX -->
+
+                <div class="col-12 col-md-3 col-xl-2">
+
+                    <label for="housekeepingSex"
+                           class="form-label small fw-semibold">
+
+                        Giới tính
+
+                    </label>
+
+                    <select id="housekeepingSex"
+                            name="Housekeeping.Sex"
+                            class="form-select">
+
+                        <option value=""
+                                selected="@(Model.Housekeeping.Filter.Sex is null ? "selected" : null)">
+                            Tất cả
+                        </option>
+
+                        <option value="0"
+                                selected="@(Model.Housekeeping.Filter.Sex == 0 ? "selected" : null)">
+                            Nam
+                        </option>
+
+                        <option value="1"
+                                selected="@(Model.Housekeeping.Filter.Sex == 1 ? "selected" : null)">
+                            Nữ
+                        </option>
+
+                        <option value="2"
+                                selected="@(Model.Housekeeping.Filter.Sex == 2 ? "selected" : null)">
+                            Khác
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- STATUS -->
+
+                <div class="col-12 col-md-3 col-xl-2">
+
+                    <label for="housekeepingStatus"
+                           class="form-label small fw-semibold">
+
+                        Trạng thái
+
+                    </label>
+
+                    <select id="housekeepingStatus"
+                            name="Housekeeping.Status"
+                            class="form-select">
+
+                        <option value=""
+                                selected="@(Model.Housekeeping.Filter.Status is null ? "selected" : null)">
+                            Tất cả
+                        </option>
+
+                        <option value="0"
+                                selected="@(Model.Housekeeping.Filter.Status == 0 ? "selected" : null)">
+                            Đã nghỉ
+                        </option>
+
+                        <option value="1"
+                                selected="@(Model.Housekeeping.Filter.Status == 1 ? "selected" : null)">
+                            Đang làm
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- ACTION -->
+
+                <div class="col-12 col-xl-1">
+
+                    <div class="d-flex gap-2 justify-content-xl-end">
+
+                        <button type="submit"
+                                class="btn btn-primary flex-grow-1 flex-xl-grow-0 employee-filter-submit"
+                                title="Áp dụng bộ lọc Buồng Phòng">
+
+                            <span class="ui-button-content">
+
+                                <i class="bi bi-funnel me-1"
+                                   aria-hidden="true"></i>
+
+                                <span class="d-xl-none d-xxl-inline">
+                                    Lọc
+                                </span>
+
+                            </span>
+
+                            <span class="ui-button-loading d-none">
+
+                                <span class="spinner-border spinner-border-sm"
+                                      role="status"
+                                      aria-hidden="true"></span>
+
+                                Đang lọc...
+
+                            </span>
+
+                        </button>
+
+
+                        <button type="submit"
+                                name="ResetSection"
+                                value="housekeeping"
+                                class="btn btn-outline-secondary"
+                                title="Đặt lại bộ lọc Buồng Phòng"
+                                aria-label="Đặt lại bộ lọc Buồng Phòng">
+
+                            <i class="bi bi-arrow-counterclockwise"
+                               aria-hidden="true"></i>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- PRESERVE RECEPTION FILTER -->
+        <!-- ================================================= -->
+
+        <input type="hidden"
+               name="Reception.Search"
+               value="@Model.Reception.Filter.Search" />
+
+        <input type="hidden"
+               name="Reception.Sort"
+               value="@((byte)Model.Reception.Filter.Sort)" />
+
+
+        @if (Model.Reception.Filter.Sex.HasValue)
+            {
+                <input type="hidden"
+                       name="Reception.Sex"
+                       value="@Model.Reception.Filter.Sex.Value" />
+            }
+
+
+            @if (Model.Reception.Filter.Status.HasValue)
+            {
+                <input type="hidden"
+                       name="Reception.Status"
+                       value="@Model.Reception.Filter.Status.Value" />
+            }
+
+
+            <input type="hidden"
+                   name="Reception.CurrentPage"
+                   value="@Model.Reception.Filter.CurrentPage" />
+
+            <input type="hidden"
+                   name="Reception.PageSize"
+                   value="@Model.Reception.Filter.PageSize" />
+
+
+            <!-- ================================================= -->
+            <!-- HOUSEKEEPING TABLE -->
+            <!-- ================================================= -->
+            @await Html.PartialAsync(
+            "~/Views/Employee/_EmployeeTable.cshtml",
+                Model.Housekeeping)
+
+    </section>
+
+</form>
+
+
+
+<!-- ===================================================== -->
+<!-- HIDDEN POST FORM - LEAVE -->
+<!-- ===================================================== -->
+
+<form id="employeeLeaveForm"
+      asp-controller="Employee"
+      asp-action="Leave"
+      method="post"
+      class="d-none">
+
+    @Html.AntiForgeryToken()
+
+    <input type="hidden"
+           name="id"
+           id="employeeLeaveId" />
+
+    <input type="hidden"
+           name="returnUrl"
+           id="employeeLeaveReturnUrl" />
+
+</form>
+
+
+
+<!-- ===================================================== -->
+<!-- HIDDEN POST FORM - RETURN TO WORK -->
+<!-- ===================================================== -->
+
+<form id="employeeReturnToWorkForm"
+      asp-controller="Employee"
+      asp-action="ReturnToWork"
+      method="post"
+      class="d-none">
+
+    @Html.AntiForgeryToken()
+
+    <input type="hidden"
+           name="id"
+           id="employeeReturnToWorkId" />
+
+    <input type="hidden"
+           name="returnUrl"
+           id="employeeReturnToWorkReturnUrl" />
+
+</form>
+
+
+
+<!-- ===================================================== -->
+<!-- HIDDEN POST FORM - DELETE -->
+<!-- ===================================================== -->
+
+<form id="employeeDeleteForm"
+      asp-controller="Employee"
+      asp-action="Delete"
+      method="post"
+      class="d-none">
+
+    @Html.AntiForgeryToken()
+
+    <input type="hidden"
+           name="id"
+           id="employeeDeleteId" />
+
+    <input type="hidden"
+           name="returnUrl"
+           id="employeeDeleteReturnUrl" />
+
+</form>
+}
+
+
+
+<!-- ========================================================= -->
+<!-- EMPLOYEE PAGE STYLE -->
+<!-- ========================================================= -->
+
+<style>
+
+    .employee-section .card-header .btn {
+        white-space: nowrap;
+    }
+
+
+    @@media (max-width: 575.98px) {
+
+        .employee-section .card-header .btn {
+            flex: 1 1 auto;
+        }
+    }
+
+
+    .employee-col-action {
+        width: 160px;
+        min-width: 160px;
+        max-width: 160px;
+    }
+
+
+    .employee-action-group {
+        min-width: 76px;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+    }
+
+
+    .employee-action-btn {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 34px;
+    }
+
+
+        .employee-action-btn i {
+            font-size: 1rem;
+        }
+
+
+    .employee-leave-btn {
+        color: var(--bs-danger);
+    }
+
+
+        .employee-leave-btn:hover,
+        .employee-leave-btn:focus-visible {
+            color: var(--bs-white);
+        }
+
+
+    .employee-return-btn {
+        color: var(--bs-success);
+    }
+
+
+        .employee-return-btn:hover,
+        .employee-return-btn:focus-visible {
+            color: var(--bs-white);
+        }
+
+
+    .employee-delete-btn {
+        color: var(--bs-danger);
+    }
+
+
+        .employee-delete-btn:hover,
+        .employee-delete-btn:focus-visible {
+            color: var(--bs-white);
+        }
+
+
+    .employee-action-btn .spinner-border {
+        width: 0.8rem;
+        height: 0.8rem;
+    }
+</style>
+
+
+
+@section Scripts
+{
+
+    <!-- ===================================================== -->
+    <!-- FILTER AJAX BUTTON LOADING -->
+    <!-- ===================================================== -->
+
+    <script>
+
+        (() => {
+
+            "use strict";
+
+
+            const forms =
+                document.querySelectorAll(
+                    ".employee-filter-form"
+                );
+
+
+            forms.forEach(
+                form => {
+
+                    if (
+                        form.dataset.ajaxFilterBound ===
+                        "true"
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    form.dataset.ajaxFilterBound =
+                        "true";
+
+
+                    let submitted =
+                        false;
+
+
+                    form.addEventListener(
+                        "submit",
+                        function () {
+
+                            if (submitted) {
+
+                                return;
+
+                            }
+
+
+                            submitted =
+                                true;
+
+
+                            const submitButton =
+                                form.querySelector(
+                                    ".employee-filter-submit"
+                                );
+
+
+                            if (
+                                submitButton &&
+                                window.HotelUI?.setButtonLoading
+                            ) {
+
+                                window.HotelUI.setButtonLoading(
+
+                                    submitButton,
+
+                                    true,
+
+                                    "Đang lọc..."
+
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+        })();
+
+    </script>
+    })();
+
+</script>
+    }
+
+
+
+    <!-- ===================================================== -->
+    <!-- EMPLOYEE ACTION AJAX -->
+    <!-- ===================================================== -->
+
+    <script>
+
+        (() => {
+
+            "use strict";
+
+
+            // =================================================
+            // CHỐNG BIND NHIỀU LẦN
+            // =================================================
+
+            if (
+                window.__employeeAjaxActionsBound ===
+                true
+            ) {
+
+                return;
+
+            }
+
+
+            window.__employeeAjaxActionsBound =
+                true;
+
+
+
+            // =================================================
+            // ACTION CONFIG
+            // =================================================
+
+            const actionConfig = {
+
+                leave: {
+
+                    title:
+                        "Xác nhận cho nghỉ việc",
+
+                    message:
+                        "Bạn có chắc muốn cho nhân viên \"{name}\" nghỉ việc?",
+
+                    note:
+                        "Hệ thống sẽ chuyển nhân viên sang trạng thái nghỉ việc và dừng hoạt động tài khoản User liên kết với nhân viên đó nếu có.",
+
+                    confirmText:
+                        "Cho nghỉ việc",
+
+                    variant:
+                        "danger"
+                },
+
+
+                return: {
+
+                    title:
+                        "Xác nhận trở lại làm việc",
+
+                    message:
+                        "Bạn có chắc muốn cho nhân viên \"{name}\" trở lại làm việc?",
+
+                    note:
+                        "Hệ thống sẽ chuyển nhân viên sang trạng thái đang làm việc và kích hoạt lại tài khoản User liên kết với nhân viên đó nếu có.",
+
+                    confirmText:
+                        "Trở lại làm việc",
+
+                    variant:
+                        "success"
+                },
+
+
+                delete: {
+
+                    title:
+                        "Xác nhận xóa nhân viên",
+
+                    message:
+                        "Bạn có chắc muốn xóa hồ sơ của nhân viên \"{name}\"?",
+
+                    note:
+                        "Hệ thống sẽ xóa hồ sơ nhân viên và dừng hoạt động tài khoản User liên kết của nhân viên đó nếu có.",
+
+                    confirmText:
+                        "Xóa nhân viên",
+
+                    variant:
+                        "danger"
+                }
+
+            };
+
+
+            // =================================================
+            // FORM CONFIG
+            // =================================================
+
+            const formConfig = {
+
+                leave: {
+
+                    formId:
+                        "employeeLeaveForm",
+
+                    idInputId:
+                        "employeeLeaveId",
+
+                    returnUrlInputId:
+                        "employeeLeaveReturnUrl"
+
+                },
+
+
+                return: {
+
+                    formId:
+                        "employeeReturnToWorkForm",
+
+                    idInputId:
+                        "employeeReturnToWorkId",
+
+                    returnUrlInputId:
+                        "employeeReturnToWorkReturnUrl"
+
+                },
+
+
+                delete: {
+
+                    formId:
+                        "employeeDeleteForm",
+
+                    idInputId:
+                        "employeeDeleteId",
+
+                    returnUrlInputId:
+                        "employeeDeleteReturnUrl"
+
+                }
+
+            };
+
+
+
+            // =================================================
+            // EXECUTE ACTION
+            // =================================================
+
+            async function executeAction(
+                button,
+                action
+            ) {
+
+                const config =
+                    formConfig[action];
+
+
+                if (!config) {
+
+                    throw new Error(
+                        `Không tồn tại cấu hình action: ${action}`
+                    );
+
+                }
+
+
+                const form =
+                    document.getElementById(
+                        config.formId
+                    );
+
+
+                const idInput =
+                    document.getElementById(
+                        config.idInputId
+                    );
+
+
+                const returnUrlInput =
+                    document.getElementById(
+                        config.returnUrlInputId
+                    );
+
+
+                if (
+                    !form ||
+                    !idInput ||
+                    !returnUrlInput
+                ) {
+
+                    throw new Error(
+                        "Không tìm thấy hidden employee form."
+                    );
+
+                }
+
+
+                const employeeId =
+                    button.dataset.employeeId;
+
+
+                const returnUrl =
+                    button.dataset.returnUrl ||
+                    (
+                        window.location.pathname +
+                        window.location.search
+                    );
+
+
+                if (!employeeId) {
+
+                    throw new Error(
+                        "Không tìm thấy Employee ID."
+                    );
+
+                }
+
+
+                idInput.value =
+                    employeeId;
+
+
+                returnUrlInput.value =
+                    returnUrl;
+
+
+                const formData =
+                    new FormData(
+                        form
+                    );
+
+
+                /*
+                 * Chỉ loading button hiện tại.
+                 */
+
+                if (
+                    window.HotelUI?.setButtonLoading
+                ) {
+
+                    window.HotelUI.setButtonLoading(
+                        button,
+                        true
+                    );
+
+                }
+
+
+                try {
+
+                    if (
+                        !window.HotelAjax ||
+                        typeof window.HotelAjax.navigate !==
+                        "function"
+                    ) {
+
+                        throw new Error(
+                            "HotelAjax.navigate không tồn tại."
+                        );
+
+                    }
+
+
+                    const success =
+                    await window.HotelAjax.navigate(
+                        form.action,
+                        {
+                            method: "POST",
+                            body: formData,
+                            historyMode: "replace",
+
+                            // Đây là thao tác trên chính danh sách Employee
+                            preserveScroll: true,
+
+                            // Employee tự xử lý error
+                            showErrorToast: false
+                        }
+                    );
+
+
+                    if (!success) {
+
+                        if (
+                            window.HotelUI?.toast
+                        ) {
+
+                            window.HotelUI.toast(
+
+                                "error",
+
+                                "Có lỗi xảy ra",
+
+                                "Không thể hoàn tất thao tác. Vui lòng thử lại."
+
+                            );
+
+                        }
+
+
+                        return false;
+
+                    }
+
+
+                    return true;
+
+                }
+                catch (error) {
+
+                    console.error(
+                        "[Employee] Action failed:",
+                        error
+                    );
+
+
+                    if (
+                        window.HotelUI?.toast
+                    ) {
+
+                        window.HotelUI.toast(
+
+                            "error",
+
+                            "Có lỗi xảy ra",
+
+                            "Không thể hoàn tất thao tác."
+
+                        );
+
+                    }
+
+
+                    return false;
+
+                }
+                finally {
+
+                    /*
+                     * Button có thể đã bị thay khỏi DOM sau
+                     * khi main content được AJAX replace.
+                     *
+                     * setButtonLoading vẫn an toàn trên
+                     * element cũ.
+                     */
+
+                    if (
+                        window.HotelUI?.setButtonLoading
+                    ) {
+
+                        window.HotelUI.setButtonLoading(
+
+                            button,
+
+                            false
+
+                        );
+
+                    }
+
+                }
+
+            }
+
+
+
+            // =================================================
+            // SHOW CONFIRMATION
+            // =================================================
+
+            function showConfirmation(
+                button,
+                action
+            ) {
+
+                const config =
+                    actionConfig[action];
+
+
+                if (!config) {
+
+                    console.error(
+                        `[Employee] Không tồn tại action: ${action}`
+                    );
+
+                    return;
+
+                }
+
+
+                const employeeName =
+                    button.dataset.employeeName ||
+                    "nhân viên";
+
+
+                const message =
+                    config.message.replace(
+                        "{name}",
+                        employeeName
+                    );
+
+
+                if (
+                    !window.HotelUI ||
+                    typeof window.HotelUI.showConfirm !==
+                    "function"
+                ) {
+
+                    console.error(
+                        "[Employee] HotelUI.showConfirm không tồn tại."
+                    );
+
+                    return;
+
+                }
+
+
+                window.HotelUI.showConfirm({
+
+                    title:
+                        config.title,
+
+                    message:
+                        message,
+
+                    note:
+                        config.note,
+
+                    confirmText:
+                        config.confirmText,
+
+                    variant:
+                        config.variant,
+
+                    onConfirm:
+                        async function () {
+
+                            await executeAction(
+
+                                button,
+
+                                action
+
+                            );
+
+                        }
+
+                });
+
+            }
+
+
+
+            // =================================================
+            // FIND ACTION
+            // =================================================
+
+            function getActionFromButton(
+                button
+            ) {
+
+                if (
+                    button.classList.contains(
+                        "employee-leave-btn"
+                    )
+                ) {
+
+                    return "leave";
+
+                }
+
+
+                if (
+                    button.classList.contains(
+                        "employee-return-btn"
+                    )
+                ) {
+
+                    return "return";
+
+                }
+
+
+                if (
+                    button.classList.contains(
+                        "employee-delete-btn"
+                    )
+                ) {
+
+                    return "delete";
+
+                }
+
+
+                return null;
+
+            }
+
+
+
+            // =================================================
+            // EVENT DELEGATION
+            // =================================================
+
+            document.addEventListener(
+
+                "click",
+
+                function (event) {
+
+                    const target =
+                        event.target instanceof Element
+                            ? event.target
+                            : null;
+
+
+                    if (!target) {
+
+                        return;
+
+                    }
+
+
+                    const button =
+                        target.closest(
+
+                            ".employee-leave-btn, " +
+                            ".employee-return-btn, " +
+                            ".employee-delete-btn"
+
+                        );
+
+
+                    if (!button) {
+
+                        return;
+
+                    }
+
+
+                    const action =
+                        getActionFromButton(
+                            button
+                        );
+
+
+                    if (!action) {
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * Các nút này không được submit
+                     * filter form.
+                     */
+
+                    event.preventDefault();
+
+                    event.stopPropagation();
+
+
+                    /*
+                     * Nếu button đã disable/loading thì bỏ qua.
+                     */
+
+                    if (
+                        button.disabled
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    showConfirmation(
+
+                        button,
+
+                        action
+
+                    );
+
+                },
+
+                true
+
+            );
+
+        })();
+
+    </script>
+}

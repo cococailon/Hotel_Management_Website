@@ -1,0 +1,362 @@
+@model Hotel_Management_Website.Models.ViewModels.Employee.EmployeeDetailsViewModel
+
+@{
+    ViewData["Title"] = "Chi tiết nhân viên";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/employee-details.css" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Chi tiết nhân viên",
+        Description = "Xem đầy đủ thông tin hồ sơ và trạng thái của nhân viên.",
+        Icon = "bi-person-vcard"
+    })
+
+<div class="employee-detail-page">
+
+    <!-- ===================================================== -->
+    <!-- TOP ACTIONS -->
+    <!-- ===================================================== -->
+
+    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2 mb-4">
+
+        <a asp-controller="Employee"
+           asp-action="Index"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            Quay lại danh sách
+        </a>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- PROFILE SUMMARY -->
+    <!-- ===================================================== -->
+
+    <section class="card border-0 shadow-sm employee-detail-summary mb-4">
+
+        <div class="card-body p-4">
+
+            <div class="row g-4 align-items-center">
+
+                <div class="col-12 col-lg-auto">
+
+                    <div class="employee-detail-avatar" aria-hidden="true">
+                        <i class="bi bi-person"></i>
+                    </div>
+
+                </div>
+
+                <div class="col-12 col-lg">
+
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 mb-2">
+
+                        <h1 class="h4 fw-semibold mb-0 employee-detail-name"
+                            title="@Model.EmployeeName">
+                            @Model.EmployeeName
+                        </h1>
+
+                        <span class="badge @Model.StatusBadgeClass">
+                            @Model.StatusName
+                        </span>
+
+                        <span class="badge text-bg-light border">
+                            @Model.PositionName
+                        </span>
+
+                    </div>
+
+                    <div class="text-body-secondary">
+                        <span class="font-monospace">@Model.EmployeeCode</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ===================================================== -->
+    <!-- INFORMATION GRID -->
+    <!-- ===================================================== -->
+
+    <div class="row g-4">
+
+        <!-- ================================================= -->
+        <!-- PERSONAL INFORMATION -->
+        <!-- ================================================= -->
+
+        <div class="col-12 col-xl-6">
+
+            <section class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-body border-bottom py-3">
+
+                    <div class="d-flex align-items-center gap-2">
+
+                        <div class="employee-detail-section-icon"
+                             aria-hidden="true">
+                            <i class="bi bi-person-lines-fill"></i>
+                        </div>
+
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">
+                                Thông tin cá nhân
+                            </h2>
+                            <div class="small text-body-secondary">
+                                Thông tin định danh cơ bản
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-12 col-sm-6">
+                            <div class="employee-detail-label">Mã nhân viên</div>
+                            <div class="employee-detail-value font-monospace"
+                                 title="@Model.EmployeeCode">
+                                @Model.EmployeeCode
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6">
+                            <div class="employee-detail-label">Tên nhân viên</div>
+                            <div class="employee-detail-value employee-detail-breakable">
+                                @Model.EmployeeName
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6">
+                            <div class="employee-detail-label">Ngày sinh</div>
+                            <div class="employee-detail-value">
+                                @Model.DateOfBirth
+                            </div>
+                        </div>
+
+                        @if (Model.Age.HasValue)
+                        {
+                            <div class="col-12 col-sm-6">
+                                <div class="employee-detail-label">Tuổi</div>
+                                <div class="employee-detail-value">
+                                    @Model.Age.Value
+                                </div>
+                            </div>
+                        }
+
+                        <div class="col-12 col-sm-6">
+                            <div class="employee-detail-label">Giới tính</div>
+                            <div class="employee-detail-value">
+                                @Model.SexName
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- EMPLOYMENT INFORMATION -->
+        <!-- ================================================= -->
+
+        <div class="col-12 col-xl-6">
+
+            <section class="card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-body border-bottom py-3">
+
+                    <div class="d-flex align-items-center gap-2">
+
+                        <div class="employee-detail-section-icon"
+                             aria-hidden="true">
+                            <i class="bi bi-briefcase"></i>
+                        </div>
+
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">
+                                Thông tin công việc
+                            </h2>
+                            <div class="small text-body-secondary">
+                                Bộ phận và quá trình làm việc
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-12 col-sm-6">
+                            <div class="employee-detail-label">Chức vụ</div>
+                            <div class="employee-detail-value">
+                                @Model.PositionName
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6">
+                            <div class="employee-detail-label">Trạng thái làm việc</div>
+                            <div class="employee-detail-value">
+                                <span class="badge @Model.StatusBadgeClass">
+                                    @Model.StatusName
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6">
+                            <div class="employee-detail-label">Ngày vào làm</div>
+                            <div class="employee-detail-value">
+                                @Model.StartDate
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6">
+                            <div class="employee-detail-label">Ngày nghỉ việc</div>
+                            <div class="employee-detail-value">
+                                @(string.IsNullOrWhiteSpace(Model.EndDate)
+                                    ? "Chưa nghỉ việc"
+                                    : Model.EndDate)
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- NOTE -->
+        <!-- ================================================= -->
+
+        <div class="col-12">
+
+            <section class="card border-0 shadow-sm">
+
+                <div class="card-header bg-body border-bottom py-3">
+
+                    <div class="d-flex align-items-center gap-2">
+
+                        <div class="employee-detail-section-icon"
+                             aria-hidden="true">
+                            <i class="bi bi-sticky"></i>
+                        </div>
+
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">
+                                Ghi chú
+                            </h2>
+                            <div class="small text-body-secondary">
+                                Thông tin bổ sung về nhân viên
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    @if (string.IsNullOrWhiteSpace(Model.Note))
+                    {
+                        <div class="text-body-secondary">
+                            Không có ghi chú
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-body-secondary">
+                            @Model.Note
+                        </div>
+                    }
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- SYSTEM INFORMATION -->
+        <!-- ================================================= -->
+
+        <div class="col-12">
+
+            <section class="card border-0 shadow-sm">
+
+                <div class="card-header bg-body border-bottom py-3">
+
+                    <div class="d-flex align-items-center gap-2">
+
+                        <div class="employee-detail-section-icon"
+                             aria-hidden="true">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">
+                                Thông tin hệ thống
+                            </h2>
+                            <div class="small text-body-secondary">
+                                Ngày tạo và lần cập nhật gần nhất
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-12 col-md-4">
+                            <div class="employee-detail-label">Ngày tạo</div>
+                            <div class="employee-detail-value">
+                                @Model.CreatedAt
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="employee-detail-label">Ngày chỉnh sửa gần nhất</div>
+                            <div class="employee-detail-value">
+                                @Model.LastModifiedAt
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,357 @@
+@model Hotel_Management_Website.Models.ViewModels.Service.ServiceIndexViewModel
+@using System.Globalization
+
+@{
+    var isReception = User.IsInRole("Reception");
+    ViewData["Title"] = "Quản lý dịch vụ";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+    var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/service-index.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quản lý dịch vụ",
+        Description = isReception
+            ? "Xem danh sách, tìm kiếm, sắp xếp và lọc các dịch vụ."
+            : "Xem, tìm kiếm, sắp xếp, lọc và quản lý trạng thái dịch vụ.",
+        Icon = "bi-cone-striped"
+    })
+
+@if (!string.IsNullOrWhiteSpace(Model.LoadError))
+{
+    @await Html.PartialAsync(
+        "~/Views/Shared/UI/_ErrorState.cshtml",
+        new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+        {
+            Message = Model.LoadError,
+            Icon = "bi-exclamation-triangle"
+        })
+}
+else
+{
+    <form method="get"
+          asp-controller="Services"
+          asp-action="Index"
+          class="service-filter-form"
+          data-preserve-scroll="true">
+
+        <input type="hidden" name="Filter.CurrentPage" value="1" />
+        <input type="hidden" name="Filter.PageSize" value="@Model.Filter.PageSize" />
+
+        <section class="service-section card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-3 min-width-0">
+                        <div class="service-section-icon" aria-hidden="true">
+                            <i class="bi bi-cone-striped"></i>
+                        </div>
+                        <div class="min-width-0">
+                            <h2 class="h5 mb-1 fw-semibold">Danh sách dịch vụ</h2>
+                        </div>
+                    </div>
+                    @if (!isReception)
+                    {
+                    <a asp-controller="Services" asp-action="Create" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+                        Tạo dịch vụ
+                    </a>
+                    }
+                </div>
+            </div>
+
+            <div class="card-body border-bottom service-filter-panel">
+                <div class="row g-2 g-lg-3 align-items-end">
+                    <div class="col-12 col-xl-4">
+                        <label asp-for="Filter.Search" class="form-label small fw-semibold">Tìm kiếm</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body"><i class="bi bi-search" aria-hidden="true"></i></span>
+                            <input asp-for="Filter.Search"
+                                   id="serviceSearch"
+                                   class="form-control"
+                                   placeholder="Mã hoặc tên dịch vụ"
+                                   autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label asp-for="Filter.Sort" class="form-label small fw-semibold">Sắp xếp</label>
+                        <select asp-for="Filter.Sort" class="form-select">
+                            <option value="0">Mã dịch vụ A-Z</option>
+                            <option value="1">Mã dịch vụ Z-A</option>
+                            <option value="2">Tên dịch vụ A-Z</option>
+                            <option value="3">Tên dịch vụ Z-A</option>
+                            <option value="4">Đơn giá thấp → cao</option>
+                            <option value="5">Đơn giá cao → thấp</option>
+                            <option value="6">Ngày chỉnh sửa mới nhất</option>
+                            <option value="7">Ngày chỉnh sửa cũ nhất</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label asp-for="Filter.Status" class="form-label small fw-semibold">Trạng thái</label>
+                        <select asp-for="Filter.Status" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="true">Đang hoạt động</option>
+                            <option value="false">Dừng hoạt động</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label asp-for="Filter.PriceFilter" class="form-label small fw-semibold">Đơn giá</label>
+                        <select asp-for="Filter.PriceFilter" class="form-select">
+                            <option value="0">Tất cả</option>
+                            <option value="1">Miễn phí</option>
+                            <option value="2">Có giá</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1 service-filter-submit">
+                                <span class="ui-button-content">
+                                    <i class="bi bi-funnel me-1" aria-hidden="true"></i>
+                                    Lọc
+                                </span>
+                                <span class="ui-button-loading d-none">
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    Đang lọc...
+                                </span>
+                            </button>
+                            <button type="submit"
+                                    name="Reset"
+                                    value="service"
+                                    class="btn btn-outline-secondary"
+                                    title="Đặt lại bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Services.Count == 0)
+            {
+                @await Html.PartialAsync(
+                    "~/Views/Shared/UI/_EmptyState.cshtml",
+                    new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+                    {
+                        Message = "Không tìm thấy dịch vụ nào.",
+                        Icon = "bi-cone-striped"
+                    })
+            }
+            else
+            {
+                <div class="table-responsive service-table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0 service-table">
+                        <caption class="visually-hidden">Danh sách dịch vụ</caption>
+                        <colgroup>
+                            <col class="service-col-code" />
+                            <col class="service-col-name" />
+                            <col class="service-col-price" />
+                            <col class="service-col-status" />
+                            <col class="service-col-date" />
+                            <col class="service-col-action" />
+                        </colgroup>
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã dịch vụ</th>
+                                <th>Tên dịch vụ</th>
+                                <th>Đơn giá - Đơn vị</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày chỉnh sửa</th>
+                                <th class="text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Services)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="service-cell-ellipsis font-monospace fw-semibold" title="@item.ServiceCode">@item.ServiceCode</span>
+                                </td>
+                                <td>
+                                    <span class="service-cell-ellipsis fw-semibold" title="@item.ServiceName">@item.ServiceName</span>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold service-price-cell">
+                                        @(item.UnitPrice.GetValueOrDefault() <= 0
+                                            ? "Miễn phí"
+                                            : item.UnitPrice.Value.ToString("N0", CultureInfo.InvariantCulture) + " ₫")
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(item.PriceUnitType))
+                                    {
+                                        <div class="small text-body-secondary service-unit-cell" title="@item.PriceUnitType">@item.PriceUnitType</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="badge text-bg-success service-status-badge">Đang hoạt động</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary service-status-badge">Dừng hoạt động</span>
+                                    }
+                                </td>
+                                <td class="text-nowrap">@item.LastModifiedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    <div class="d-flex justify-content-center align-items-center gap-1 service-action-group">
+                                        <a asp-controller="Services"
+                                           asp-action="Details"
+                                           asp-route-id="@item.Id"
+                                           asp-route-returnUrl="@returnUrl"
+                                           class="btn btn-outline-primary btn-sm service-action-btn"
+                                           title="Xem chi tiết"
+                                           aria-label="Xem chi tiết @item.ServiceCode">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </a>
+
+                                        @if (!isReception)
+                                        {
+                                            <a asp-controller="Services"
+                                           asp-action="Edit"
+                                           asp-route-id="@item.Id"
+                                           asp-route-returnUrl="@returnUrl"
+                                           class="btn btn-outline-secondary btn-sm service-action-btn"
+                                           title="Sửa dịch vụ"
+                                               aria-label="Sửa @item.ServiceCode">
+                                                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                        </a>
+
+                                        @if (item.IsActive)
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-outline-warning btn-sm service-action-btn"
+                                                    data-service-action="deactivate"
+                                                    data-id="@item.Id"
+                                                    data-name="@item.ServiceCode - @item.ServiceName"
+                                                    data-allowed="@(!item.HasActiveBookings)"
+                                                    title="Dừng hoạt động"
+                                                    aria-label="Dừng hoạt động @item.ServiceCode">
+                                                <i class="bi bi-pause-circle" aria-hidden="true"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-outline-success btn-sm service-action-btn"
+                                                    data-service-action="activate"
+                                                    data-id="@item.Id"
+                                                    data-name="@item.ServiceCode - @item.ServiceName"
+                                                    data-allowed="@(!item.HasActiveBookings)"
+                                                    title="Mở hoạt động"
+                                                    aria-label="Mở hoạt động @item.ServiceCode">
+                                                <i class="bi bi-play-circle" aria-hidden="true"></i>
+                                            </button>
+
+                                            <button type="button"
+                                                    class="btn btn-outline-danger btn-sm service-action-btn"
+                                                    data-service-action="delete"
+                                                    data-id="@item.Id"
+                                                    data-name="@item.ServiceCode - @item.ServiceName"
+                                                    data-allowed="@(!item.HasActiveBookings)"
+                                                    title="Xóa dịch vụ"
+                                                    aria-label="Xóa @item.ServiceCode">
+                                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                                            </button>
+                                        }
+                                        }
+
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @await Html.PartialAsync("~/Views/Shared/UI/_Pagination.cshtml", Model.Pagination)
+        </section>
+    </form>
+
+    <form id="serviceDeactivateForm" asp-controller="Services" asp-action="Deactivate" method="post" class="d-none" data-ajax="false">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="serviceDeactivateId" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+    </form>
+
+    <form id="serviceActivateForm" asp-controller="Services" asp-action="Activate" method="post" class="d-none" data-ajax="false">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="serviceActivateId" />
+        <input type="hidden" name="reactivateAssociations" id="serviceReactivateAssociations" value="false" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+    </form>
+
+    <form id="serviceDeleteForm" asp-controller="Services" asp-action="Delete" method="post" class="d-none" data-ajax="false">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="serviceDeleteId" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+    </form>
+
+    <div class="modal fade" id="serviceActivateModal" tabindex="-1" aria-labelledby="serviceActivateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="serviceActivateModalLabel">Xác nhận mở hoạt động</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3" id="serviceActivateMessage"></p>
+                    <div class="form-check border rounded p-3">
+                        <input class="form-check-input" type="checkbox" id="serviceReactivateAssociationsCheckbox" />
+                        <label class="form-check-label fw-semibold" for="serviceReactivateAssociationsCheckbox">
+                            Mở hoạt động lại toàn bộ dịch vụ trong các loại phòng
+                        </label>
+                        <div class="form-text">Chỉ các RoomTypeServices chưa bị xóa và đang dừng hoạt động mới được mở lại.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-success" id="serviceActivateConfirmButton">
+                        <i class="bi bi-play-circle me-1" aria-hidden="true"></i>Mở hoạt động
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts
+{
+    <script>
+        (() => {
+            "use strict";
+
+            const form = document.querySelector(".service-filter-form");
+            if (!form || form.dataset.ajaxFilterBound === "true") return;
+
+            form.dataset.ajaxFilterBound = "true";
+            let submitted = false;
+
+            form.addEventListener("submit", () => {
+                if (submitted) return;
+                submitted = true;
+
+                const submitButton = form.querySelector(".service-filter-submit");
+                if (submitButton && window.HotelUI?.setButtonLoading) {
+                    window.HotelUI.setButtonLoading(
+                        submitButton,
+                        true,
+                        "Đang lọc..."
+                    );
+                }
+            });
+        })();
+    </script>
+    <script src="~/js/service-index.js" asp-append-version="true"></script>
+}

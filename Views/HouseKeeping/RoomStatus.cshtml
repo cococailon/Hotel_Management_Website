@@ -1,0 +1,325 @@
+@model Hotel_Management_Website.Models.ViewModels.Housekeeping.HousekeepingRoomStatusViewModel
+
+@{
+    ViewData["Title"] = "Quản lý tình trạng phòng";
+    Layout = "~/Views/Shared/_HousekeepingLayout.cshtml";
+    var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/room-index.css" asp-append-version="true" />
+    <style>
+        .housekeeping-room-summary { background: var(--bs-body-bg); }
+        .housekeeping-status-note { overflow-wrap: anywhere; }
+    </style>
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quản lý tình trạng phòng",
+        Description = "Theo dõi toàn bộ phòng theo tầng và hàng, tìm kiếm, sắp xếp, lọc; xem chi tiết, chuyển Bảo trì, bắt đầu dọn dẹp và xác nhận đã dọn xong.",
+        Icon = "bi-clipboard2-check"
+    })
+
+@if (!string.IsNullOrWhiteSpace(Model.LoadError))
+{
+    @await Html.PartialAsync(
+        "~/Views/Shared/UI/_ErrorState.cshtml",
+        new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+        {
+            Message = Model.LoadError,
+            Icon = "bi-exclamation-triangle"
+        })
+}
+else
+{
+    <form method="get"
+          asp-controller="Housekeeping"
+          asp-action="RoomStatus"
+          class="room-filter-form"
+          data-preserve-scroll="true">
+
+        <section class="card border-0 shadow-sm room-page-section mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3 min-width-0">
+                        <div class="room-section-icon" aria-hidden="true">
+                            <i class="bi bi-clipboard2-check"></i>
+                        </div>
+                        <div class="min-width-0">
+                            <h2 class="h5 mb-1 fw-semibold">Tìm kiếm và lọc phòng</h2>
+                            <p class="text-body-secondary small mb-0">
+                                Hiển thị toàn bộ phòng phù hợp với điều kiện tìm kiếm; không sử dụng phân trang.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body room-filter-panel">
+                <div class="row g-2 g-lg-3 align-items-end">
+                    <div class="col-12 col-xl-4">
+                        <label for="housekeepingRoomSearch" class="form-label small fw-semibold">Tìm kiếm</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </span>
+                            <input id="housekeepingRoomSearch"
+                                   type="search"
+                                   class="form-control"
+                                   name="Filter.Search"
+                                   value="@Model.Filter.Search"
+                                   placeholder="Mã phòng hoặc tên phòng"
+                                   autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="housekeepingRoomSort" class="form-label small fw-semibold">Sắp xếp</label>
+                        <select id="housekeepingRoomSort" name="Filter.Sort" class="form-select">
+                            <option value="0" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Room.RoomSortOption.LeftToRightAsc)">Thứ tự từ bé đến lớn</option>
+                            <option value="1" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Room.RoomSortOption.LeftToRightDesc)">Thứ tự từ lớn đến bé</option>
+                            <option value="2" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Room.RoomSortOption.RoomCodeAsc)">Theo mã từ bé đến lớn</option>
+                            <option value="3" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Room.RoomSortOption.RoomCodeDesc)">Theo mã từ lớn đến bé</option>
+                            <option value="4" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Room.RoomSortOption.RoomNameAsc)">Theo tên từ A-Z</option>
+                            <option value="5" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Room.RoomSortOption.RoomNameDesc)">Theo tên từ Z-A</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="housekeepingRoomTypeFilter" class="form-label small fw-semibold">Loại phòng</label>
+                        <select id="housekeepingRoomTypeFilter" name="Filter.RoomTypeId" class="form-select">
+                            <option value="">Tất cả loại phòng</option>
+                            @foreach (var type in Model.RoomTypes)
+                            {
+                                <option value="@type.Id" selected="@(Model.Filter.RoomTypeId == type.Id)">
+                                    @type.Code - @type.Name
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="housekeepingRoomStatusFilter" class="form-label small fw-semibold">Tình trạng</label>
+                        <select id="housekeepingRoomStatusFilter" name="Filter.Status" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="0" selected="@(Model.Filter.Status == 0)">Trống</option>
+                            <option value="1" selected="@(Model.Filter.Status == 1)">Đang sử dụng</option>
+                            <option value="2" selected="@(Model.Filter.Status == 2)">Chờ dọn dẹp</option>
+                            <option value="3" selected="@(Model.Filter.Status == 3)">Đang dọn dẹp</option>
+                            <option value="4" selected="@(Model.Filter.Status == 4)">Bảo trì</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="housekeepingRoomActiveFilter" class="form-label small fw-semibold">Trạng thái</label>
+                        <select id="housekeepingRoomActiveFilter" name="Filter.IsActive" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="true" selected="@(Model.Filter.IsActive == true)">Đang hoạt động</option>
+                            <option value="false" selected="@(Model.Filter.IsActive == false)">Dừng hoạt động</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1" aria-hidden="true"></i>
+                        Lọc
+                    </button>
+                    <button type="submit" name="reset" value="housekeeping" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>
+                        Reset
+                    </button>
+                    <div class="ms-auto small text-body-secondary align-self-center">
+                        Tổng <strong>@Model.TotalRooms</strong> phòng
+                    </div>
+                </div>
+            </div>
+        </section>
+    </form>
+
+    @if (Model.TotalRooms == 0)
+    {
+        @await Html.PartialAsync(
+            "~/Views/Shared/UI/_EmptyState.cshtml",
+            new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+            {
+                Message = "Không tìm thấy phòng nào phù hợp.",
+                Description = "Thử thay đổi từ khóa hoặc các điều kiện sắp xếp, lọc.",
+                Icon = "bi-door-closed"
+            })
+    }
+    else
+    {
+        <section class="card border-0 shadow-sm room-page-section mb-4 housekeeping-room-summary">
+            <div class="card-body py-3">
+                <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="room-section-icon" aria-hidden="true">
+                            <i class="bi bi-door-closed"></i>
+                        </div>
+                        <div>
+                            <div class="small text-body-secondary">Tổng số phòng phù hợp</div>
+                            <div class="h5 mb-0 fw-semibold">@Model.TotalRooms phòng</div>
+                        </div>
+                    </div>
+                    <div class="small text-body-secondary housekeeping-status-note">
+                        Nút thao tác chỉ hiển thị khi phòng đang ở đúng trạng thái nghiệp vụ và đang hoạt động.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm room-page-section">
+            <div class="room-floor-list">
+                @foreach (var floorGroup in Model.Rows.GroupBy(x => x.Floor))
+                {
+                    <section class="room-floor-card">
+                        <div class="room-floor-header">
+                            <div>
+                                <div class="room-floor-kicker">Tầng</div>
+                                <h2 class="h5 mb-0 fw-semibold">@floorGroup.Key</h2>
+                            </div>
+                            <span class="badge text-bg-light border">
+                                @floorGroup.Sum(x => x.Rooms.Count) phòng hiển thị
+                            </span>
+                        </div>
+
+                        <div class="room-floor-body">
+                            @foreach (var rowGroup in floorGroup.OrderBy(x => x.Row))
+                            {
+                                <div class="room-row-block">
+                                    <div class="room-row-label">
+                                        <span class="room-row-kicker">Hàng</span>
+                                        <span class="room-row-number">@rowGroup.Row</span>
+                                    </div>
+
+                                    <div class="room-row-scroller" role="region" aria-label="Tầng @rowGroup.Floor, hàng @rowGroup.Row">
+                                        <div class="room-row-grid">
+                                            @foreach (var room in rowGroup.Rooms)
+                                            {
+                                                <article class="room-card @(room.IsActive ? "room-card-active" : "room-card-inactive")">
+                                                    <div class="room-card-topline">
+                                                        <span class="badge @room.ActiveStatusBadgeClass">@room.ActiveStatusName</span>
+                                                        <span class="room-card-position">@room.Floor-@room.Row-@room.LeftToRightOrder</span>
+                                                    </div>
+
+                                                    <div class="room-card-main">
+                                                        <div class="room-card-code" title="@room.RoomCode">@room.RoomCode</div>
+                                                        <div class="room-card-name" title="@room.RoomName">@room.RoomName</div>
+                                                        <div class="room-card-type" title="@room.RoomTypeCode - @room.RoomTypeName">
+                                                            <i class="bi bi-door-open me-1" aria-hidden="true"></i>
+                                                            @room.RoomTypeCode - @room.RoomTypeName
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="room-card-status">
+                                                        <span class="badge @room.StatusBadgeClass">@room.StatusName</span>
+                                                    </div>
+
+                                                    <div class="room-card-actions">
+                                                        <a asp-controller="Housekeeping"
+                                                           asp-action="Details"
+                                                           asp-route-id="@room.Id"
+                                                           class="btn btn-outline-secondary btn-sm room-action-btn"
+                                                           title="Xem chi tiết phòng">
+                                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                                            <span>Chi tiết</span>
+                                                        </a>
+
+                                                        @if (room.CanDeactivate)
+                                                        {
+                                                            <button type="button"
+                                                                    class="btn btn-outline-danger btn-sm room-action-btn"
+                                                                    data-room-action="housekeeping-maintenance"
+                                                                    data-id="@room.Id"
+                                                                    data-name="@room.RoomCode - @room.RoomName"
+                                                                    data-status="@room.Status"
+                                                                    data-allowed="true"
+                                                                    title="Chuyển phòng sang Bảo trì">
+                                                                <i class="bi bi-tools" aria-hidden="true"></i>
+                                                                <span>Bảo trì</span>
+                                                            </button>
+                                                        }
+
+                                                        @if (room.IsActive && room.Status == 2)
+                                                        {
+                                                            <button type="button"
+                                                                    class="btn btn-outline-primary btn-sm room-action-btn"
+                                                                    data-room-action="housekeeping-clean"
+                                                                    data-id="@room.Id"
+                                                                    data-name="@room.RoomCode - @room.RoomName"
+                                                                    data-status="2"
+                                                                    data-allowed="true"
+                                                                    title="Bắt đầu dọn dẹp phòng">
+                                                                <i class="bi bi-stars" aria-hidden="true"></i>
+                                                                <span>Dọn dẹp</span>
+                                                            </button>
+                                                        }
+
+                                                        @if (room.IsActive && room.Status == 3)
+                                                        {
+                                                            <button type="button"
+                                                                    class="btn btn-outline-success btn-sm room-action-btn"
+                                                                    data-room-action="housekeeping-finished"
+                                                                    data-id="@room.Id"
+                                                                    data-name="@room.RoomCode - @room.RoomName"
+                                                                    data-status="3"
+                                                                    data-allowed="true"
+                                                                    title="Xác nhận đã dọn xong phòng">
+                                                                <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                                                                <span>Đã dọn xong</span>
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                </article>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </section>
+                }
+            </div>
+        </section>
+
+        <form id="housekeepingMaintenanceForm"
+              asp-controller="Housekeeping"
+              asp-action="SetMaintenance"
+              method="post"
+              class="d-none">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="housekeepingMaintenanceId" />
+            <input type="hidden" name="returnUrl" id="housekeepingMaintenanceReturnUrl" value="@returnUrl" />
+        </form>
+
+        <form id="housekeepingCleanForm"
+              asp-controller="Housekeeping"
+              asp-action="StartCleaning"
+              method="post"
+              class="d-none">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="housekeepingCleanId" />
+            <input type="hidden" name="returnUrl" id="housekeepingCleanReturnUrl" value="@returnUrl" />
+        </form>
+
+        <form id="housekeepingCompleteForm"
+              asp-controller="Housekeeping"
+              asp-action="CompleteCleaning"
+              method="post"
+              class="d-none">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="housekeepingCompleteId" />
+            <input type="hidden" name="returnUrl" id="housekeepingCompleteReturnUrl" value="@returnUrl" />
+        </form>
+    }
+}
+
+@section Scripts
+{
+    <script src="~/js/room-index.js" asp-append-version="true"></script>
+}

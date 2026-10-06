@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Tạo lịch đặt phòng";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/booking-create.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Tạo lịch đặt phòng",
+        Description = "Chọn loại hình tạo lịch đặt phòng để bắt đầu đúng luồng nghiệp vụ.",
+        Icon = "bi-calendar-plus"
+    })
+
+<div class="booking-create-page">
+    <div class="row g-4">
+        <div class="col-12 col-lg-6">
+            <div class="card h-100 border-0 shadow-sm booking-create-type-card">
+                <div class="card-body p-4 p-xl-5 d-flex flex-column">
+                    <div class="booking-create-section-icon mb-3">
+                        <i class="bi bi-calendar-check" aria-hidden="true"></i>
+                    </div>
+                    <h2 class="h4 fw-semibold mb-2">Đặt trước</h2>
+                    <p class="text-body-secondary mb-4">
+                        Chọn ngày lưu trú trong tương lai hoặc hiện tại, kiểm tra khả năng phòng, nhập thông tin khách và tạo Booking ở trạng thái <strong>Chờ xác nhận</strong>.
+                    </p>
+                    <div class="mt-auto">
+                        <a asp-controller="Booking"
+                           asp-action="Create"
+                           asp-route-bookingType="0"
+                           class="btn btn-primary w-100">
+                            <i class="bi bi-arrow-right-circle me-1" aria-hidden="true"></i>
+                            Tạo lịch đặt trước
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="card h-100 border-0 shadow-sm booking-create-type-card">
+                <div class="card-body p-4 p-xl-5 d-flex flex-column">
+                    <div class="booking-create-section-icon mb-3">
+                        <i class="bi bi-person-check" aria-hidden="true"></i>
+                    </div>
+                    <h2 class="h4 fw-semibold mb-2">Trực tiếp tại quầy</h2>
+                    <p class="text-body-secondary mb-4">
+                        Check in ngay trong ngày hiện tại. Nhập khách hàng, chọn phòng thực tế và phân người ngay trong một màn hình; không qua bước xác nhận lịch đặt phòng.
+                    </p>
+                    <div class="mt-auto">
+                        <a asp-controller="Booking"
+                           asp-action="Create"
+                           asp-route-bookingType="1"
+                           class="btn btn-outline-primary w-100">
+                            <i class="bi bi-person-check me-1" aria-hidden="true"></i>
+                            Tạo trực tiếp tại quầy
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-4">
+        <a asp-controller="Booking" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            Quay lại danh sách
+        </a>
+    </div>
+</div>

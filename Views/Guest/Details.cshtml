@@ -1,0 +1,92 @@
+﻿@model Hotel_Management_Website.Models.ViewModels.Guest.GuestDetailsViewModel
+
+@{
+    var isReception = User.IsInRole("Reception");
+    ViewData["Title"] = "Chi tiết khách hàng";
+    Layout = isReception ? "~/Views/Shared/_ReceptionLayout.cshtml" : "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/guest-details.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync("~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Chi tiết khách hàng",
+        Description = "Xem đầy đủ thông tin khách hàng đặt phòng.",
+        Icon = "bi-person-vcard"
+    })
+
+<div class="guest-detail-page">
+    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2 mb-4">
+        <a asp-controller="Guest" asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách</a>
+        <a asp-controller="Guest" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="bi bi-pencil-square me-1"></i>Sửa thông tin khách hàng</a>
+    </div>
+
+    <section class="card border-0 shadow-sm guest-detail-summary mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3">
+                <div class="guest-detail-avatar" aria-hidden="true"><i class="bi bi-person"></i></div>
+                <div class="min-width-0">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <h1 class="h4 fw-semibold mb-0 guest-detail-name" title="@Model.Name">@Model.Name</h1>
+                        <span class="badge text-bg-light border font-monospace">@Model.GuestCode</span>
+                    </div>
+                    <div class="text-body-secondary">Thông tin khách hàng đặt phòng</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3"><div class="d-flex align-items-center gap-2"><div class="guest-detail-section-icon"><i class="bi bi-person-lines-fill"></i></div><div><h2 class="h6 mb-0 fw-semibold">Thông tin cá nhân</h2><div class="small text-body-secondary">Thông tin định danh</div></div></div></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6"><div class="guest-detail-label">Mã khách hàng</div><div class="guest-detail-value font-monospace guest-breakable">@Model.GuestCode</div></div>
+                        <div class="col-12 col-sm-6"><div class="guest-detail-label">Tên khách hàng</div><div class="guest-detail-value guest-breakable">@Model.Name</div></div>
+                        <div class="col-12 col-sm-6"><div class="guest-detail-label">Ngày sinh</div><div class="guest-detail-value">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div></div>
+                        <div class="col-12 col-sm-6"><div class="guest-detail-label">Giới tính</div><div class="guest-detail-value">@Model.SexName</div></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3"><div class="d-flex align-items-center gap-2"><div class="guest-detail-section-icon"><i class="bi bi-person-vcard"></i></div><div><h2 class="h6 mb-0 fw-semibold">Liên hệ và giấy tờ</h2><div class="small text-body-secondary">Thông tin liên hệ, địa chỉ và giấy tờ</div></div></div></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12"><div class="guest-detail-label">Địa chỉ</div><div class="guest-detail-value guest-detail-note">@(string.IsNullOrWhiteSpace(Model.Address) ? "Chưa cập nhật" : Model.Address)</div></div>
+                        <div class="col-12 col-sm-6"><div class="guest-detail-label">Số điện thoại</div><div class="guest-detail-value guest-breakable">@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "Chưa cập nhật" : Model.PhoneNumber)</div></div>
+                        <div class="col-12 col-sm-6"><div class="guest-detail-label">Email</div><div class="guest-detail-value guest-breakable">@(string.IsNullOrWhiteSpace(Model.Email) ? "Chưa cập nhật" : Model.Email)</div></div>
+                        <div class="col-12 col-sm-6"><div class="guest-detail-label">Số giấy tờ</div><div class="guest-detail-value guest-breakable">@(string.IsNullOrWhiteSpace(Model.IdentityNumber) ? "Chưa cập nhật" : Model.IdentityNumber)</div></div>
+                        <div class="col-12 col-sm-6"><div class="guest-detail-label">Loại giấy tờ</div><div class="guest-detail-value">@Model.IdentityTypeName</div></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-7">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3"><div class="d-flex align-items-center gap-2"><div class="guest-detail-section-icon"><i class="bi bi-card-text"></i></div><div><h2 class="h6 mb-0 fw-semibold">Ghi chú</h2><div class="small text-body-secondary">Thông tin bổ sung</div></div></div></div>
+                <div class="card-body"><div class="guest-detail-value guest-detail-note">@(string.IsNullOrWhiteSpace(Model.Note) ? "Không có ghi chú" : Model.Note)</div></div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3"><div class="d-flex align-items-center gap-2"><div class="guest-detail-section-icon"><i class="bi bi-clock-history"></i></div><div><h2 class="h6 mb-0 fw-semibold">Thông tin thời gian</h2><div class="small text-body-secondary">Thông tin audit</div></div></div></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12"><div class="guest-detail-label">Ngày tạo</div><div class="guest-detail-value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</div></div>
+                        <div class="col-12"><div class="guest-detail-label">Ngày chỉnh sửa gần nhất</div><div class="guest-detail-value">@Model.LastModifiedAt.ToString("dd/MM/yyyy HH:mm:ss")</div></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

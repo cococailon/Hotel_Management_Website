@@ -1,0 +1,796 @@
+@model Hotel_Management_Website.Models.ViewModels.Booking.BookingDirectCreateViewModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Tạo trực tiếp tại quầy";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+
+    var topErrors = ViewData.ModelState
+        .Where(x => string.IsNullOrWhiteSpace(x.Key))
+        .SelectMany(x => x.Value?.Errors.Select(e => e.ErrorMessage) ?? Enumerable.Empty<string>())
+        .Select(x => x?.Trim())
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
+    var roomCatalog = Model.RoomTypes.ToDictionary(
+        x => x.RoomTypeId.ToString(),
+        x => x.AvailableRooms.Select(r => new
+        {
+            id = r.Id,
+            code = r.RoomCode,
+            name = r.RoomName,
+            typeCode = r.RoomTypeCode,
+            typeName = r.RoomTypeName
+        }).ToList());
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/booking-create.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/booking-direct-create.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Tạo trực tiếp tại quầy",
+        Description = "Check in trong ngày hiện tại, chọn phòng thực tế và phân người trước khi lưu Booking.",
+        Icon = "bi-person-check"
+    })
+
+<div class="booking-create-page">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 mb-4">
+        <a asp-controller="Booking" asp-action="Create" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            Chọn lại loại tạo
+        </a>
+
+        <span class="badge rounded-pill text-bg-primary align-self-sm-center px-3 py-2">
+            Trực tiếp tại quầy · Check in ngay
+        </span>
+    </div>
+
+    @if (topErrors.Count > 0)
+    {
+        <div class="alert alert-danger shadow-sm border-0 mb-4" role="alert">
+            <div class="fw-semibold mb-2">
+                <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>
+                Vui lòng kiểm tra lại thông tin.
+            </div>
+            <ul class="mb-0 ps-4">
+                @foreach (var error in topErrors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div id="directClientTopError" class="alert alert-danger shadow-sm border-0 mb-4 d-none" role="alert">
+        <div class="fw-semibold mb-2">
+            <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>
+            Vui lòng kiểm tra lại thông tin.
+        </div>
+        <ul class="mb-0 ps-4" id="directClientTopErrorList"></ul>
+    </div>
+
+    <form asp-controller="Booking" asp-action="CreateDirect" method="post" id="bookingDirectCreateForm" data-ajax="false" novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="FinalConfirmation" id="directFinalConfirmation" value="false" />
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon"><i class="bi bi-calendar-range" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thời gian lưu trú</h2>
+                        <div class="small text-body-secondary">Ngày check in bị khóa vào ngày hiện tại vì đây là khách trực tiếp tại quầy.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Check in dự kiến</label>
+                        <input type="text" class="form-control" value="@Model.CheckInDate.ToString("dd/MM/yyyy") @Model.DefaultCheckInTime.ToString("HH\\:mm")" readonly />
+                        <div class="form-text">Ngày luôn là hôm nay; giờ mặc định lấy từ HotelSettings. Check in thực tế vẫn ghi nhận thời điểm tạo thành công.</div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="CheckOutDate" class="form-label fw-semibold">Ngày check out dự kiến</label>
+                        <input asp-for="CheckOutDate" id="directCheckOutDate" type="date" class="form-control" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                        <div class="form-text">Giờ check out mặc định: <strong>@Model.DefaultCheckOutTime.ToString("HH\\:mm")</strong></div>
+                        <span asp-validation-for="CheckOutDate" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon"><i class="bi bi-door-open" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Chọn BookingRoom và phòng thực tế</h2>
+                        <div class="small text-body-secondary">Chọn số phòng theo từng loại. Sau đó phân người và chọn phòng thực tế cho từng BookingRoom.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Loại phòng</th>
+                                <th class="text-center" style="width:130px">Phòng có thể dùng</th>
+                                <th style="width:140px">Số phòng</th>
+                                <th class="text-end">Giá / đêm</th>
+                                <th class="text-end">Cọc / phòng / toàn kỳ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @for (var i = 0; i < Model.RoomTypes.Count; i++)
+                        {
+                            var type = Model.RoomTypes[i];
+                            <tr data-direct-room-type-row="@type.RoomTypeId" data-price="@type.PricePerNight" data-deposit="@type.DepositPercent" data-max-adults="@type.MaxAdults" data-max-children="@type.MaxChildren">
+                                <td>
+                                    <input type="hidden" name="RoomTypes[@i].RoomTypeId" value="@type.RoomTypeId" />
+                                    <input type="hidden" name="RoomTypes[@i].RoomTypeCode" value="@type.RoomTypeCode" />
+                                    <input type="hidden" name="RoomTypes[@i].RoomTypeName" value="@type.RoomTypeName" />
+                                    <div class="fw-semibold booking-breakable">@type.RoomTypeCode · @type.RoomTypeName</div>
+                                    <div class="small text-body-secondary">Tối đa/phòng: @type.MaxAdults NL · @type.MaxChildren TE</div>
+                                </td>
+                                <td class="text-center"><span class="badge text-bg-light border">@type.AvailableRoomCount</span></td>
+                                <td>
+                                    <input type="number" class="form-control direct-quantity" min="0" max="@type.AvailableRoomCount" name="RoomTypes[@i].Quantity" value="@type.Quantity" data-room-type-id="@type.RoomTypeId" />
+                                </td>
+                                <td class="text-end text-nowrap">@type.PricePerNight.ToString("N0") ₫</td>
+                                <td class="text-end text-nowrap">@((type.PricePerNight * Model.Nights * type.DepositPercent / 100m).ToString("N0")) ₫</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row g-3 mt-3">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="TotalAdults" class="form-label fw-semibold">Tổng người lớn</label>
+                        <input asp-for="TotalAdults" id="directTotalAdults" class="form-control" type="number" min="1" max="9999" />
+                        <span asp-validation-for="TotalAdults" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="TotalChildren" class="form-label fw-semibold">Tổng trẻ em</label>
+                        <input asp-for="TotalChildren" id="directTotalChildren" class="form-control" type="number" min="0" max="9999" />
+                        <span asp-validation-for="TotalChildren" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div id="directRoomAssignmentContainer" class="mt-4">
+                    @if (Model.RoomAssignments.Count > 0)
+                    {
+                        @for (var i = 0; i < Model.RoomAssignments.Count; i++)
+                        {
+                            var assignment = Model.RoomAssignments[i];
+                            <div class="direct-assignment-card" data-assignment-row data-room-type-id="@assignment.RoomTypeId" data-index="@i">
+                                <input type="hidden" name="RoomAssignments[@i].RoomTypeId" value="@assignment.RoomTypeId" />
+                                <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
+                                    <div>
+                                        <div class="fw-semibold">@assignment.RoomTypeCode · @assignment.RoomTypeName</div>
+                                        <div class="small text-body-secondary">BookingRoom @(i + 1) · Tối đa @assignment.MaxAdults người lớn, @assignment.MaxChildren trẻ em</div>
+                                    </div>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-12 col-lg-6">
+                                        <label class="form-label fw-semibold">Phòng thực tế</label>
+                                        <select class="form-select direct-room-select" name="RoomAssignments[@i].RoomId" required>
+                                            <option value="">-- Chọn phòng --</option>
+                                            @foreach (var room in assignment.AvailableRooms)
+                                            {
+                                                <option value="@room.Id" selected="@(assignment.RoomId == room.Id ? "selected" : null)">@room.RoomCode - @room.RoomName - @room.RoomTypeName</option>
+                                            }
+                                        </select>
+                                        @{
+                                            var roomFieldKey = $"RoomAssignments[{i}].RoomId";
+                                        }
+                                        <span class="text-danger">@(ViewData.ModelState.TryGetValue(roomFieldKey, out var roomEntry) ? string.Join(" ", roomEntry.Errors.Select(x => x.ErrorMessage).Where(x => !string.IsNullOrWhiteSpace(x))) : "")</span>
+                                    </div>
+                                    <div class="col-6 col-lg-3">
+                                        <label class="form-label fw-semibold">Người lớn</label>
+                                        <input class="form-control direct-room-adults" type="number" min="0" max="@assignment.MaxAdults" name="RoomAssignments[@i].Adults" value="@assignment.Adults" />
+                                        @{ var adultsFieldKey = $"RoomAssignments[{i}].Adults"; }
+                                        <span class="text-danger">@(ViewData.ModelState.TryGetValue(adultsFieldKey, out var adultsEntry) ? string.Join(" ", adultsEntry.Errors.Select(x => x.ErrorMessage).Where(x => !string.IsNullOrWhiteSpace(x))) : "")</span>
+                                    </div>
+                                    <div class="col-6 col-lg-3">
+                                        <label class="form-label fw-semibold">Trẻ em</label>
+                                        <input class="form-control direct-room-children" type="number" min="0" max="@assignment.MaxChildren" name="RoomAssignments[@i].Children" value="@assignment.Children" />
+                                        @{ var childrenFieldKey = $"RoomAssignments[{i}].Children"; }
+                                        <span class="text-danger">@(ViewData.ModelState.TryGetValue(childrenFieldKey, out var childrenEntry) ? string.Join(" ", childrenEntry.Errors.Select(x => x.ErrorMessage).Where(x => !string.IsNullOrWhiteSpace(x))) : "")</span>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">Ghi chú BookingRoom</label>
+                                        <textarea class="form-control" rows="2" maxlength="255" name="RoomAssignments[@i].Note">@assignment.Note</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="direct-assignment-empty text-body-secondary">Chưa có BookingRoom. Hãy chọn số phòng ở bảng phía trên.</div>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon"><i class="bi bi-journal-text" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thông tin đặt phòng</h2>
+                        <div class="small text-body-secondary">Mã đặt phòng được tự sinh theo số lớn nhất hiện có và vẫn có thể chỉnh sửa.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="BookingCode" class="form-label fw-semibold">Mã đặt phòng <span class="text-danger">*</span></label>
+                        <input asp-for="BookingCode" class="form-control font-monospace" maxlength="50" autocomplete="off" pattern="\S+" required />
+                        <div class="form-text">Mặc định tự sinh dạng <strong>DP + số lớn nhất + 1</strong>; không được chứa dấu cách và không được trùng.</div>
+                        <span asp-validation-for="BookingCode" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="BookingNote" class="form-label fw-semibold">Ghi chú Booking</label>
+                        <textarea asp-for="BookingNote" class="form-control" rows="2" maxlength="255"></textarea>
+                        <span asp-validation-for="BookingNote" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon"><i class="bi bi-person-vcard" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thông tin khách hàng</h2>
+                        <div class="small text-body-secondary">Mỗi Booking mới luôn tạo một khách hàng mới. Các trường định danh của khách trực tiếp tại quầy là bắt buộc.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="GuestCode" class="form-label fw-semibold">Mã khách hàng <span class="text-danger">*</span></label>
+                        <input asp-for="GuestCode" id="directGuestCode" class="form-control font-monospace" maxlength="50" autocomplete="off" pattern="\S+" required />
+                        <div class="form-text">Mặc định tự sinh dạng KH + số lớn nhất + 1; không được chứa dấu cách.</div>
+                        <span asp-validation-for="GuestCode" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="GuestName" class="form-label fw-semibold">Tên khách hàng <span class="text-danger">*</span></label>
+                        <input asp-for="GuestName" id="directGuestName" class="form-control" maxlength="100" autocomplete="name" required />
+                        <span asp-validation-for="GuestName" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestDateOfBirth" class="form-label fw-semibold">Ngày sinh <span class="text-danger">*</span></label>
+                        <input asp-for="GuestDateOfBirth" id="directGuestDob" type="date" class="form-control" required />
+                        <span asp-validation-for="GuestDateOfBirth" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestSex" class="form-label fw-semibold">Giới tính <span class="text-danger">*</span></label>
+                        <select asp-for="GuestSex" id="directGuestSex" class="form-select" required>
+                            <option value="">-- Chọn --</option>
+                            <option value="0">Nam</option><option value="1">Nữ</option><option value="2">Khác</option>
+                        </select>
+                        <span asp-validation-for="GuestSex" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestPhoneNumber" class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+                        <input asp-for="GuestPhoneNumber" id="directGuestPhone" class="form-control" maxlength="20" autocomplete="tel" required />
+                        <span asp-validation-for="GuestPhoneNumber" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="GuestAddress" class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
+                        <textarea asp-for="GuestAddress" id="directGuestAddress" class="form-control" rows="2" maxlength="255" autocomplete="street-address" required></textarea>
+                        <span asp-validation-for="GuestAddress" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestEmail" class="form-label fw-semibold">Email</label>
+                        <input asp-for="GuestEmail" id="directGuestEmail" type="email" class="form-control" maxlength="4000" autocomplete="email" />
+                        <span asp-validation-for="GuestEmail" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestIdentityNumber" class="form-label fw-semibold">Số giấy tờ <span class="text-danger">*</span></label>
+                        <input asp-for="GuestIdentityNumber" id="directGuestIdentityNumber" class="form-control" maxlength="50" required />
+                        <span asp-validation-for="GuestIdentityNumber" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestIdentityType" class="form-label fw-semibold">Loại giấy tờ <span class="text-danger">*</span></label>
+                        <select asp-for="GuestIdentityType" id="directGuestIdentityType" class="form-select" required>
+                            <option value="">-- Chọn --</option>
+                            <option value="0">CCCD</option><option value="1">Giấy phép lái xe</option><option value="2">Hộ chiếu</option>
+                        </select>
+                        <span asp-validation-for="GuestIdentityType" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="GuestNote" class="form-label fw-semibold">Ghi chú khách hàng</label>
+                        <textarea asp-for="GuestNote" id="directGuestNote" class="form-control" rows="2" maxlength="255"></textarea>
+                        <span asp-validation-for="GuestNote" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon">
+                        <i class="bi bi-wallet2" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Tiền cọc &amp; xác nhận thanh toán</h2>
+                        <div class="small text-body-secondary">
+                            Tiền cọc được tính lại từ giá phòng, số phòng, số đêm và DepositPercent của DB.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <div class="booking-money-summary">
+                            <div class="booking-money-label">Tổng tiền phòng dự kiến</div>
+                            <div id="directEstimatedAmount" class="booking-money-value">@Model.EstimatedRoomAmount.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <div class="booking-money-summary booking-money-summary-highlight">
+                            <div class="booking-money-label">Tiền cọc phải trả</div>
+                            <div id="directDepositAmount" class="booking-money-value">@Model.DepositAmount.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="directDepositPaymentFields">
+                    <div id="directDepositPaymentInputs" class="row g-3 @(Model.DepositAmount > 0 ? string.Empty : "d-none")">
+                        <div class="col-12">
+                            <fieldset>
+                                <legend class="col-form-label fw-semibold">
+                                    Phương thức thanh toán cọc
+                                </legend>
+
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="radio"
+                                               asp-for="PaymentMethod"
+                                               id="directPaymentCash"
+                                               value="0" />
+                                        <label class="form-check-label" for="directPaymentCash">
+                                            Tiền mặt
+                                        </label>
+                                    </div>
+
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="radio"
+                                               asp-for="PaymentMethod"
+                                               id="directPaymentTransfer"
+                                               value="1" />
+                                        <label class="form-check-label" for="directPaymentTransfer">
+                                            Chuyển khoản
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                                <div id="directPaymentMethodClientError" class="text-danger"></div>
+                            </fieldset>
+                        </div>
+
+                        <div class="col-12 d-none" id="directReferenceGroup">
+                            <label asp-for="ReferenceCode" class="form-label fw-semibold">Mã giao dịch</label>
+                            <input asp-for="ReferenceCode"
+                                   id="directReferenceCode"
+                                   class="form-control font-monospace"
+                                   maxlength="100" />
+                            <div class="form-text">Bắt buộc khi chọn chuyển khoản.</div>
+                            <span asp-validation-for="ReferenceCode" class="text-danger"></span>
+                            <div id="directReferenceCodeClientError" class="text-danger"></div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="PaymentDate" class="form-label fw-semibold">
+                                Thời gian thanh toán cọc <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="PaymentDate"
+                                   id="directPaymentDate"
+                                   type="datetime-local"
+                                   class="form-control"
+                                   value="@(Model.PaymentDate?.ToString("yyyy-MM-ddTHH:mm"))" />
+                            <div class="form-text">Chọn ngày và thời gian thực tế đã nhận tiền cọc.</div>
+                            <span asp-validation-for="PaymentDate" class="text-danger"></span>
+                            <div id="directPaymentDateClientError" class="text-danger"></div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check booking-deposit-confirm-box">
+                                <input class="form-check-input"
+                                       asp-for="DepositConfirmed"
+                                       id="directDepositConfirmed" />
+                                <label class="form-check-label fw-semibold" for="directDepositConfirmed">
+                                    Tôi xác nhận đã nhận được <span id="directDepositConfirmedAmount">@Model.DepositAmount.ToString("N0") ₫</span> tiền cọc theo phương thức thanh toán đã chọn.
+                                </label>
+                                <div class="small text-body-secondary mt-1">
+                                    Thời gian thanh toán sẽ được ghi nhận theo thời gian thực tế nhân viên nhập.
+                                </div>
+                                <span asp-validation-for="DepositConfirmed" class="text-danger d-block"></span>
+                                <div id="directDepositConfirmedClientError" class="text-danger"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="directDepositZeroAlert" class="alert alert-success mb-0 @(Model.DepositAmount > 0 ? "d-none" : string.Empty)" role="alert">
+                        <i class="bi bi-check-circle me-1" aria-hidden="true"></i>
+                        Tiền cọc bằng <span id="directDepositZeroAmount">@Model.DepositAmount.ToString("N0") ₫</span>. Không cần chọn phương thức thanh toán và không cần xác nhận nhận cọc.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mb-4">
+            <a asp-controller="Booking" asp-action="Create" class="btn btn-outline-secondary">Hủy</a>
+            <button type="submit" class="btn btn-primary" id="directCreateSubmit">
+                <i class="bi bi-person-check me-1" aria-hidden="true"></i>
+                Tạo và check in
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Confirm modal riêng cho luồng Tạo trực tiếp tại quầy.
+     Nút xác nhận bên trong là submit button thật, gắn trực tiếp với form. -->
+<div class="modal fade" id="directCreateConfirmModal" tabindex="-1" aria-labelledby="directCreateConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="directCreateConfirmModalLabel">Xác nhận tạo và check in</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Bạn có chắc chắn muốn tạo Booking và check in ngay cho khách hàng không?</p>
+                <div class="alert alert-warning mb-0">
+                    Hệ thống sẽ đồng thời tạo Booking, BookingRooms, gán phòng, phân bổ người và chuyển Booking sang trạng thái <strong>Đang ở</strong>.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit"
+                        form="bookingDirectCreateForm"
+                        class="btn btn-primary"
+                        id="directCreateConfirmSubmit">
+                    <span class="ui-button-content">
+                        <i class="bi bi-person-check me-1" aria-hidden="true"></i>
+                        Tạo và check in
+                    </span>
+                    <span class="ui-button-loading d-none">
+                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        Đang tạo và check in...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+    "use strict";
+
+    const form = document.getElementById("bookingDirectCreateForm");
+    if (!form) return;
+
+    const catalog = @Html.Raw(JsonSerializer.Serialize(roomCatalog));
+    const assignmentContainer = document.getElementById("directRoomAssignmentContainer");
+    const depositEl = document.getElementById("directDepositAmount");
+    const estimateEl = document.getElementById("directEstimatedAmount");
+    const depositPaymentInputs = document.getElementById("directDepositPaymentInputs");
+    const depositZeroAlert = document.getElementById("directDepositZeroAlert");
+    const depositConfirmedAmountEl = document.getElementById("directDepositConfirmedAmount");
+    const depositZeroAmountEl = document.getElementById("directDepositZeroAmount");
+
+    const money = value => new Intl.NumberFormat("vi-VN").format(Math.round(Number(value || 0))) + " ₫";
+
+    const getNights = () => {
+        const end = document.getElementById("directCheckOutDate")?.value;
+        if (!end) return 0;
+        const start = new Date(new Date().toISOString().slice(0,10) + "T00:00:00");
+        const checkout = new Date(end + "T00:00:00");
+        const days = Math.round((checkout - start) / 86400000);
+        return days > 0 ? days : 0;
+    };
+
+
+
+    const buildAssignments = () => {
+        const current = [...assignmentContainer.querySelectorAll("[data-assignment-row]")].map(row => ({
+            typeId: row.dataset.roomTypeId,
+            roomId: row.querySelector(".direct-room-select")?.value || "",
+            adults: row.querySelector(".direct-room-adults")?.value || "0",
+            children: row.querySelector(".direct-room-children")?.value || "0",
+            note: row.querySelector("textarea")?.value || ""
+        }));
+
+        assignmentContainer.replaceChildren();
+        let index = 0;
+
+        form.querySelectorAll("[data-direct-room-type-row]").forEach(typeRow => {
+            const typeId = typeRow.dataset.directRoomTypeRow;
+            const qty = Math.max(0, Number(typeRow.querySelector(".direct-quantity")?.value || 0));
+            if (qty <= 0) return;
+
+            const catalogRows = catalog[typeId] || [];
+            const oldRows = current.filter(x => x.typeId === typeId);
+
+            for (let i = 0; i < qty; i++) {
+                const old = oldRows[i] || {};
+                const optionHtml = [
+                    '<option value="">-- Chọn phòng --</option>',
+                    ...catalogRows.map(room => `<option value="${room.id}" ${String(old.roomId) === String(room.id) ? "selected" : ""}>${escapeHtml(room.code)} - ${escapeHtml(room.name)} - ${escapeHtml(room.typeName)}</option>`)
+                ].join("");
+
+                const card = document.createElement("div");
+                card.className = "direct-assignment-card";
+                card.dataset.assignmentRow = "true";
+                card.dataset.roomTypeId = typeId;
+                card.innerHTML = `
+                    <input type="hidden" name="RoomAssignments[${index}].RoomTypeId" value="${typeId}">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
+                        <div><div class="fw-semibold">${escapeHtml(typeRow.querySelector("td:first-child .fw-semibold")?.textContent || "")}</div>
+                        <div class="small text-body-secondary">BookingRoom ${i + 1} · Tối đa ${Number(typeRow.querySelector("td:first-child .small")?.textContent.match(/(\d+) NL/)?.[1] || 0)} người lớn</div></div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-semibold">Phòng thực tế</label>
+                            <select class="form-select direct-room-select" name="RoomAssignments[${index}].RoomId" required>${optionHtml}</select>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label fw-semibold">Người lớn</label>
+                            <input class="form-control direct-room-adults" type="number" min="0" max="${Number(typeRow.dataset.maxAdults || 9999)}" name="RoomAssignments[${index}].Adults" value="${escapeAttr(old.adults || 0)}">
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label fw-semibold">Trẻ em</label>
+                            <input class="form-control direct-room-children" type="number" min="0" max="${Number(typeRow.dataset.maxChildren || 9999)}" name="RoomAssignments[${index}].Children" value="${escapeAttr(old.children || 0)}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Ghi chú BookingRoom</label>
+                            <textarea class="form-control" rows="2" maxlength="255" name="RoomAssignments[${index}].Note">${escapeHtml(old.note || "")}</textarea>
+                        </div>
+                    </div>`;
+                assignmentContainer.appendChild(card);
+                index++;
+            }
+        });
+
+        if (index === 0) {
+            const empty = document.createElement("div");
+            empty.className = "direct-assignment-empty text-body-secondary";
+            empty.textContent = "Chưa có BookingRoom. Hãy chọn số phòng ở bảng phía trên.";
+            assignmentContainer.appendChild(empty);
+        }
+    };
+
+    const htmlEscapes = {"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"};
+    const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => htmlEscapes[c]);
+    const escapeAttr = escapeHtml;
+
+    const updateMoney = () => {
+        const nights = getNights();
+        let amount = 0;
+        let deposit = 0;
+        form.querySelectorAll("[data-direct-room-type-row]").forEach(row => {
+            const qty = Math.max(0, Number(row.querySelector(".direct-quantity")?.value || 0));
+            const price = Number(row.dataset.price || 0);
+            const depositPercent = Number(row.dataset.deposit || 0);
+            amount += qty * price * nights;
+            deposit += qty * price * nights * depositPercent / 100;
+        });
+        estimateEl.textContent = money(amount);
+        depositEl.textContent = money(deposit);
+    };
+
+
+    const syncDepositFields = () => {
+        const deposit = Number((depositEl?.textContent || "0").replace(/[^0-9]/g, ""));
+        const date = document.getElementById("directPaymentDate");
+        const reference = document.getElementById("directReferenceCode");
+        const confirm = document.getElementById("directDepositConfirmed");
+        const formatted = money(deposit);
+
+        if (depositPaymentInputs) depositPaymentInputs.classList.toggle("d-none", deposit <= 0);
+        if (depositZeroAlert) depositZeroAlert.classList.toggle("d-none", deposit > 0);
+        if (depositConfirmedAmountEl) depositConfirmedAmountEl.textContent = formatted;
+        if (depositZeroAmountEl) depositZeroAmountEl.textContent = formatted;
+
+        if (deposit <= 0) {
+            document.querySelectorAll('input[name="PaymentMethod"]').forEach(input => input.checked = false);
+            if (date) date.value = "";
+            if (reference) reference.value = "";
+            if (confirm) confirm.checked = false;
+        }
+    };
+
+    form.querySelectorAll(".direct-quantity").forEach(input => input.addEventListener("change", () => { buildAssignments(); updateMoney(); syncDepositFields(); }));
+    document.getElementById("directCheckOutDate")?.addEventListener("change", () => { updateMoney(); syncDepositFields(); });
+    updateMoney();
+    syncDepositFields();
+    const hasServerAssignments = @(Model.RoomAssignments.Count > 0 ? "true" : "false");
+    if (!hasServerAssignments) {
+        buildAssignments();
+    } else {
+    }
+
+    const clearInlineError = id => { const el = document.getElementById(id); if (el) el.textContent = ""; };
+    const setInlineError = (id, message) => { const el = document.getElementById(id); if (el) el.textContent = message || ""; };
+    const setDirectTopError = message => {
+        const box = document.getElementById("directClientTopError");
+        const list = document.getElementById("directClientTopErrorList");
+        if (!box || !list) return;
+        list.replaceChildren();
+        const li = document.createElement("li");
+        li.textContent = message;
+        list.appendChild(li);
+        box.classList.remove("d-none");
+        box.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    const clearDirectTopError = () => document.getElementById("directClientTopError")?.classList.add("d-none");
+
+    const syncReferenceVisibility = () => {
+        const selectedMethod = document.querySelector('input[name="PaymentMethod"]:checked');
+        const reference = document.getElementById("directReferenceCode");
+        const group = document.getElementById("directReferenceGroup");
+        const isTransfer = selectedMethod?.value === "1";
+        if (group) group.classList.toggle("d-none", !isTransfer);
+        if (reference) {
+            reference.required = isTransfer;
+            if (!isTransfer) reference.value = "";
+        }
+        if (!isTransfer) clearInlineError("directReferenceCodeClientError");
+    };
+    document.querySelectorAll('input[name="PaymentMethod"]').forEach(input => input.addEventListener("change", () => {
+        syncReferenceVisibility();
+        clearInlineError("directPaymentMethodClientError");
+    }));
+    form.querySelectorAll(".direct-quantity").forEach(input => input.addEventListener("change", syncReferenceVisibility));
+    document.getElementById("directCheckOutDate")?.addEventListener("change", syncReferenceVisibility);
+    document.getElementById("directPaymentDate")?.addEventListener("input", () => clearInlineError("directPaymentDateClientError"));
+    document.getElementById("directReferenceCode")?.addEventListener("input", () => clearInlineError("directReferenceCodeClientError"));
+    document.getElementById("directDepositConfirmed")?.addEventListener("change", () => clearInlineError("directDepositConfirmedClientError"));
+    syncReferenceVisibility();
+
+    const directCreateConfirmModalEl = document.getElementById("directCreateConfirmModal");
+    const directCreateConfirmSubmit = document.getElementById("directCreateConfirmSubmit");
+
+    let directClientValidationRunning = false;
+
+    const openDirectConfirmModal = () => {
+        if (!directCreateConfirmModalEl || typeof bootstrap === "undefined" || !bootstrap.Modal) {
+            // Fallback cuối cùng: native confirm không phụ thuộc callback UI.
+            if (window.confirm("Bạn có chắc chắn muốn tạo Booking và check in ngay cho khách hàng không?")) {
+                const confirmationInput = document.getElementById("directFinalConfirmation");
+                if (confirmationInput) confirmationInput.value = "true";
+                form.dataset.directNativeConfirmed = "true";
+                form.requestSubmit();
+            }
+            return;
+        }
+
+        bootstrap.Modal.getOrCreateInstance(directCreateConfirmModalEl).show();
+    };
+
+    const runDirectSubmitValidation = () => {
+        if (directClientValidationRunning) return;
+        directClientValidationRunning = true;
+
+        try {
+            clearDirectTopError();
+            clearInlineError("directPaymentMethodClientError");
+            clearInlineError("directPaymentDateClientError");
+            clearInlineError("directReferenceCodeClientError");
+            clearInlineError("directDepositConfirmedClientError");
+
+            // 1) Validate annotation / required / format / range trước.
+            const invalidField = form.querySelector(":invalid");
+            if (invalidField) {
+                invalidField.reportValidity();
+                invalidField.scrollIntoView({ behavior: "smooth", block: "center" });
+                invalidField.focus({ preventScroll: true });
+                return;
+            }
+
+            // 2) Validate phân phòng / phân người.
+            const totalAdults = Number(document.getElementById("directTotalAdults")?.value || 0);
+            const totalChildren = Number(document.getElementById("directTotalChildren")?.value || 0);
+            const assignmentRows = [...assignmentContainer.querySelectorAll("[data-assignment-row]")];
+            const assignedAdults = assignmentRows.reduce((sum, row) => sum + Number(row.querySelector(".direct-room-adults")?.value || 0), 0);
+            const assignedChildren = assignmentRows.reduce((sum, row) => sum + Number(row.querySelector(".direct-room-children")?.value || 0), 0);
+
+            if (assignmentRows.length === 0) {
+                setDirectTopError("Vui lòng chọn ít nhất một phòng.");
+                return;
+            }
+
+            if (assignedAdults !== totalAdults || assignedChildren !== totalChildren) {
+                setDirectTopError(`Phân bổ người chưa khớp: người lớn ${assignedAdults}/${totalAdults}; trẻ em ${assignedChildren}/${totalChildren}.`);
+                return;
+            }
+
+            // 3) Validate tiền cọc sau khi các field cơ bản đã hợp lệ.
+            const deposit = Number((depositEl?.textContent || "0").replace(/[^0-9]/g, ""));
+            const selectedPaymentMethod = document.querySelector('input[name="PaymentMethod"]:checked');
+            const paymentDate = document.getElementById("directPaymentDate");
+            const referenceInput = document.getElementById("directReferenceCode");
+            const depositConfirmed = document.getElementById("directDepositConfirmed");
+
+            if (deposit > 0) {
+                if (!selectedPaymentMethod) {
+                    setInlineError("directPaymentMethodClientError", "Vui lòng chọn phương thức thanh toán tiền cọc.");
+                    document.getElementById("directPaymentCash")?.focus();
+                    return;
+                }
+                if (!paymentDate?.value) {
+                    setInlineError("directPaymentDateClientError", "Vui lòng chọn thời gian thanh toán tiền cọc.");
+                    paymentDate?.focus();
+                    return;
+                }
+                const payment = new Date(paymentDate.value);
+                if (payment > new Date()) {
+                    setInlineError("directPaymentDateClientError", "Thời gian thanh toán không được lớn hơn thời điểm hiện tại.");
+                    paymentDate?.focus();
+                    return;
+                }
+                if (selectedPaymentMethod.value === "1" && !referenceInput?.value.trim()) {
+                    setInlineError("directReferenceCodeClientError", "Mã giao dịch là bắt buộc khi thanh toán chuyển khoản.");
+                    referenceInput?.focus();
+                    return;
+                }
+                if (!depositConfirmed?.checked) {
+                    setInlineError("directDepositConfirmedClientError", "Vui lòng xác nhận đã nhận tiền cọc.");
+                    depositConfirmed?.focus();
+                    return;
+                }
+            }
+
+            // Chỉ sau khi mọi validation cơ bản/nghiệp vụ đều hợp lệ mới mở modal.
+            openDirectConfirmModal();
+        } finally {
+            directClientValidationRunning = false;
+        }
+    };
+
+    // Chỉ submit khi đã xác nhận ở modal. Nếu JS lỗi hoàn toàn, nút vẫn là submit button
+    // và server sẽ trả lỗi xác nhận thay vì im lặng không làm gì.
+    form.addEventListener("submit", event => {
+        if (form.dataset.directNativeConfirmed === "true") {
+            delete form.dataset.directNativeConfirmed;
+            return;
+        }
+
+        event.preventDefault();
+        runDirectSubmitValidation();
+    });
+
+    // Nếu người dùng Enter, form submit sẽ đi qua cùng handler ở trên.
+    directCreateConfirmSubmit?.addEventListener("click", () => {
+        const confirmationInput = document.getElementById("directFinalConfirmation");
+        if (confirmationInput) confirmationInput.value = "true";
+        form.dataset.directNativeConfirmed = "true";
+    });
+})();
+</script>

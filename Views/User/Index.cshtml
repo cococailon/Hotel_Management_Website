@@ -1,0 +1,62 @@
+@model Hotel_Management_Website.Models.ViewModels.User.UserIndexViewModel
+
+@{
+    ViewData["Title"] = "Quản lý tài khoản";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet"
+          href="~/css/user-index.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quản lý tài khoản",
+        Description = "Xem, tạo, sửa và quản lý trạng thái tài khoản theo từng vai trò.",
+        Icon = "bi-person-lock"
+    })
+
+
+@if (Model.IsFullAdmin)
+{
+    @await Html.PartialAsync(
+        "~/Views/User/_UserSection.cshtml",
+        Model.AdminUsers)
+}
+
+@await Html.PartialAsync(
+    "~/Views/User/_UserSection.cshtml",
+    Model.ReceptionUsers)
+
+@await Html.PartialAsync(
+    "~/Views/User/_UserSection.cshtml",
+    Model.HousekeepingUsers)
+
+<!-- Hidden action forms: thao tác được gửi bằng User Index JS sau khi xác nhận modal. -->
+<form id="userLockForm" asp-controller="User" asp-action="Lock" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="userLockId" />
+    <input type="hidden" name="returnUrl" id="userLockReturnUrl" />
+</form>
+
+<form id="userReopenForm" asp-controller="User" asp-action="Reopen" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="userReopenId" />
+    <input type="hidden" name="returnUrl" id="userReopenReturnUrl" />
+</form>
+
+<form id="userDeleteForm" asp-controller="User" asp-action="Delete" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="userDeleteId" />
+    <input type="hidden" name="returnUrl" id="userDeleteReturnUrl" />
+</form>
+
+@section Scripts
+{
+    <script src="~/js/user-index.js" asp-append-version="true"></script>
+}

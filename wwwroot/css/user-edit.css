@@ -1,0 +1,80 @@
+/* =========================================================
+   USER EDIT
+   Hotel Management UI System
+   Đồng bộ layout với Employee Edit / User Create
+   ========================================================= */
+
+.user-edit-page {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.user-edit-page .card-header {
+    padding: 1rem 1.25rem;
+}
+
+.user-edit-page .card-body {
+    padding: 1.25rem;
+}
+
+.user-edit-section-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .7rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.05rem;
+}
+
+.user-edit-page .form-label.required::after {
+    content: " *";
+    color: var(--bs-danger);
+}
+
+.user-edit-page .text-danger:empty {
+    display: none;
+}
+
+.user-edit-page .form-control:focus,
+.user-edit-page .form-select:focus,
+.user-edit-page textarea:focus {
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
+}
+
+.user-edit-readonly-box {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    padding: .45rem .75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-tertiary-bg);
+    font-weight: 500;
+}
+
+.user-edit-page textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.user-edit-cancel-btn {
+    min-width: 180px;
+}
+
+@media (max-width: 767.98px) {
+    .user-edit-page .card-header,
+    .user-edit-page .card-body {
+        padding: 1rem;
+    }
+
+    .user-edit-cancel-btn,
+    #userEditSubmitButton {
+        width: 100%;
+    }
+}

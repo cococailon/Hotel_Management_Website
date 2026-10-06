@@ -1,0 +1,495 @@
+@using Hotel_Management_Website.Security
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+
+    <title>
+        @ViewData["Title"] - Hotel Management
+    </title>
+
+
+    <!-- ===================================================== -->
+    <!-- BOOTSTRAP -->
+    <!-- ===================================================== -->
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css"
+          asp-append-version="true" />
+
+
+    <!-- ===================================================== -->
+    <!-- BOOTSTRAP ICONS -->
+    <!-- ===================================================== -->
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css"
+          asp-append-version="true" />
+
+
+    <!-- ===================================================== -->
+    <!-- ADMINLTE 4.9.1 -->
+    <!-- ===================================================== -->
+
+    <link rel="stylesheet"
+          href="~/lib/admin-lte/css/adminlte.min.css"
+          asp-append-version="true" />
+
+
+    <!-- ===================================================== -->
+    <!-- HOTEL MANAGEMENT UI SYSTEM -->
+    <!-- ===================================================== -->
+
+    <link rel="stylesheet"
+          href="~/css/ui-system.css"
+          asp-append-version="true" />
+
+
+    <link rel="stylesheet"
+          href="~/css/admin-ajax.css"
+          asp-append-version="true" />
+
+
+    <!-- ===================================================== -->
+    <!-- PAGE-SPECIFIC STYLES -->
+    <!-- ===================================================== -->
+    <!--
+        Section Styles nằm trong template.
+
+        Khi AJAX navigation:
+        - admin-ajax.js lấy template từ response
+        - xóa CSS page cũ
+        - thêm CSS page mới
+    -->
+
+    <template id="ajax-page-styles-template">
+
+        @await RenderSectionAsync(
+                "Styles",
+                required: false
+                )
+
+    </template>
+
+</head>
+
+
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary"
+      data-ajax-navigation="true">
+
+
+    <!-- ===================================================== -->
+    <!-- GLOBAL AJAX LOADING INDICATOR -->
+    <!-- ===================================================== -->
+
+    <div id="admin-page-loading"
+         class="admin-page-loading"
+         aria-hidden="true">
+    </div>
+
+
+    <div class="app-wrapper">
+
+
+        <!-- ================================================= -->
+        <!-- HEADER -->
+        <!-- ================================================= -->
+
+        <nav class="app-header navbar navbar-expand bg-body hotel-floating-nav">
+
+            <div class="container-fluid">
+
+
+                <ul class="navbar-nav">
+
+                    <li class="nav-item">
+
+                        <a class="nav-link"
+                           data-lte-toggle="sidebar"
+                           href="#"
+                           role="button"
+                           aria-label="Mở hoặc đóng menu">
+
+                            <i class="bi bi-list"></i>
+
+                        </a>
+
+                    </li>
+
+
+                    <li class="nav-item d-none d-md-block">
+
+                        <a asp-controller="Reception"
+                           asp-action="Index"
+                           class="nav-link fw-semibold">
+
+                            Khu vực Lễ Tân
+
+                        </a>
+
+                    </li>
+
+                </ul>
+
+
+
+                <ul class="navbar-nav ms-auto align-items-center">
+
+
+                    <!-- ===================================== -->
+                    <!-- CURRENT USER -->
+                    <!-- ===================================== -->
+
+                    <li class="nav-item d-none d-sm-block me-3">
+
+                        <div class="text-end lh-sm">
+
+                            <div class="fw-semibold">
+
+                                @(User.FindFirst("FullName")?.Value
+                                                                ?? User.Identity?.Name
+                                                                ?? "Lễ Tân")
+
+                            </div>
+
+
+                            <small class="text-body-secondary">
+
+                                @(User.IsInRole(AppRoles.Reception) ? "Lễ Tân" :
+                                    User.FindFirst(AppRoles.RoleCodeClaim)?.Value == "4" ? "Admin toàn quyền" : "Admin")
+
+                            </small>
+
+                        </div>
+
+                    </li>
+
+
+                    <!-- ===================================== -->
+                    <!-- LOGOUT -->
+                    <!-- ===================================== -->
+
+                    <li class="nav-item">
+
+                        <!--
+                            Logout KHÔNG dùng AJAX.
+
+                            data-ajax="false" khiến admin-ajax.js
+                            bỏ qua form này.
+
+                            Sau logout trình duyệt chuyển hẳn
+                            về Login.
+                        -->
+
+                        <form asp-controller="Account"
+                              asp-action="Logout"
+                              method="post"
+                              class="m-0"
+                              data-ajax="false">
+
+                            @Html.AntiForgeryToken()
+
+
+                            <button type="submit"
+                                    class="btn btn-outline-danger btn-sm">
+
+                                <i class="bi bi-box-arrow-right me-1"
+                                   aria-hidden="true"></i>
+
+
+                                <span class="d-none d-sm-inline">
+
+                                    Đăng xuất
+
+                                </span>
+
+                            </button>
+
+                        </form>
+
+                    </li>
+
+                </ul>
+
+            </div>
+
+        </nav>
+
+
+
+        <!-- ================================================= -->
+        <!-- SIDEBAR -->
+        <!-- ================================================= -->
+
+                <aside class="app-sidebar bg-body-secondary shadow"
+               data-bs-theme="dark"
+               data-enable-persistence="true">
+
+            <div class="sidebar-brand">
+                <a asp-controller="Reception"
+                   asp-action="Index"
+                   class="brand-link text-decoration-none">
+                    <i class="bi bi-building me-2" aria-hidden="true"></i>
+                    <span class="brand-text fw-semibold">Hotel Management</span>
+                </a>
+            </div>
+
+            <div class="sidebar-wrapper">
+                <nav class="mt-2">
+                    <ul class="nav sidebar-menu flex-column"
+                        data-lte-toggle="treeview"
+                        role="menu"
+                        data-accordion="true">
+
+                        <li class="nav-item">
+                            <a asp-controller="Reception"
+                               asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon bi bi-house-door"></i>
+                                <p>Trang chủ Lễ Tân</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-header">NGHIỆP VỤ</li>
+
+                        <li class="nav-item">
+                            <a asp-controller="Booking"
+                               asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon bi bi-calendar-check"></i>
+                                <p>Quản lý đặt phòng</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a asp-controller="Guest"
+                               asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon bi bi-person-vcard"></i>
+                                <p>Quản lý khách hàng</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a asp-controller="Bill"
+                               asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon bi bi-receipt"></i>
+                                <p>Quản lý hóa đơn</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-header">DANH MỤC</li>
+
+                        <li class="nav-item">
+                            <a asp-controller="RoomType"
+                               asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon bi bi-door-open"></i>
+                                <p>Quản lý loại phòng</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a asp-controller="Room"
+                               asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon bi bi-door-closed"></i>
+                                <p>Quản lý phòng</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a asp-controller="Services"
+                               asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon bi bi-cone-striped"></i>
+                                <p>Quản lý dịch vụ</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a asp-controller="Amenity"
+                               asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon bi bi-stars"></i>
+                                <p>Quản lý tiện nghi</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a asp-controller="HotelPolicy"
+                               asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon bi bi-journal-text"></i>
+                                <p>Quy định khách sạn</p>
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+
+
+        <!-- ================================================= -->
+        <!-- GLOBAL FLASH MESSAGES -->
+        <!-- ================================================= -->
+        <!--
+            Đọc TempData trước RenderBody để các trang con không
+            tự tiêu thụ SuccessMessage/ErrorMessage.
+
+            admin-ajax.js sẽ lấy flash message từ AJAX response
+            và hiển thị ngay trên ToastHost hiện tại.
+        -->
+
+        <partial name="~/Views/Shared/UI/_FlashMessages.cshtml" />
+
+
+        <!-- ================================================= -->
+        <!-- MAIN CONTENT -->
+        <!-- ================================================= -->
+
+        <main id="app-main-content"
+              class="app-main">
+
+
+            <div class="app-content">
+
+                <div class="container-fluid py-4">
+
+                    @RenderBody()
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- PAGE-SPECIFIC SCRIPTS -->
+            <!-- ================================================= -->
+            <!--
+                Scripts của page nằm bên trong main.
+
+                Khi AJAX:
+                #app-main-content được thay thế
+                => page script cũ biến mất
+                => page script mới được admin-ajax.js thực thi
+            -->
+            @await RenderSectionAsync(
+                        "Scripts",
+                        required: false
+                        )
+
+        </main>
+
+
+
+        <!-- ================================================= -->
+        <!-- FOOTER -->
+        <!-- ================================================= -->
+
+        <footer class="app-footer">
+
+            <div class="float-end d-none d-sm-inline">
+
+                Hotel Management
+
+            </div>
+
+
+            <strong>
+
+                &copy; @DateTime.Now.Year
+
+            </strong>
+
+        </footer>
+
+
+
+        <!-- ================================================= -->
+        <!-- GLOBAL UI SYSTEM -->
+        <!-- ================================================= -->
+        <!--
+            Những thành phần này nằm NGOÀI #app-main-content.
+
+            Vì vậy chúng không bị AJAX replace.
+
+            ui-core.js cũng chỉ cần bind một lần.
+        -->
+
+        <partial name="~/Views/Shared/UI/_ToastHost.cshtml" />
+
+        <partial name="~/Views/Shared/UI/_ConfirmModal.cshtml" />
+
+        <partial name="~/Views/Shared/UI/_LoadingOverlay.cshtml" />
+
+    </div>
+
+
+
+    <!-- ===================================================== -->
+    <!-- JAVASCRIPT -->
+    <!-- ===================================================== -->
+    <!-- jQuery -->
+
+    <script src="~/lib/jquery/dist/jquery.min.js"
+            asp-append-version="true"></script>
+
+
+    <!-- Bootstrap -->
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"
+            asp-append-version="true"></script>
+
+
+    <!-- AdminLTE -->
+
+    <script src="~/lib/admin-lte/js/adminlte.min.js"
+            asp-append-version="true"></script>
+
+
+    <!--
+        GLOBAL UI.
+
+        File này nằm ngoài #app-main-content
+        và được tải một lần.
+    -->
+
+    <script src="~/js/ui-core.js"
+            asp-append-version="true"></script>
+
+
+    <!--
+        GLOBAL AJAX NAVIGATION.
+
+        File này nằm ngoài #app-main-content
+        và được tải một lần.
+    -->
+
+    <script src="~/js/admin-ajax.js"
+            asp-append-version="true"></script>
+
+
+    <!--
+        GLOBAL PAGINATION.
+
+        File này cũng phải sống ngoài main.
+    -->
+
+    <script src="~/js/admin-pagination.js"
+            asp-append-version="true"></script>
+
+
+</body>
+
+</html>

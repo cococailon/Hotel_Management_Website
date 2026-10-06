@@ -1,0 +1,60 @@
+﻿@{
+    ViewData["Title"] = "Trang chủ Buồng Phòng";
+    Layout = "~/Views/Shared/_HousekeepingLayout.cshtml";
+
+    var fullName =
+        User.FindFirst("FullName")?.Value
+        ?? User.Identity?.Name
+        ?? "Buồng Phòng";
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Trang chủ Buồng Phòng",
+        Description = "Theo dõi và cập nhật tình trạng phòng trong quá trình dọn dẹp, bảo trì và vận hành.",
+        Icon = "bi-house-check"
+    })
+
+<div class="row g-4">
+    <div class="col-12 col-xl-8">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4 p-lg-5">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="room-section-icon flex-shrink-0" aria-hidden="true">
+                        <i class="bi bi-house-check"></i>
+                    </div>
+                    <div class="min-width-0">
+                        <div class="small text-body-secondary mb-1">Khu vực Buồng Phòng</div>
+                        <h1 class="h4 fw-semibold mb-2">Chào mừng, @fullName</h1>
+                        <p class="text-body-secondary mb-0">
+                            Bạn có thể theo dõi toàn bộ phòng, chuyển phòng sang Bảo trì,
+                            bắt đầu dọn dẹp và xác nhận phòng đã dọn xong.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-12 col-xl-4">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column justify-content-center gap-3 p-4">
+                <div>
+                    <div class="small text-body-secondary">Nghiệp vụ chính</div>
+                    <h2 class="h5 fw-semibold mb-1">Quản lý tình trạng phòng</h2>
+                    <p class="text-body-secondary small mb-0">
+                        Xem toàn bộ phòng theo tầng và hàng, không phân trang.
+                    </p>
+                </div>
+                <a asp-controller="Housekeeping"
+                   asp-action="RoomStatus"
+                   class="btn btn-primary">
+                    <i class="bi bi-clipboard2-check me-1" aria-hidden="true"></i>
+                    Mở quản lý tình trạng phòng
+                </a>
+            </div>
+        </section>
+    </div>
+</div>

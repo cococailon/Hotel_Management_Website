@@ -1,0 +1,29 @@
+@model Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption
+
+@{
+    var options = new[]
+    {
+        (Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption.LastModifiedDesc, "Ngày chỉnh sửa mới nhất"),
+        (Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption.LastModifiedAsc, "Ngày chỉnh sửa cũ nhất"),
+        (Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption.EmployeeCodeAsc, "Mã nhân viên A-Z"),
+        (Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption.EmployeeCodeDesc, "Mã nhân viên Z-A"),
+        (Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption.EmployeeNameAsc, "Tên nhân viên A-Z"),
+        (Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption.EmployeeNameDesc, "Tên nhân viên Z-A"),
+        (Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption.DateOfBirthDesc, "Ngày sinh - Trẻ nhất"),
+        (Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption.DateOfBirthAsc, "Ngày sinh - Già nhất"),
+        (Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption.StartDateDesc, "Ngày vào làm mới nhất"),
+        (Hotel_Management_Website.Models.ViewModels.Employee.EmployeeSortOption.StartDateAsc, "Ngày vào làm cũ nhất")
+    };
+}
+
+@foreach (var option in options)
+{
+    if (option.Item1 == Model)
+    {
+        <option value="@((byte)option.Item1)" selected>@option.Item2</option>
+    }
+    else
+    {
+        <option value="@((byte)option.Item1)">@option.Item2</option>
+    }
+}

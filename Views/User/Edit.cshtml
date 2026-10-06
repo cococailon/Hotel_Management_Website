@@ -1,0 +1,340 @@
+@model Hotel_Management_Website.Models.ViewModels.User.UserEditViewModel
+
+@{
+    ViewData["Title"] = "Sửa tài khoản";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet"
+          href="~/css/user-edit.css"
+          asp-append-version="true" />
+}
+
+<div class="user-edit-page">
+
+    <form asp-controller="User"
+          asp-action="Edit"
+          method="post"
+          id="userEditForm">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="ReturnUrl" />
+
+        <div asp-validation-summary="ModelOnly"
+             class="alert alert-danger"
+             role="alert">
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- ACCOUNT INFORMATION -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="user-edit-section-icon">
+                        <i class="bi bi-person-lock" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Thông tin tài khoản
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Cập nhật tên đăng nhập, mật khẩu và vai trò của tài khoản.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-4">
+
+                    <div class="col-12 col-md-6">
+
+                        <label asp-for="UserCode" class="form-label required">
+                            Mã tài khoản
+                        </label>
+
+                        <input asp-for="UserCode"
+                               class="form-control"
+                               maxlength="50"
+                               autocomplete="off"
+                               spellcheck="false" />
+
+                        <div class="form-text">
+                            Mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.
+                        </div>
+
+                        <span asp-validation-for="UserCode" class="text-danger"></span>
+
+                    </div>
+
+                    <div class="col-12 col-md-6">
+
+                        <label asp-for="UserName"
+                               class="form-label required">
+                        </label>
+
+                        <input asp-for="UserName"
+                               class="form-control"
+                               maxlength="100"
+                               autocomplete="username"
+                               placeholder="Nhập tên đăng nhập..." />
+
+                        <span asp-validation-for="UserName"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <div class="col-12 col-md-6">
+
+                        <label asp-for="Password"
+                               class="form-label">
+                        </label>
+
+                        <div class="input-group">
+                            <input asp-for="Password"
+                                   type="password"
+                                   class="form-control"
+                                   id="userEditPassword"
+                                   maxlength="255"
+                                   autocomplete="new-password"
+                                   placeholder="Để trống nếu không đổi mật khẩu..." />
+
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    data-user-edit-password-toggle
+                                    title="Hiện hoặc ẩn mật khẩu"
+                                    aria-label="Hiện hoặc ẩn mật khẩu">
+                                <i class="bi bi-eye-slash" aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <div class="form-text">
+                            Bỏ trống nếu giữ nguyên mật khẩu hiện tại. Nếu nhập mật khẩu mới, tối thiểu 5 ký tự.
+                        </div>
+
+                        <span id="userEditPasswordError"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <div class="col-12">
+
+                        <label asp-for="Role"
+                               class="form-label required">
+                        </label>
+
+                        <select asp-for="Role"
+                                class="form-select"
+                                id="userEditRole">
+
+                            @if (Model.CanEditAdmin)
+                            {
+                                <option value="0">Admin</option>
+                            }
+
+                            <option value="1">Lễ Tân</option>
+                            <option value="2">Buồng Phòng</option>
+
+                        </select>
+
+                        <span asp-validation-for="Role"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- EMPLOYEE ASSIGNMENT -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="user-edit-section-icon">
+                        <i class="bi bi-person-vcard" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Gán nhân viên
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Tài khoản có thể được gán cho một nhân viên hoặc để trống.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <div id="userEditEmployeeAssignmentBlock">
+
+                    <label asp-for="EmployeeId"
+                           class="form-label">
+                    </label>
+
+                    <select asp-for="EmployeeId"
+                            class="form-select"
+                            id="userEditEmployeeId">
+
+                        <option value="">
+                            Không gán nhân viên
+                        </option>
+
+                        @foreach (var employee in Model.Employees)
+                        {
+                            <option value="@employee.Id"
+                                    data-position="@employee.Position"
+                                    data-active="@(employee.IsActive ? "1" : "0")">
+                                @employee.EmployeeCode - @employee.EmployeeName@(employee.IsActive ? "" : " (Đã nghỉ việc)")
+                            </option>
+                        }
+
+                    </select>
+
+                    <div class="form-text">
+                        Chỉ nhân viên đúng bộ phận mới được chọn. Gỡ gán bằng cách chọn “Không gán nhân viên”.
+                    </div>
+
+                    <span asp-validation-for="EmployeeId"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+                <div id="userEditAdminEmployeeNote"
+                     class="alert alert-info d-none mb-0">
+                    Tài khoản Admin không được gán cho nhân viên.
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- NOTE -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="user-edit-section-icon">
+                        <i class="bi bi-sticky" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Ghi chú
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Ghi chú bổ sung về tài khoản.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <label asp-for="Note"
+                       class="form-label">
+                </label>
+
+                <textarea asp-for="Note"
+                          class="form-control"
+                          rows="4"
+                          maxlength="255"
+                          placeholder="Nhập ghi chú nếu cần..."></textarea>
+
+                <div class="form-text">
+                    Tối đa 255 ký tự.
+                </div>
+
+                <span asp-validation-for="Note"
+                      class="text-danger">
+                </span>
+
+            </div>
+
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- ACTIONS -->
+        <!-- ===================================================== -->
+
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mb-4">
+
+            <a href="@(
+                !string.IsNullOrWhiteSpace(Model.ReturnUrl) && Url.IsLocalUrl(Model.ReturnUrl)
+                    ? Model.ReturnUrl
+                    : Url.Action("Index", "User")
+            )"
+               class="btn btn-outline-secondary user-edit-cancel-btn">
+
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+                Quay lại danh sách
+
+            </a>
+
+            <button type="submit"
+                    class="btn btn-primary"
+                    id="userEditSubmitButton">
+
+                <span class="ui-button-content">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+                    Lưu thay đổi
+                </span>
+
+                <span class="ui-button-loading d-none">
+                    <span class="spinner-border spinner-border-sm me-1"
+                          role="status"
+                          aria-hidden="true"></span>
+                    Đang lưu...
+                </span>
+
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/user-edit.js" asp-append-version="true"></script>
+}

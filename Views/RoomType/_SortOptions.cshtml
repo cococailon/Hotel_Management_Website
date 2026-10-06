@@ -1,0 +1,23 @@
+@model Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption
+
+@foreach (var item in Enum.GetValues<Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption>())
+{
+    var text = item switch
+    {
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.LastModifiedDesc => "Ngày chỉnh sửa mới nhất",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.LastModifiedAsc => "Ngày chỉnh sửa cũ nhất",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.RoomTypeCodeDesc => "Mã loại phòng từ lớn đến nhỏ",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.RoomTypeCodeAsc => "Mã loại phòng từ nhỏ đến lớn",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.RoomTypeNameAsc => "Tên loại phòng từ A-Z",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.RoomTypeNameDesc => "Tên loại phòng từ Z-A",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.PriceAsc => "Giá phòng từ thấp đến cao",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.PriceDesc => "Giá phòng từ cao đến thấp",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.DepositAsc => "Cọc từ thấp đến cao",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.DepositDesc => "Cọc từ cao đến thấp",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.AreaAsc => "Diện tích từ thấp đến cao",
+        Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeSortOption.AreaDesc => "Diện tích từ cao đến thấp",
+        _ => item.ToString()
+    };
+
+    <option value="@((byte)item)" selected="@(Model == item ? "selected" : null)">@text</option>
+}

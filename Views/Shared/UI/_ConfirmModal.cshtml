@@ -1,0 +1,67 @@
+<div class="modal fade"
+     id="uiConfirmModal"
+     tabindex="-1"
+     aria-labelledby="uiConfirmModalLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="uiConfirmModalLabel">
+                    Xác nhận
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Đóng">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <div id="uiConfirmMessage"
+                     class="mb-3">
+                </div>
+
+                <div id="uiConfirmNote"
+                     class="alert alert-warning d-none mb-0">
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        id="uiConfirmCancelBtn"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Hủy
+                </button>
+
+                <button type="button"
+                        id="uiConfirmOkBtn"
+                        class="btn btn-danger">
+
+                    <span class="ui-button-content">
+                        Xác nhận
+                    </span>
+
+                    <span class="ui-button-loading d-none">
+                        <span class="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"></span>
+
+                        <span class="ms-1">
+                            Đang xử lý...
+                        </span>
+                    </span>
+
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>

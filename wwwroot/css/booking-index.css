@@ -1,0 +1,144 @@
+﻿/* =========================================================
+   BOOKING LIST
+   UI System / AdminLTE 4.9.1 / Bootstrap 5
+   Visual standard: Employee / RoomType Management
+   ========================================================= */
+
+.booking-section {
+    overflow: hidden;
+}
+
+.booking-section-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .75rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.1rem;
+}
+
+.booking-count-badge {
+    font-weight: 500;
+}
+
+.booking-filter-panel {
+    background: var(--bs-body-bg);
+}
+
+.booking-filter-panel .form-label {
+    margin-bottom: .4rem;
+}
+
+.booking-filter-panel .input-group-text {
+    border-color: var(--bs-border-color);
+}
+
+.booking-filter-submit {
+    min-height: 38px;
+}
+
+.booking-table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.booking-table {
+    min-width: 1120px;
+    table-layout: fixed;
+}
+
+.booking-table th,
+.booking-table td {
+    padding: .7rem .75rem;
+}
+
+.booking-table th {
+    white-space: nowrap;
+    font-size: .82rem;
+}
+
+.booking-table td {
+    font-size: .9rem;
+}
+
+.booking-cell-ellipsis {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.booking-datetime {
+    display: inline-flex;
+    flex-direction: column;
+    line-height: 1.35;
+    white-space: nowrap;
+}
+
+.booking-status-badge {
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.booking-action-group {
+    display: inline-flex;
+    gap: .35rem;
+    min-width: 40px;
+    flex-wrap: nowrap;
+}
+
+.booking-action-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+}
+
+.booking-action-btn i {
+    font-size: 1rem;
+}
+
+.booking-col-code { width: 145px; }
+.booking-col-guest { width: 145px; }
+.booking-col-datetime { width: 175px; }
+.booking-col-people { width: 155px; }
+.booking-col-status { width: 190px; }
+.booking-col-action { width: 132px; }
+
+.min-width-0 {
+    min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+    .booking-section-icon {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+    }
+
+    .booking-table th,
+    .booking-table td {
+        padding: .65rem .65rem;
+    }
+}
+
+.booking-type-badge { max-width: 180px; white-space: normal; overflow-wrap: anywhere; }
+
+.booking-actions-cell {
+    white-space: nowrap;
+}
+
+.booking-delete-form {
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+}

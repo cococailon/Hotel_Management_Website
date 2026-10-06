@@ -1,0 +1,83 @@
+/* =========================================================
+   ROOMTYPE DETAILS
+   Visual standard: Employee Management
+   ========================================================= */
+
+.roomtype-detail-page {
+    max-width: 1400px;
+    margin-inline: auto;
+}
+
+.roomtype-detail-summary {
+    overflow: hidden;
+}
+
+.roomtype-detail-avatar {
+    width: 84px;
+    height: 84px;
+    border-radius: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 2rem;
+}
+
+.roomtype-detail-name {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.roomtype-detail-section-icon {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .7rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1rem;
+}
+
+.roomtype-detail-label {
+    margin-bottom: .3rem;
+    color: var(--bs-secondary-color);
+    font-size: .8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+}
+
+.roomtype-detail-value {
+    min-width: 0;
+    font-size: .95rem;
+    font-weight: 500;
+    color: var(--bs-body-color);
+    overflow-wrap: anywhere;
+}
+
+.roomtype-detail-breakable {
+    overflow-wrap: anywhere;
+}
+
+.roomtype-detail-note {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.65;
+}
+
+@media (max-width: 575.98px) {
+    .roomtype-detail-summary .card-body {
+        padding: 1rem !important;
+    }
+
+    .roomtype-detail-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: .85rem;
+        font-size: 1.6rem;
+    }
+}

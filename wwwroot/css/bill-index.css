@@ -1,0 +1,143 @@
+/* =========================================================
+   BILL LIST
+   UI System / AdminLTE 4.9.1 / Bootstrap 5
+   ========================================================= */
+
+.bill-section {
+    overflow: hidden;
+}
+
+.bill-section-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .75rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.1rem;
+}
+
+.bill-count-badge {
+    font-weight: 500;
+}
+
+.bill-filter-panel {
+    background: var(--bs-body-bg);
+}
+
+.bill-filter-panel .form-label {
+    margin-bottom: .4rem;
+}
+
+.bill-filter-panel .input-group-text {
+    border-color: var(--bs-border-color);
+}
+
+.bill-filter-submit {
+    min-width: 42px;
+    min-height: 38px;
+}
+
+.bill-table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.bill-table {
+    min-width: 1180px;
+    table-layout: fixed;
+}
+
+.bill-table th,
+.bill-table td {
+    padding: .7rem .75rem;
+}
+
+.bill-table th {
+    white-space: nowrap;
+    font-size: .82rem;
+}
+
+.bill-table td {
+    font-size: .9rem;
+}
+
+.bill-cell-ellipsis {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bill-money {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.bill-datetime {
+    display: inline-flex;
+    flex-direction: column;
+    line-height: 1.35;
+    white-space: nowrap;
+}
+
+.bill-status-badge {
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.bill-action-group {
+    display: inline-flex;
+    gap: .35rem;
+    min-width: 40px;
+    flex-wrap: nowrap;
+}
+
+.bill-action-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+}
+
+.bill-action-btn i {
+    font-size: 1rem;
+}
+
+.bill-col-code { width: 150px; }
+.bill-col-booking { width: 150px; }
+.bill-col-money { width: 155px; }
+.bill-col-paid-at { width: 160px; }
+.bill-col-status { width: 205px; }
+.bill-col-action { width: 90px; }
+
+.min-width-0 {
+    min-width: 0;
+}
+
+@media (max-width: 991.98px) {
+    .bill-table {
+        min-width: 1120px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .bill-section-icon {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+    }
+
+    .bill-table th,
+    .bill-table td {
+        padding: .65rem .65rem;
+    }
+}

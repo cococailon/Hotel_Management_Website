@@ -1,0 +1,20 @@
+@model Hotel_Management_Website.Models.ViewModels.User.UserSortOption
+
+<option value="LastModifiedDesc" selected="@(Model == Hotel_Management_Website.Models.ViewModels.User.UserSortOption.LastModifiedDesc ? "selected" : null)">
+    Ngày chỉnh sửa mới nhất
+</option>
+<option value="LastModifiedAsc" selected="@(Model == Hotel_Management_Website.Models.ViewModels.User.UserSortOption.LastModifiedAsc ? "selected" : null)">
+    Ngày chỉnh sửa cũ nhất
+</option>
+<option value="UserCodeDesc" selected="@(Model == Hotel_Management_Website.Models.ViewModels.User.UserSortOption.UserCodeDesc ? "selected" : null)">
+    Mã tài khoản từ lớn đến nhỏ
+</option>
+<option value="UserCodeAsc" selected="@(Model == Hotel_Management_Website.Models.ViewModels.User.UserSortOption.UserCodeAsc ? "selected" : null)">
+    Mã tài khoản từ nhỏ đến lớn
+</option>
+<option value="UserNameAsc" selected="@(Model == Hotel_Management_Website.Models.ViewModels.User.UserSortOption.UserNameAsc ? "selected" : null)">
+    Tên tài khoản từ A-Z
+</option>
+<option value="UserNameDesc" selected="@(Model == Hotel_Management_Website.Models.ViewModels.User.UserSortOption.UserNameDesc ? "selected" : null)">
+    Tên tài khoản từ Z-A
+</option>

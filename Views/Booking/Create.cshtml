@@ -1,0 +1,1181 @@
+﻿@model Hotel_Management_Website.Models.ViewModels.Booking.BookingCreateViewModel
+
+@{
+    ViewData["Title"] = "Tạo lịch đặt phòng";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+
+    var isStep1 = Model.Step == 1;
+    var isStep2 = Model.Step == 2;
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/booking-create.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Tạo lịch đặt phòng",
+        Description = isStep1
+            ? "Bước 1: chọn phòng, số lượng người và thời gian, sau đó kiểm tra khả năng đặt phòng."
+            : "Bước 2: nhập thông tin đặt phòng, khách hàng, tiền cọc và xác nhận tạo.",
+        Icon = "bi-calendar-plus"
+    })
+
+<div class="booking-create-page">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 mb-4">
+        <a asp-controller="Booking"
+           asp-action="CancelCreate"
+           asp-route-draftId="@Model.DraftId"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            Quay lại danh sách
+        </a>
+
+        <div class="booking-create-stepper" aria-label="Các bước tạo lịch đặt phòng">
+            <div class="booking-step @(isStep1 ? "is-active" : "is-done")">
+                <span class="booking-step-number">1</span>
+                <span>Chọn phòng &amp; kiểm tra</span>
+            </div>
+            <div class="booking-step-line"></div>
+            <div class="booking-step @(isStep2 ? "is-active" : "")">
+                <span class="booking-step-number">2</span>
+                <span>Thông tin &amp; xác nhận</span>
+            </div>
+        </div>
+    </div>
+
+    @{
+        // Chỉ gom lỗi cấp form (key rỗng) vào khu vực thông báo chung.
+        // Lỗi của từng field phải hiển thị ngay dưới field tương ứng.
+        var topErrors = ViewData.ModelState
+            .Where(x => string.IsNullOrWhiteSpace(x.Key))
+            .SelectMany(x => x.Value?.Errors
+                .Select(error => error.ErrorMessage)
+                ?? Enumerable.Empty<string>())
+            .Select(message => message?.Trim())
+            .Where(message => !string.IsNullOrWhiteSpace(message))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var hasTopErrors = topErrors.Count > 0;
+        var hasFailedAvailabilityMessage =
+            !Model.AvailabilitySucceeded &&
+            !string.IsNullOrWhiteSpace(Model.AvailabilityMessage);
+    }
+
+    @if (hasTopErrors || hasFailedAvailabilityMessage)
+    {
+        <div class="alert alert-danger shadow-sm border-0 mb-4" role="alert">
+            <div class="fw-semibold mb-1">
+                <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>
+                Vui lòng kiểm tra lại thông tin.
+            </div>
+
+            <ul class="mb-0 ps-4">
+                @foreach (var error in topErrors)
+                {
+                    <li>@error</li>
+                }
+
+                @if (hasFailedAvailabilityMessage &&
+                     !topErrors.Contains(Model.AvailabilityMessage!.Trim(), StringComparer.OrdinalIgnoreCase))
+                {
+                    <li>@Model.AvailabilityMessage</li>
+                }
+            </ul>
+        </div>
+    }
+    else if (Model.AvailabilitySucceeded &&
+             !string.IsNullOrWhiteSpace(Model.AvailabilityMessage))
+    {
+        <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle me-1" aria-hidden="true"></i>
+            @Model.AvailabilityMessage
+        </div>
+    }
+
+    @if (isStep1)
+    {
+    <form asp-controller="Booking"
+          asp-action="PrepareCreate"
+          method="post"
+          id="bookingStepOneForm"
+          data-booking-create-form="step-one"
+          data-ajax="false"
+          data-server-today="@DateTime.Today.ToString("yyyy-MM-dd")">
+        @Html.AntiForgeryToken()
+
+        @if (!string.IsNullOrWhiteSpace(Model.DraftId))
+        {
+            <input type="hidden" asp-for="DraftId" />
+        }
+
+        <button type="submit"
+                id="refreshCreateRoomTypesButton"
+                class="d-none"
+                formnovalidate
+                formaction="@Url.Action("RefreshCreate", "Booking")"
+                aria-hidden="true">
+            Làm mới danh sách phòng
+        </button>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon">
+                        <i class="bi bi-calendar-range" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thời gian lưu trú</h2>
+                        <div class="small text-body-secondary">
+                            Giờ check in/check out được lấy tự động từ HotelSettings.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="CheckInDate" class="form-label fw-semibold">
+                            Ngày check in dự kiến
+                        </label>
+                        <input asp-for="CheckInDate"
+                               id="step1CheckInDate"
+                               type="date"
+                               class="form-control" />
+                        <div class="form-text">
+                            Giờ mặc định:
+                            <strong>@Model.DefaultCheckInTime.ToString("HH\\:mm")</strong>
+                        </div>
+                        <span asp-validation-for="CheckInDate" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label asp-for="CheckOutDate" class="form-label fw-semibold">
+                            Ngày check out dự kiến
+                        </label>
+                        <input asp-for="CheckOutDate"
+                               id="step1CheckOutDate"
+                               type="date"
+                               class="form-control" />
+                        <div class="form-text">
+                            Giờ mặc định:
+                            <strong>@Model.DefaultCheckOutTime.ToString("HH\\:mm")</strong>
+                        </div>
+                        <span asp-validation-for="CheckOutDate" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="booking-create-section-icon">
+                            <i class="bi bi-door-open" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Loại phòng cần thuê</h2>
+                            <div class="small text-body-secondary">
+                                Chọn từng loại phòng và số phòng cần thuê. Tổng số người nhập bên dưới chỉ dùng để kiểm tra sức chứa; chưa phân vào từng phòng.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="small text-body-secondary">
+                        Hệ thống sẽ kiểm tra lại dữ liệu phòng trước khi lưu Booking.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="TotalAdults" class="form-label fw-semibold">
+                            Tổng người lớn
+                        </label>
+                        <input asp-for="TotalAdults"
+                               class="form-control"
+                               type="number"
+                               min="0"
+                               max="9999"
+                               id="step1TotalAdultsInput" />
+                        <div class="form-text">
+                            Tổng người lớn phải lớn hơn 0. Việc phân người vào từng phòng sẽ thực hiện khi check in.
+                        </div>
+                        <span asp-validation-for="TotalAdults" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label asp-for="TotalChildren" class="form-label fw-semibold">
+                            Tổng trẻ em
+                        </label>
+                        <input asp-for="TotalChildren"
+                               class="form-control"
+                               type="number"
+                               min="0"
+                               max="9999"
+                               id="step1TotalChildrenInput" />
+                        <div class="form-text">
+                            Tổng trẻ em phải lớn hơn hoặc bằng 0. Việc phân trẻ vào từng phòng sẽ thực hiện khi check in.
+                        </div>
+                        <span asp-validation-for="TotalChildren" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="table-responsive booking-create-room-table-wrap">
+                    <table class="table align-middle mb-0 booking-create-room-table">
+                        <thead>
+                            <tr>
+                                <th style="min-width:220px">Loại phòng</th>
+                                <th class="text-center" style="width:120px">Phòng có thể đặt</th>
+                                <th style="width:130px">Số phòng</th>
+                                <th class="text-end" style="width:170px">Giá / đêm</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @for (var i = 0; i < Model.RoomSelections.Count; i++)
+                            {
+                                var room = Model.RoomSelections[i];
+
+                                <tr data-room-type-row="@i"
+                                    data-price="@room.PricePerNight.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-deposit="@room.DepositPercent.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                                    <td>
+                                        <input type="hidden"
+                                               name="RoomSelections[@i].RoomTypeId"
+                                               value="@room.RoomTypeId" />
+
+                                        <div class="fw-semibold booking-breakable">
+                                            @room.RoomTypeCode · @room.RoomTypeName
+                                        </div>
+
+                                        <div class="small text-body-secondary mt-1">
+                                            Tối đa / phòng:
+                                            @room.MaxAdults NL · @room.MaxChildren TE
+                                            <span class="ms-1">
+                                                · Cọc @room.DepositPercent.ToString("0.##")%
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <span class="badge text-bg-light border text-body booking-availability-badge">
+                                            @room.AvailableRoomCount
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <input class="form-control booking-quantity-input"
+                                               type="number"
+                                               min="0"
+                                               max="999"
+                                               name="RoomSelections[@i].Quantity"
+                                               value="@room.Quantity"
+                                               data-room-input="quantity"
+                                               aria-label="Số phòng @room.RoomTypeCode" />
+
+                                        <span class="text-danger field-validation-message"
+                                              data-error-for="RoomSelections[@i].Quantity"></span>
+                                    </td>
+
+                                    <td class="text-end text-nowrap">
+                                        <span class="fw-semibold booking-room-night-price">
+                                            @room.PricePerNight.ToString("N0") ₫
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+
+                        <tfoot>
+                            <tr class="table-light">
+                                <td colspan="2" class="fw-semibold">
+                                    Tổng số phòng
+                                    <div class="small text-body-secondary fw-normal mt-1">
+                                        Số đêm: <span id="step1Nights" class="fw-semibold">@Model.Nights.ToString("N0")</span>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <span id="step1RoomCount" class="fw-semibold">@Model.RoomSelections.Sum(x => x.Quantity) phòng</span>
+                                </td>
+                                <td class="text-end">
+                                    <div>
+                                        <span class="small text-body-secondary">Tiền phòng:</span>
+                                        <span id="step1Estimate" class="fw-semibold">@Model.EstimatedRoomAmount.ToString("N0") ₫</span>
+                                    </div>
+                                    <div class="mt-1">
+                                        <span class="small text-body-secondary">Tổng tiền cọc:</span>
+                                        <span id="step1Deposit" class="fw-semibold">@Model.DepositAmount.ToString("N0") ₫</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mb-4">
+            <a asp-controller="Booking"
+               asp-action="CancelCreate"
+               asp-route-draftId="@Model.DraftId"
+               class="btn btn-outline-secondary">
+                Hủy
+            </a>
+
+            <button type="submit"
+                    class="btn btn-primary booking-create-next-btn">
+                <span class="ui-button-content">
+                    <i class="bi bi-arrow-right-circle me-1" aria-hidden="true"></i>
+                    Kiểm tra khả năng &amp; sang bước 2
+                </span>
+                <span class="ui-button-loading d-none">
+                    <span class="spinner-border spinner-border-sm me-1"
+                          role="status"
+                          aria-hidden="true"></span>
+                    Đang kiểm tra khả năng...
+                </span>
+            </button>
+        </div>
+    </form>
+    }
+
+    @if (isStep2)
+    {
+    <form action="@Url.Action("Create", "Booking", new { draftId = Model.DraftId })"
+          method="post"
+          id="bookingCreateFinalForm"
+          data-booking-create-form="final"
+          data-ajax="false">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="DraftId" />
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon">
+                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Kết quả bước 1</h2>
+                        <div class="small text-body-secondary">
+                            Các thông tin phòng được lưu server-side và sẽ được kiểm tra lại trước khi tạo.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-3">
+                        <div class="booking-create-summary-item">
+                            <div class="booking-create-summary-label">Check in</div>
+                            <div class="booking-create-summary-value">
+                                @Model.CheckInDate.ToString("dd/MM/yyyy")
+                                @Model.DefaultCheckInTime.ToString("HH\\:mm")
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <div class="booking-create-summary-item">
+                            <div class="booking-create-summary-label">Check out</div>
+                            <div class="booking-create-summary-value">
+                                @Model.CheckOutDate.ToString("dd/MM/yyyy")
+                                @Model.DefaultCheckOutTime.ToString("HH\\:mm")
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-2">
+                        <div class="booking-create-summary-item">
+                            <div class="booking-create-summary-label">Số đêm</div>
+                            <div class="booking-create-summary-value">@Model.Nights.ToString("N0")</div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-2">
+                        <div class="booking-create-summary-item">
+                            <div class="booking-create-summary-label">Người lớn</div>
+                            <div class="booking-create-summary-value">@Model.TotalAdults</div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-2">
+                        <div class="booking-create-summary-item">
+                            <div class="booking-create-summary-label">Trẻ em</div>
+                            <div class="booking-create-summary-value">@Model.TotalChildren</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive mt-4 booking-create-room-summary-wrap">
+                    <table class="table table-sm align-middle mb-0 booking-create-room-summary">
+                        <thead>
+                            <tr>
+                                <th>Loại phòng</th>
+                                <th class="text-center">Số phòng</th>
+                                <th class="text-end">Giá / đêm</th>
+                                <th class="text-end">Tiền cọc</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var room in Model.RoomSelections.Where(x => x.Quantity > 0))
+                            {
+                                var roomDepositAmount = Math.Round(
+                                    room.Quantity * room.PricePerNight * Model.Nights * room.DepositPercent / 100m,
+                                    2,
+                                    MidpointRounding.AwayFromZero);
+                                <tr>
+                                    <td class="booking-breakable">
+                                        <span class="font-monospace">@room.RoomTypeCode</span>
+                                        · @room.RoomTypeName
+                                    </td>
+                                    <td class="text-center">@room.Quantity</td>
+                                    <td class="text-end text-nowrap">@room.PricePerNight.ToString("N0") ₫</td>
+                                    <td class="text-end text-nowrap">@roomDepositAmount.ToString("N0") ₫</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 mt-3">
+                    <div class="small text-body-secondary">
+                        BookingRoom được tạo với RoomId = null, Adults = null và Children = null. Việc gán người vào từng phòng sẽ thực hiện khi check in.
+                    </div>
+
+                    <a asp-controller="Booking"
+                       asp-action="Create"
+                       asp-route-bookingType="0"
+                       asp-route-step="1"
+                       asp-route-draftId="@Model.DraftId"
+                       class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+                        Thay đổi phòng/ngày
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon">
+                        <i class="bi bi-card-checklist" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thông tin đặt phòng</h2>
+                        <div class="small text-body-secondary">
+                            Mã đặt phòng có thể dùng mã tự sinh hoặc nhập mã riêng.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <input type="hidden" asp-for="BookingType" value="0" />
+                    <div class="col-12 col-md-6">
+                        <label asp-for="BookingCode" class="form-label fw-semibold">
+                            Mã đặt phòng
+                        </label>
+                        <input asp-for="BookingCode"
+                               class="form-control font-monospace"
+                               maxlength="50"
+                               autocomplete="off"
+                               pattern="\S+"
+                               required />
+                        <div class="form-text">
+                            Không được chứa khoảng trắng và không được trùng.
+                        </div>
+                        <span asp-validation-for="BookingCode" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Khoảng lưu trú</label>
+                        <div class="form-control bg-body-tertiary booking-readonly-value">
+                            @Model.CheckInDate.ToString("dd/MM/yyyy") @Model.DefaultCheckInTime.ToString("HH\\:mm")
+                            <span class="mx-1">→</span>
+                            @Model.CheckOutDate.ToString("dd/MM/yyyy") @Model.DefaultCheckOutTime.ToString("HH\\:mm")
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="BookingNote" class="form-label fw-semibold">
+                            Ghi chú Booking
+                        </label>
+                        <textarea asp-for="BookingNote"
+                                  class="form-control"
+                                  rows="3"
+                                  maxlength="255"
+                                  placeholder="Nhập ghi chú nếu có..."></textarea>
+                        <span asp-validation-for="BookingNote" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon">
+                        <i class="bi bi-person-vcard" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thông tin khách hàng</h2>
+                        <div class="small text-body-secondary">
+                            Mỗi Booking mới luôn tạo một khách hàng mới. Mã khách hàng được tự sinh và có thể chỉnh sửa.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="GuestCode" class="form-label fw-semibold">
+                            Mã khách hàng <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="GuestCode"
+                               id="guestCode"
+                               class="form-control font-monospace"
+                               pattern="\S+"
+                               maxlength="50"
+                               autocomplete="off"
+                               required />
+                        <div class="form-text">Không được chứa dấu cách; mã phải chưa tồn tại.</div>
+                        <span asp-validation-for="GuestCode" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="GuestName" class="form-label fw-semibold">
+                            Tên khách hàng <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="GuestName"
+                               id="guestName"
+                               class="form-control"
+                               maxlength="100"
+                               autocomplete="name"
+                               required />
+                        <span asp-validation-for="GuestName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestDateOfBirth" class="form-label fw-semibold">Ngày sinh</label>
+                        <input asp-for="GuestDateOfBirth" id="guestDob" type="date" class="form-control" />
+                        <span asp-validation-for="GuestDateOfBirth" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestSex" class="form-label fw-semibold">Giới tính</label>
+                        <select asp-for="GuestSex" id="guestSex" class="form-select">
+                            <option value="">-- Không nhập --</option>
+                            <option value="0">Nam</option>
+                            <option value="1">Nữ</option>
+                            <option value="2">Khác</option>
+                        </select>
+                        <span asp-validation-for="GuestSex" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestAddress" class="form-label fw-semibold">Địa chỉ</label>
+                        <input asp-for="GuestAddress" id="guestAddress" class="form-control" maxlength="255" autocomplete="street-address" />
+                        <span asp-validation-for="GuestAddress" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestPhoneNumber" class="form-label fw-semibold">Số điện thoại</label>
+                        <input asp-for="GuestPhoneNumber"
+                               id="guestPhone"
+                               class="form-control"
+                               maxlength="20"
+                               autocomplete="tel" />
+                        <span asp-validation-for="GuestPhoneNumber"
+                              class="text-danger guest-contact-validation"
+                              data-guest-contact-validation="true"></span>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestEmail" class="form-label fw-semibold">Email</label>
+                        <input asp-for="GuestEmail"
+                               id="guestEmail"
+                               type="email"
+                               class="form-control"
+                               maxlength="4000"
+                               autocomplete="email" />
+                        <span asp-validation-for="GuestEmail" class="text-danger"></span>
+                        <div class="form-text">Phải nhập ít nhất số điện thoại hoặc email.</div>
+                    </div>
+
+                    <div class="col-12 col-md-7">
+                        <label asp-for="GuestIdentityNumber" class="form-label fw-semibold">Số giấy tờ</label>
+                        <input asp-for="GuestIdentityNumber" id="guestIdentityNumber" class="form-control" maxlength="50" />
+                        <span asp-validation-for="GuestIdentityNumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-md-5">
+                        <label asp-for="GuestIdentityType" class="form-label fw-semibold">Loại giấy tờ</label>
+                        <select asp-for="GuestIdentityType" id="guestIdentityType" class="form-select">
+                            <option value="">-- Không nhập --</option>
+                            <option value="0">CCCD</option>
+                            <option value="1">Giấy phép lái xe</option>
+                            <option value="2">Hộ chiếu</option>
+                        </select>
+                        <span asp-validation-for="GuestIdentityType" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="GuestNote" class="form-label fw-semibold">Ghi chú khách hàng</label>
+                        <textarea asp-for="GuestNote"
+                                  id="guestNote"
+                                  class="form-control"
+                                  rows="2"
+                                  maxlength="255"></textarea>
+                        <span asp-validation-for="GuestNote" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon">
+                        <i class="bi bi-wallet2" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Tiền cọc &amp; xác nhận thanh toán</h2>
+                        <div class="small text-body-secondary">
+                            Tiền cọc được tính lại từ giá phòng, số phòng, số đêm và DepositPercent của DB.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <div class="booking-money-summary">
+                            <div class="booking-money-label">Tổng tiền phòng dự kiến</div>
+                            <div class="booking-money-value">@Model.EstimatedRoomAmount.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <div class="booking-money-summary booking-money-summary-highlight">
+                            <div class="booking-money-label">Tiền cọc phải trả</div>
+                            <div class="booking-money-value">@Model.DepositAmount.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.DepositAmount > 0)
+                {
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <fieldset>
+                                <legend class="col-form-label fw-semibold">
+                                    Phương thức thanh toán cọc
+                                </legend>
+
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="radio"
+                                               asp-for="PaymentMethod"
+                                               id="paymentCash"
+                                               value="0" />
+                                        <label class="form-check-label" for="paymentCash">
+                                            Tiền mặt
+                                        </label>
+                                    </div>
+
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="radio"
+                                               asp-for="PaymentMethod"
+                                               id="paymentTransfer"
+                                               value="1" />
+                                        <label class="form-check-label" for="paymentTransfer">
+                                            Chuyển khoản
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                            </fieldset>
+                        </div>
+
+                        <div class="col-12 d-none" id="referenceCodeWrap">
+                            <label asp-for="ReferenceCode" class="form-label fw-semibold">
+                                Mã giao dịch
+                            </label>
+                            <input asp-for="ReferenceCode"
+                                   id="referenceCode"
+                                   class="form-control font-monospace"
+                                   maxlength="100" />
+                            <div class="form-text">
+                                Bắt buộc khi chọn chuyển khoản.
+                            </div>
+                            <span asp-validation-for="ReferenceCode" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="PaymentDate" class="form-label fw-semibold">
+                                Thời gian thanh toán cọc <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="PaymentDate"
+                                   id="paymentDate"
+                                   type="datetime-local"
+                                   class="form-control"
+                                   value="@(Model.PaymentDate?.ToString("yyyy-MM-ddTHH:mm"))"
+                                   data-step2-start="@(Model.Step2StartedAt?.ToString("yyyy-MM-ddTHH:mm"))" />
+                            <div class="form-text">Chọn ngày và thời gian thực tế đã nhận tiền cọc.</div>
+                            <span asp-validation-for="PaymentDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check booking-deposit-confirm-box">
+                                <input class="form-check-input"
+                                       asp-for="DepositConfirmed"
+                                       id="depositConfirmed" />
+                                <label class="form-check-label fw-semibold" for="depositConfirmed">
+                                    Tôi xác nhận đã nhận được @Model.DepositAmount.ToString("N0") ₫ tiền cọc theo phương thức thanh toán đã chọn.
+                                </label>
+                                <div class="small text-body-secondary mt-1">
+                                    Ngày thanh toán sẽ được ghi nhận tự động tại thời điểm tạo booking.
+                                </div>
+                                <span asp-validation-for="DepositConfirmed" class="text-danger d-block"></span>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-success mb-0" role="alert">
+                        <i class="bi bi-check-circle me-1" aria-hidden="true"></i>
+                        Tiền cọc bằng 0 ₫. Không cần chọn phương thức thanh toán và không cần xác nhận nhận cọc.
+                    </div>
+                }
+            </div>
+        </section>
+
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mb-4">
+            <a href="@Url.Action("Create", "Booking", new { bookingType = 0, step = 1, draftId = Model.DraftId })"
+               data-ajax="false"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+                Quay lại bước 1
+            </a>
+
+            <button type="submit"
+                    class="btn btn-primary"
+                    id="bookingCreateSubmitButton">
+                <span class="ui-button-content">
+                    <i class="bi bi-calendar-check me-1" aria-hidden="true"></i>
+                    Tạo lịch đặt phòng
+                </span>
+                <span class="ui-button-loading d-none">
+                    <span class="spinner-border spinner-border-sm me-1"
+                          role="status"
+                          aria-hidden="true"></span>
+                    Đang tạo...
+                </span>
+            </button>
+        </div>
+    </form>
+    }
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            "use strict";
+
+            const money = value =>
+                new Intl.NumberFormat("vi-VN").format(
+                    Math.round(Number(value || 0))
+                ) + " ₫";
+
+            const dateDiff = (a, b) => {
+                if (!a || !b) {
+                    return 0;
+                }
+
+                const start = new Date(a + "T00:00:00");
+                const end = new Date(b + "T00:00:00");
+                const diff = Math.round((end - start) / 86400000);
+                return diff > 0 ? diff : 0;
+            };
+
+            const stepOneForm = document.getElementById("bookingStepOneForm");
+            const refreshButton = document.getElementById("refreshCreateRoomTypesButton");
+
+            const updateStepOneSummary = () => {
+                if (!stepOneForm) {
+                    return;
+                }
+
+                let rooms = 0;
+                let estimate = 0;
+                let deposit = 0;
+
+                const nights = dateDiff(
+                    stepOneForm.querySelector('[name="CheckInDate"]')?.value,
+                    stepOneForm.querySelector('[name="CheckOutDate"]')?.value
+                );
+
+                stepOneForm.querySelectorAll("[data-room-type-row]").forEach(row => {
+                    const quantityInput = row.querySelector('[data-room-input="quantity"]');
+                    const quantity = Math.max(0, Number(quantityInput?.value || 0));
+                    const price = Number(row.dataset.price || 0);
+                    const depositPercent = Number(row.dataset.deposit || 0);
+                    const max = Number(quantityInput?.max || 999);
+
+                    rooms += quantity;
+                    estimate += quantity * price * nights;
+                    deposit += quantity * price * nights * depositPercent / 100;
+
+                    quantityInput?.classList.toggle("is-invalid", quantity > max);
+                });
+
+                document.getElementById("step1Nights")?.replaceChildren(String(nights));
+                document.getElementById("step1RoomCount")?.replaceChildren(`${rooms} phòng`);
+                document.getElementById("step1Estimate")?.replaceChildren(money(estimate));
+                document.getElementById("step1Deposit")?.replaceChildren(money(deposit));
+            };
+
+            if (stepOneForm) {
+                let refreshTimer = null;
+                let lastCheckIn = stepOneForm.querySelector('[name="CheckInDate"]')?.value || "";
+                let lastCheckOut = stepOneForm.querySelector('[name="CheckOutDate"]')?.value || "";
+
+                const checkInInput = stepOneForm.querySelector('[name="CheckInDate"]');
+                const checkOutInput = stepOneForm.querySelector('[name="CheckOutDate"]');
+                const serverToday = stepOneForm.dataset.serverToday || new Date().toISOString().slice(0, 10);
+
+                const validateStayDates = () => {
+                    if (!checkInInput || !checkOutInput) {
+                        return false;
+                    }
+
+                    const checkIn = checkInInput.value || "";
+                    const checkOut = checkOutInput.value || "";
+
+                    checkInInput.setCustomValidity("");
+                    checkOutInput.setCustomValidity("");
+
+                    if (!checkIn) {
+                        checkInInput.setCustomValidity("Vui lòng chọn ngày check in dự kiến.");
+                        return false;
+                    }
+
+                    if (!checkOut) {
+                        checkOutInput.setCustomValidity("Vui lòng chọn ngày check out dự kiến.");
+                        return false;
+                    }
+
+                    if (checkIn < serverToday) {
+                        checkInInput.setCustomValidity("Ngày check in dự kiến không được trước ngày hiện tại.");
+                        return false;
+                    }
+
+                    if (checkOut <= checkIn) {
+                        checkOutInput.setCustomValidity("Ngày check out phải sau ngày check in.");
+                        return false;
+                    }
+
+                    return true;
+                };
+
+                const updateDateConstraints = () => {
+                    if (!checkInInput || !checkOutInput) {
+                        return;
+                    }
+
+                    checkInInput.min = serverToday;
+
+                    if (checkInInput.value) {
+                        const nextDay = new Date(checkInInput.value + "T00:00:00");
+                        nextDay.setDate(nextDay.getDate() + 1);
+                        const nextDayIso = nextDay.toISOString().slice(0, 10);
+                        checkOutInput.min = nextDayIso;
+                    } else {
+                        checkOutInput.removeAttribute("min");
+                    }
+                };
+
+                const scheduleAvailabilityRefresh = () => {
+                    // Quan trọng: validate 2 ngày trước. Nếu ngày không hợp lệ,
+                    // tuyệt đối không gửi request RefreshCreate.
+                    updateDateConstraints();
+
+                    const validDates = validateStayDates();
+                    if (!validDates) {
+                        clearTimeout(refreshTimer);
+                        return;
+                    }
+
+                    const checkIn = checkInInput.value || "";
+                    const checkOut = checkOutInput.value || "";
+
+                    if (checkIn === lastCheckIn && checkOut === lastCheckOut) {
+                        return;
+                    }
+
+                    clearTimeout(refreshTimer);
+                    refreshTimer = setTimeout(() => {
+                        // Kiểm tra lại ngay trước khi gửi request để tránh trường hợp
+                        // người dùng sửa tiếp giá trị trong thời gian debounce.
+                        if (!validateStayDates()) {
+                            return;
+                        }
+
+                        lastCheckIn = checkInInput.value || "";
+                        lastCheckOut = checkOutInput.value || "";
+
+                        if (refreshButton) {
+                            refreshButton.click();
+                        }
+                    }, 350);
+                };
+
+                checkInInput?.addEventListener("change", scheduleAvailabilityRefresh);
+                checkOutInput?.addEventListener("change", scheduleAvailabilityRefresh);
+                checkInInput?.addEventListener("blur", validateStayDates);
+                checkOutInput?.addEventListener("blur", validateStayDates);
+                checkInInput?.addEventListener("input", updateDateConstraints);
+                checkOutInput?.addEventListener("input", updateDateConstraints);
+
+                updateDateConstraints();
+                validateStayDates();
+
+                stepOneForm.addEventListener("input", updateStepOneSummary);
+                stepOneForm.addEventListener("change", updateStepOneSummary);
+
+                stepOneForm.addEventListener("submit", event => {
+                    if (event.submitter === refreshButton) {
+                        return;
+                    }
+
+                    if (!stepOneForm.checkValidity()) {
+                        event.preventDefault();
+                        stepOneForm.reportValidity();
+                        return;
+                    }
+
+                    const submitButton = event.submitter;
+                    if (submitButton && window.HotelUI?.setButtonLoading) {
+                        window.HotelUI.setButtonLoading(
+                            submitButton,
+                            true,
+                            "Đang kiểm tra..."
+                        );
+                    }
+                });
+
+                updateStepOneSummary();
+            }
+        })();
+    </script>
+
+    <script>
+        (() => {
+            "use strict";
+
+            const finalForm = document.getElementById("bookingCreateFinalForm");
+            const referenceWrap = document.getElementById("referenceCodeWrap");
+            const referenceInput = document.getElementById("referenceCode");
+            const transferRadio = document.getElementById("paymentTransfer");
+            const cashRadio = document.getElementById("paymentCash");
+            const depositConfirmed = document.getElementById("depositConfirmed");
+            const depositAmount = Number("@Model.DepositAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)");
+
+            const guestCode = document.getElementById("guestCode");
+            const guestName = document.getElementById("guestName");
+            const guestDob = document.getElementById("guestDob");
+            const guestSex = document.getElementById("guestSex");
+            const guestAddress = document.getElementById("guestAddress");
+            const guestPhone = document.getElementById("guestPhone");
+            const guestEmail = document.getElementById("guestEmail");
+
+            const updateReferenceVisibility = () => {
+                const show = Boolean(transferRadio?.checked);
+                referenceWrap?.classList.toggle("d-none", !show);
+
+                if (referenceInput) {
+                    referenceInput.required = show;
+                }
+            };
+
+            const contactValidationMessage =
+                "Khách hàng phải có ít nhất số điện thoại hoặc email.";
+
+            const guestContactValidation =
+                document.querySelector('[data-guest-contact-validation="true"]');
+
+            const clearGuestContactValidation = () => {
+                if (guestContactValidation) {
+                    guestContactValidation.textContent = "";
+                    guestContactValidation.classList.remove("field-validation-error");
+                    guestContactValidation.classList.add("field-validation-valid");
+                }
+
+                guestPhone?.classList.remove("is-invalid");
+                guestEmail?.classList.remove("is-invalid");
+            };
+
+            const showGuestContactValidation = () => {
+                if (guestContactValidation) {
+                    guestContactValidation.textContent = contactValidationMessage;
+                    guestContactValidation.classList.remove("field-validation-valid");
+                    guestContactValidation.classList.add("field-validation-error");
+                }
+
+                guestPhone?.classList.add("is-invalid");
+                guestEmail?.classList.add("is-invalid");
+                guestPhone?.focus();
+            };
+
+            document.querySelectorAll('input[name="PaymentMethod"]').forEach(input => {
+                input.addEventListener("change", updateReferenceVisibility);
+            });
+
+            updateReferenceVisibility();
+
+            if (depositAmount > 0) {
+                if (cashRadio) cashRadio.required = true;
+                if (depositConfirmed) depositConfirmed.required = true;
+            }
+
+            if (finalForm) {
+                let confirmed = false;
+
+                finalForm.addEventListener("submit", event => {
+                    if (confirmed) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    updateReferenceVisibility();
+
+                    const paymentDate = document.getElementById("paymentDate");
+                    if (depositAmount > 0 && paymentDate) {
+                        paymentDate.required = true;
+                    }
+
+                    // 1) Basic validation first: required, type/format and range.
+                    if (!finalForm.checkValidity()) {
+                        finalForm.reportValidity();
+                        const invalid = finalForm.querySelector(":invalid");
+                        invalid?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        invalid?.focus({ preventScroll: true });
+                        return;
+                    }
+
+                    // 2) Business validation only after basic validation has passed.
+                    if (!(guestPhone?.value.trim() || guestEmail?.value.trim())) {
+                        showGuestContactValidation();
+                        return;
+                    }
+
+                    clearGuestContactValidation();
+
+                    if (depositAmount > 0) {
+                        if (paymentDate?.value) {
+                            const payment = new Date(paymentDate.value);
+                            const step2StartText = paymentDate.dataset.step2Start;
+                            if (step2StartText) {
+                                const step2Start = new Date(step2StartText);
+                                if (payment < step2Start) {
+                                    paymentDate.focus();
+                                    window.HotelUI?.toast?.(
+                                        "warning",
+                                        "Thời gian thanh toán không hợp lệ",
+                                        "Thời gian thanh toán cọc không được trước thời điểm bắt đầu bước 2."
+                                    );
+                                    return;
+                                }
+                            }
+
+                            if (payment > new Date()) {
+                                paymentDate.focus();
+                                window.HotelUI?.toast?.(
+                                    "warning",
+                                    "Thời gian thanh toán không hợp lệ",
+                                    "Thời gian thanh toán cọc không được lớn hơn thời điểm submit bước 2."
+                                );
+                                return;
+                            }
+                        }
+
+                        if (!depositConfirmed?.checked) {
+                            depositConfirmed?.focus();
+                            window.HotelUI?.toast?.(
+                                "warning",
+                                "Chưa xác nhận tiền cọc",
+                                "Vui lòng xác nhận đã nhận được tiền cọc trước khi tạo booking."
+                            );
+                            return;
+                        }
+
+                        if (transferRadio?.checked && !referenceInput?.value.trim()) {
+                            referenceInput?.focus();
+                            window.HotelUI?.toast?.(
+                                "warning",
+                                "Thiếu mã giao dịch",
+                                "Thanh toán chuyển khoản bắt buộc phải có mã giao dịch."
+                            );
+                            return;
+                        }
+                    }
+
+                    const doSubmit = () => {
+                        confirmed = true;
+                        const button = document.getElementById("bookingCreateSubmitButton");
+
+                        if (button && window.HotelUI?.setButtonLoading) {
+                            window.HotelUI.setButtonLoading(
+                                button,
+                                true,
+                                "Đang tạo..."
+                            );
+                        }
+
+                        finalForm.submit();
+                    };
+
+                    const confirm = window.HotelUI?.showConfirm;
+                    if (typeof confirm === "function") {
+                        confirm({
+                            title: "Xác nhận tạo lịch đặt phòng",
+                            message: "Bạn có chắc chắn muốn tạo lịch đặt phòng với các thông tin hiện tại?",
+                            note: depositAmount > 0
+                                ? "Hệ thống sẽ ghi nhận tiền cọc và thời điểm thanh toán ngay khi tạo thành công."
+                                : "Tiền cọc bằng 0 nên hệ thống sẽ không ghi nhận phương thức thanh toán cọc.",
+                            variant: "primary",
+                            confirmText: "Tạo lịch đặt phòng",
+                            onConfirm: doSubmit
+                        });
+                    } else {
+                        doSubmit();
+                    }
+                });
+            }
+        })();
+    </script>
+}

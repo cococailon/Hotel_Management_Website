@@ -1,0 +1,392 @@
+﻿@model Hotel_Management_Website.Models.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+}
+
+
+<div class="login-wrapper">
+
+
+    <div class="card shadow-lg border-0 login-card">
+
+
+        <div class="card-body p-4 p-md-5">
+
+
+            <!-- ================================================= -->
+            <!-- BRAND -->
+            <!-- ================================================= -->
+
+            <div class="text-center mb-4">
+
+                <div class="login-brand mb-2">
+                    Hotel Management
+                </div>
+
+                <div class="text-body-secondary">
+                    Đăng nhập vào hệ thống
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- LOGIN FORM -->
+            <!-- ================================================= -->
+
+            <form id="loginForm"
+                  asp-controller="Account"
+                  asp-action="Login"
+                  method="post"
+                  novalidate>
+
+                @Html.AntiForgeryToken()
+
+
+                @if (!string.IsNullOrWhiteSpace(Model.ReturnUrl))
+                {
+                    <input type="hidden"
+                           asp-for="ReturnUrl" />
+                }
+
+
+                <!-- ============================================= -->
+                <!-- ERROR -->
+                <!-- ============================================= -->
+
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger"
+                     role="alert">
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- USERNAME -->
+                <!-- ============================================= -->
+
+                <div class="mb-3">
+
+                    <label asp-for="UserName"
+                           class="form-label fw-semibold">
+
+                        Tên đăng nhập
+
+                    </label>
+
+
+                    <input asp-for="UserName"
+                           class="form-control form-control-lg"
+                           autocomplete="username"
+                           placeholder="Nhập tên đăng nhập" />
+
+
+                    <span asp-validation-for="UserName"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- PASSWORD -->
+                <!-- ============================================= -->
+
+                <div class="mb-4">
+
+                    <label asp-for="Password"
+                           class="form-label fw-semibold">
+
+                        Mật khẩu
+
+                    </label>
+
+
+                    <input asp-for="Password"
+                           class="form-control form-control-lg"
+                           autocomplete="current-password"
+                           placeholder="Nhập mật khẩu" />
+
+
+                    <span asp-validation-for="Password"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- LOGIN BUTTON -->
+                <!-- ============================================= -->
+
+                <button id="loginButton"
+                        type="submit"
+                        class="btn btn-primary btn-lg w-100">
+
+                    <span id="loginButtonText">
+                        Đăng nhập
+                    </span>
+
+
+                    <span id="loginButtonSpinner"
+                          class="spinner-border spinner-border-sm ms-2 d-none"
+                          role="status"
+                          aria-hidden="true">
+                    </span>
+
+                </button>
+
+            </form>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- LOADING OVERLAY -->
+<!-- ========================================================= -->
+
+<div id="loginLoadingOverlay"
+     class="login-loading-overlay d-none"
+     aria-hidden="true">
+
+    <div class="text-center">
+
+        <div class="spinner-border mb-3"
+             role="status">
+
+            <span class="visually-hidden">
+                Đang xác thực...
+            </span>
+
+        </div>
+
+
+        <div class="fw-semibold">
+            Đang xác thực tài khoản...
+        </div>
+
+
+        <div class="text-body-secondary small mt-1">
+            Vui lòng chờ trong giây lát.
+        </div>
+
+    </div>
+
+</div>
+
+
+@section Scripts
+{
+    <!-- ===================================================== -->
+    <!-- JQUERY VALIDATION -->
+    <!-- ===================================================== -->
+
+    <partial name="_ValidationScriptsPartial" />
+
+
+    <!-- ===================================================== -->
+    <!-- LOGIN JAVASCRIPT -->
+    <!-- ===================================================== -->
+
+    <script>
+
+        (() => {
+
+            const form =
+                document.getElementById("loginForm");
+
+            const userNameInput =
+                document.getElementById("UserName");
+
+            const passwordInput =
+                document.getElementById("Password");
+
+            const loginButton =
+                document.getElementById("loginButton");
+
+            const loginButtonText =
+                document.getElementById("loginButtonText");
+
+            const loginButtonSpinner =
+                document.getElementById("loginButtonSpinner");
+
+            const loadingOverlay =
+                document.getElementById("loginLoadingOverlay");
+
+
+            if (!form ||
+                !userNameInput ||
+                !passwordInput ||
+                !loginButton ||
+                !loginButtonText ||
+                !loginButtonSpinner ||
+                !loadingOverlay) {
+
+                return;
+            }
+
+
+            let isSubmitting = false;
+
+
+            // =====================================================
+            // SUBMIT
+            // =====================================================
+
+            form.addEventListener(
+                "submit",
+                function (event) {
+
+                    // -------------------------------------------------
+                    // Chống double submit
+                    // -------------------------------------------------
+
+                    if (isSubmitting) {
+
+                        event.preventDefault();
+
+                        return;
+                    }
+
+
+                    // -------------------------------------------------
+                    // Client-side validation
+                    // -------------------------------------------------
+
+                    if (window.jQuery &&
+                        typeof window.jQuery.fn.validate === "function") {
+
+                        const isValid =
+                            window.jQuery(form).valid();
+
+
+                        if (!isValid) {
+
+                            // Không disable form
+                            // Không hiển thị loading
+                            // Cho người dùng sửa tiếp.
+
+                            return;
+                        }
+                    }
+
+
+                    // -------------------------------------------------
+                    // Bắt đầu request thật sự
+                    // -------------------------------------------------
+
+                    isSubmitting = true;
+
+
+                    // -------------------------------------------------
+                    // KHÔNG disable input!
+                    //
+                    // readonly vẫn cho browser submit dữ liệu.
+                    // disabled input sẽ KHÔNG được submit.
+                    // -------------------------------------------------
+
+                    userNameInput.readOnly = true;
+
+                    passwordInput.readOnly = true;
+
+
+                    // -------------------------------------------------
+                    // Disable button
+                    // -------------------------------------------------
+
+                    loginButton.disabled = true;
+
+
+                    // -------------------------------------------------
+                    // Button loading
+                    // -------------------------------------------------
+
+                    loginButtonText.textContent =
+                        "Đang đăng nhập...";
+
+
+                    loginButtonSpinner.classList.remove(
+                        "d-none"
+                    );
+
+
+                    // -------------------------------------------------
+                    // Overlay
+                    // -------------------------------------------------
+
+                    loadingOverlay.classList.remove(
+                        "d-none"
+                    );
+
+
+                    loadingOverlay.setAttribute(
+                        "aria-hidden",
+                        "false"
+                    );
+
+
+                    form.setAttribute(
+                        "aria-busy",
+                        "true"
+                    );
+
+                }
+            );
+
+
+            // =====================================================
+            // PAGE SHOW
+            // =====================================================
+
+            window.addEventListener(
+                "pageshow",
+                function () {
+
+                    isSubmitting = false;
+
+
+                    userNameInput.readOnly = false;
+
+                    passwordInput.readOnly = false;
+
+
+                    loginButton.disabled = false;
+
+
+                    loginButtonText.textContent =
+                        "Đăng nhập";
+
+
+                    loginButtonSpinner.classList.add(
+                        "d-none"
+                    );
+
+
+                    loadingOverlay.classList.add(
+                        "d-none"
+                    );
+
+
+                    loadingOverlay.setAttribute(
+                        "aria-hidden",
+                        "true"
+                    );
+
+
+                    form.removeAttribute(
+                        "aria-busy"
+                    );
+
+                }
+            );
+
+        })();
+
+    </script>
+}

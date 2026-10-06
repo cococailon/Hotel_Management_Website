@@ -1,0 +1,181 @@
+@model Hotel_Management_Website.Models.ViewModels.Room.RoomDetailsViewModel
+
+@{
+    var isReception = User.IsInRole("Reception");
+    var isHousekeeping = User.IsInRole("Housekeeping");
+    ViewData["Title"] = "Chi tiết phòng";
+    Layout = isReception
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : isHousekeeping
+            ? "~/Views/Shared/_HousekeepingLayout.cshtml"
+            : "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/room-details.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Chi tiết phòng",
+        Description = "Xem đầy đủ thông tin cấu hình, vị trí và trạng thái của phòng.",
+        Icon = "bi-door-open"
+    })
+
+<div class="room-details-page">
+    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2 mb-4">
+        <a href="@(Url.IsLocalUrl(Model.ReturnUrl) ? Model.ReturnUrl : Url.Action("Index", "Room"))"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            Quay lại danh sách
+        </a>
+
+        @if (!isReception && !isHousekeeping)
+        {
+        <a asp-controller="Room"
+           asp-action="Edit"
+           asp-route-id="@Model.Id"
+           asp-route-returnUrl="@Model.ReturnUrl"
+           class="btn btn-primary">
+            <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>
+            Sửa phòng
+        </a>
+        }
+    </div>
+
+    <section class="card border-0 shadow-sm room-details-summary mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
+                <div class="min-w-0">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <h1 class="h4 fw-semibold mb-0 room-details-name" title="@Model.RoomName">@Model.RoomName</h1>
+                        <span class="badge @Model.StatusBadgeClass">@Model.StatusName</span>
+                        <span class="badge @Model.ActiveStatusBadgeClass">@Model.ActiveStatusName</span>
+                    </div>
+                    <div class="text-body-secondary room-details-code-row">
+                        <span class="font-monospace" title="@Model.RoomCode">@Model.RoomCode</span>
+                        <span aria-hidden="true">•</span>
+                        <span title="@Model.RoomTypeCode - @Model.RoomTypeName">@Model.RoomTypeCode - @Model.RoomTypeName</span>
+                    </div>
+                </div>
+
+                <div class="room-details-position-badge" title="Tầng - Hàng - Thứ tự">
+                    <span class="small text-body-secondary">Vị trí</span>
+                    <strong>@Model.Floor - @Model.Row - @Model.LeftToRightOrder</strong>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="room-details-section-icon" aria-hidden="true"><i class="bi bi-door-open"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Thông tin phòng</h2>
+                            <div class="small text-body-secondary">Thông tin định danh và loại phòng</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <dl class="row g-3 mb-0 room-details-dl">
+                        <div class="col-12 col-sm-6">
+                            <dt>Mã phòng</dt><dd class="font-monospace" title="@Model.RoomCode">@Model.RoomCode</dd>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <dt>Tên phòng</dt><dd title="@Model.RoomName">@Model.RoomName</dd>
+                        </div>
+                        <div class="col-12">
+                            <dt>Mã loại phòng - Tên loại phòng</dt>
+                            <dd title="@Model.RoomTypeCode - @Model.RoomTypeName">@Model.RoomTypeCode - @Model.RoomTypeName</dd>
+                        </div>
+                        <div class="col-12">
+                            <dt>Tầng - Hàng - Thứ tự</dt><dd>@Model.Floor - @Model.Row - @Model.LeftToRightOrder</dd>
+                        </div>
+                    </dl>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="room-details-section-icon" aria-hidden="true"><i class="bi bi-activity"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Tình trạng và trạng thái</h2>
+                            <div class="small text-body-secondary">Trạng thái vận hành hiện tại của phòng</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <dl class="row g-3 mb-0 room-details-dl">
+                        <div class="col-12 col-sm-6">
+                            <dt>Tình trạng</dt><dd><span class="badge @Model.StatusBadgeClass">@Model.StatusName</span></dd>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <dt>Trạng thái</dt><dd><span class="badge @Model.ActiveStatusBadgeClass">@Model.ActiveStatusName</span></dd>
+                        </div>
+                    </dl>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="room-details-section-icon" aria-hidden="true"><i class="bi bi-card-text"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Mô tả và ghi chú</h2>
+                            <div class="small text-body-secondary">Thông tin bổ sung của phòng</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-6">
+                            <div class="room-details-label">Mô tả</div>
+                            <div class="room-details-note">@(string.IsNullOrWhiteSpace(Model.Description) ? "Không có mô tả" : Model.Description)</div>
+                        </div>
+                        <div class="col-12 col-xl-6">
+                            <div class="room-details-label">Ghi chú</div>
+                            <div class="room-details-note">@(string.IsNullOrWhiteSpace(Model.Note) ? "Không có ghi chú" : Model.Note)</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="room-details-section-icon" aria-hidden="true"><i class="bi bi-clock-history"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Thông tin thời gian</h2>
+                            <div class="small text-body-secondary">Thông tin audit của phòng</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="room-details-label">Ngày tạo</div>
+                            <div class="room-details-value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="room-details-label">Ngày chỉnh sửa gần nhất</div>
+                            <div class="room-details-value">@Model.LastModifiedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

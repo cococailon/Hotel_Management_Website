@@ -1,0 +1,229 @@
+﻿@model Hotel_Management_Website.Models.ViewModels.Room.RoomEditViewModel
+
+@{
+    ViewData["Title"] = "Sửa phòng";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var isUsing = Model.Status == 1;
+    var statusName = Model.Status switch
+    {
+        0 => "Trống",
+        1 => "Đang sử dụng",
+        2 => "Chờ dọn dẹp",
+        3 => "Đang dọn dẹp",
+        4 => "Bảo trì",
+        _ => "Không xác định"
+    };
+
+    var statusBadgeClass = Model.Status switch
+    {
+        0 => "text-bg-success",
+        1 => "text-bg-primary",
+        2 => "text-bg-warning",
+        3 => "text-bg-info",
+        4 => "text-bg-danger",
+        _ => "text-bg-secondary"
+    };
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/room-form.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Sửa phòng",
+        Description = "Cập nhật thông tin phòng theo tình trạng sử dụng hiện tại.",
+        Icon = "bi-pencil-square"
+    })
+
+<div class="room-form-page">
+    <form id="roomEditForm"
+          asp-controller="Room"
+          asp-action="Edit"
+          method="post"
+          novalidate
+          data-native-validation="true"
+          data-ajax="false">
+
+        @Html.AntiForgeryToken()
+        <input asp-for="Id" type="hidden" />
+        <input asp-for="Status" type="hidden" />
+        <input asp-for="ReturnUrl" type="hidden" />
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+        @if (isUsing)
+        {
+            <div class="alert alert-info d-flex align-items-start gap-2" role="alert">
+                <i class="bi bi-info-circle mt-1" aria-hidden="true"></i>
+                <div>
+                    <strong>Phòng đang sử dụng.</strong>
+                    Chỉ được sửa <strong>Mô tả</strong> và <strong>Ghi chú</strong>. Tên phòng, vị trí, loại phòng và trạng thái sẽ được giữ nguyên.
+                </div>
+            </div>
+        }
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="room-form-section-icon"><i class="bi bi-door-open" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">Thông tin phòng</h2>
+                        <p class="text-body-secondary small mb-0">Mã phòng chỉ không được sửa khi phòng đang sử dụng.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="RoomCode" class="form-label required">Mã phòng</label>
+                        @if (isUsing)
+                        {
+                            <input type="hidden" asp-for="RoomCode" />
+                            <input value="@Model.RoomCode" class="form-control bg-body-secondary" readonly tabindex="-1" aria-readonly="true" />
+                            <div class="form-text">Phòng đang sử dụng nên mã không được thay đổi.</div>
+                        }
+                        else
+                        {
+                            <input asp-for="RoomCode" class="form-control" maxlength="50" autocomplete="off" spellcheck="false" />
+                            <div class="form-text">Mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.</div>
+                            <span asp-validation-for="RoomCode" class="text-danger"></span>
+                        }
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label asp-for="RoomName" class="form-label required">Tên phòng</label>
+                        <input asp-for="RoomName" id="roomEditName" class="form-control" maxlength="100" autocomplete="off" disabled="@(isUsing ? "disabled" : null)" />
+                        <span asp-validation-for="RoomName" class="text-danger"></span>
+                        @if (isUsing)
+                        {
+                            <input asp-for="RoomName" type="hidden" />
+                        }
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label asp-for="Floor" class="form-label required">Tầng</label>
+                        <input asp-for="Floor" id="roomFloor" type="number" class="form-control" min="1" max="1000" disabled="@(isUsing ? "disabled" : null)" />
+                        <div class="room-position-suggestion" id="roomFloorSuggestion" aria-live="polite"></div>
+                        <span asp-validation-for="Floor" class="text-danger"></span>
+                        @if (isUsing)
+                        {
+                            <input asp-for="Floor" type="hidden" />
+                        }
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label asp-for="Row" class="form-label required">Hàng</label>
+                        <input asp-for="Row" id="roomRow" type="number" class="form-control" min="1" max="1000" disabled="@(isUsing ? "disabled" : null)" />
+                        <div class="room-position-suggestion" id="roomRowSuggestion" aria-live="polite"></div>
+                        <span asp-validation-for="Row" class="text-danger"></span>
+                        @if (isUsing)
+                        {
+                            <input asp-for="Row" type="hidden" />
+                        }
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label asp-for="LeftToRightOrder" class="form-label required">Thứ tự</label>
+                        <input asp-for="LeftToRightOrder" id="roomOrder" type="number" class="form-control" min="1" max="1000" disabled="@(isUsing ? "disabled" : null)" />
+                        <div class="form-text">Không được trùng vị trí Tầng + Hàng + Thứ tự.</div>
+                        <span asp-validation-for="LeftToRightOrder" class="text-danger"></span>
+                        @if (isUsing)
+                        {
+                            <input asp-for="LeftToRightOrder" type="hidden" />
+                        }
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label asp-for="RoomTypeId" class="form-label required">Loại phòng</label>
+                        <select asp-for="RoomTypeId" id="roomTypeId" class="form-select" disabled="@(isUsing ? "disabled" : null)">
+                            <option value="">-- Chọn loại phòng --</option>
+                            @foreach (var type in Model.AvailableRoomTypes)
+                            {
+                                <option value="@type.Id"
+                                        data-active="@type.IsActive.ToString().ToLowerInvariant()"
+                                        disabled="@(!type.IsSelectable ? "disabled" : null)">
+                                    @type.Code - @type.Name@(type.IsActive ? "" : " (Đang dừng hoạt động)")
+                                </option>
+                            }
+                        </select>
+                        <span asp-validation-for="RoomTypeId" class="text-danger"></span>
+                        @if (isUsing)
+                        {
+                            <input asp-for="RoomTypeId" type="hidden" />
+                        }
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Tình trạng</label>
+                        <div class="room-form-readonly-box">
+                            <span class="badge @statusBadgeClass">@statusName</span>
+                            <span class="small text-body-secondary">Tình trạng được hệ thống và nghiệp vụ phòng cập nhật.</span>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        @if (isUsing)
+                        {
+                            <input type="hidden" name="IsActive" value="@(Model.IsActive ? "true" : "false")" />
+                            <div class="room-form-readonly-box">
+                                <span class="badge @(Model.IsActive ? "text-bg-success" : "text-bg-secondary")">
+                                    @(Model.IsActive ? "Đang hoạt động" : "Dừng hoạt động")
+                                </span>
+                                <span class="small text-body-secondary">Trạng thái không được thay đổi khi phòng đang sử dụng.</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="form-check form-switch room-active-switch">
+                                <input asp-for="IsActive" class="form-check-input" id="roomIsActive" />
+                                <label asp-for="IsActive" class="form-check-label fw-semibold">Đang hoạt động</label>
+                            </div>
+                        }
+                        <div class="form-text">Phòng đang hoạt động chỉ được gán loại phòng đang hoạt động.</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label">Mô tả</label>
+                        <textarea asp-for="Description" class="form-control" maxlength="255" rows="4"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Note" class="form-label">Ghi chú</label>
+                        <textarea asp-for="Note" class="form-control" maxlength="255" rows="3"></textarea>
+                        <span asp-validation-for="Note" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mb-4">
+            <a href="@(Url.IsLocalUrl(Model.ReturnUrl) ? Model.ReturnUrl : Url.Action("Index", "Room"))"
+               class="btn btn-outline-secondary room-form-cancel-btn">
+                Hủy
+            </a>
+            <button type="submit" id="roomEditSubmitButton" class="btn btn-primary room-form-submit-btn">
+                <span class="ui-button-content">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+                    Lưu thay đổi
+                </span>
+                <span class="ui-button-loading d-none">
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    Đang lưu...
+                </span>
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/native-validation.js" asp-append-version="true"></script>
+    <script src="~/js/room-form.js" asp-append-version="true"></script>
+}

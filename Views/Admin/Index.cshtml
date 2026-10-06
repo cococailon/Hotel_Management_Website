@@ -1,0 +1,454 @@
+@using Hotel_Management_Website.Models.ViewModels.UI
+@model Hotel_Management_Website.Models.ViewModels.Admin.AdminDashboardViewModel
+
+@{
+    ViewData["Title"] = "Trang chủ Admin";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var fullName =
+        User.FindFirst("FullName")?.Value
+        ?? User.Identity?.Name
+        ?? "Admin";
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new PageHeaderViewModel
+    {
+        Title = "Dashboard Admin",
+        Description = $"Xin chào {fullName}. Tổng quan nhanh tình hình hoạt động của khách sạn.",
+        Icon = "bi-speedometer2"
+    })
+
+<!-- ========================================================= -->
+<!-- DASHBOARD STATISTICS                                      -->
+<!-- ========================================================= -->
+
+<div class="admin-dashboard-statistics mb-4">
+
+    <div class="row g-3 g-xl-4">
+
+        @if (!string.IsNullOrWhiteSpace(Model.LoadError))
+        {
+            <div class="col-12">
+                @await Html.PartialAsync(
+                    "~/Views/Shared/UI/_ErrorState.cshtml",
+                    new StateViewModel
+                    {
+                        Message = Model.LoadError,
+                        Icon = "bi-exclamation-triangle"
+                    })
+            </div>
+        }
+        else
+        {
+            <!-- Doanh thu hôm nay -->
+            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
+                <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3">
+                            <div class="min-w-0">
+                                <div class="small text-body-secondary fw-semibold">
+                                    Doanh thu hôm nay
+                                </div>
+                                <div class="admin-stat-value mt-2">
+                                    @Model.RevenueToday.ToString("N0")
+                                    <span class="admin-stat-unit">₫</span>
+                                </div>
+                            </div>
+
+                            <div class="admin-stat-icon text-success bg-success-subtle">
+                                <i class="bi bi-cash-stack" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Doanh thu tháng -->
+            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
+                <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3">
+                            <div class="min-w-0">
+                                <div class="small text-body-secondary fw-semibold">
+                                    Doanh thu tháng
+                                </div>
+                                <div class="admin-stat-value mt-2">
+                                    @Model.RevenueThisMonth.ToString("N0")
+                                    <span class="admin-stat-unit">₫</span>
+                                </div>
+                            </div>
+
+                            <div class="admin-stat-icon text-primary bg-primary-subtle">
+                                <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phòng đang sử dụng -->
+            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
+                <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3">
+                            <div class="min-w-0">
+                                <div class="small text-body-secondary fw-semibold">
+                                    Phòng đang sử dụng
+                                </div>
+                                <div class="admin-stat-value mt-2">
+                                    @Model.OccupiedRooms
+                                </div>
+                            </div>
+
+                            <div class="admin-stat-icon text-danger bg-danger-subtle">
+                                <i class="bi bi-door-open" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phòng trống -->
+            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
+                <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3">
+                            <div class="min-w-0">
+                                <div class="small text-body-secondary fw-semibold">
+                                    Phòng trống
+                                </div>
+                                <div class="admin-stat-value mt-2">
+                                    @Model.AvailableRooms
+                                </div>
+                            </div>
+
+                            <div class="admin-stat-icon text-success bg-success-subtle">
+                                <i class="bi bi-door-closed" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cần dọn -->
+            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
+                <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3">
+                            <div class="min-w-0">
+                                <div class="small text-body-secondary fw-semibold">
+                                    Phòng cần dọn
+                                </div>
+                                <div class="admin-stat-value mt-2">
+                                    @Model.RoomsNeedCleaning
+                                </div>
+                            </div>
+
+                            <div class="admin-stat-icon text-warning bg-warning-subtle">
+                                <i class="bi bi-door-closed" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tổng lượt đặt -->
+            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
+                <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3">
+                            <div class="min-w-0">
+                                <div class="small text-body-secondary fw-semibold">
+                                    Tổng lượt đặt
+                                </div>
+                                <div class="admin-stat-value mt-2">
+                                    @Model.TotalBookings
+                                </div>
+                            </div>
+
+                            <div class="admin-stat-icon text-info bg-info-subtle">
+                                <i class="bi bi-calendar-check" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+
+    @if (string.IsNullOrWhiteSpace(Model.LoadError))
+    {
+        <div class="small text-body-secondary mt-2">
+            <i class="bi bi-clock me-1" aria-hidden="true"></i>
+            Cập nhật lúc @Model.GeneratedAt.ToString("dd/MM/yyyy HH:mm:ss")
+        </div>
+    }
+
+</div>
+
+<!-- ========================================================= -->
+<!-- QUICK ACCESS                                             -->
+<!-- ========================================================= -->
+
+<div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+    <div>
+        <h2 class="h5 mb-1 fw-semibold">Chức năng quản lý</h2>
+        <p class="text-body-secondary small mb-0">
+            Truy cập nhanh các phân hệ quản trị của khách sạn.
+        </p>
+    </div>
+</div>
+
+<div class="row g-3 g-xl-4">
+
+    <!-- Tài khoản -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="User"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-person-lock" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Quản lý tài khoản</h2>
+                        <p class="text-body-secondary mb-0">
+                            Quản lý tài khoản đăng nhập, trạng thái hoạt động và quyền truy cập.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Nhân viên -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="Employee"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-people" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Quản lý nhân viên</h2>
+                        <p class="text-body-secondary mb-0">
+                            Quản lý hồ sơ nhân viên, vị trí, trạng thái và quá trình làm việc.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Loại phòng -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="RoomType"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-door-open" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Quản lý loại phòng</h2>
+                        <p class="text-body-secondary mb-0">
+                            Quản lý loại phòng, sức chứa, diện tích, giá và tiền đặt cọc.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Phòng -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="Room"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-door-closed" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Quản lý phòng</h2>
+                        <p class="text-body-secondary mb-0">
+                            Quản lý phòng, tầng, thứ tự hiển thị và trạng thái vận hành.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Tiện nghi -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="Amenity"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-stars" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Quản lý tiện nghi</h2>
+                        <p class="text-body-secondary mb-0">
+                            Quản lý các tiện nghi và thông tin phục vụ từng loại phòng.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Dịch vụ -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="Services"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-cone-striped" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Quản lý dịch vụ</h2>
+                        <p class="text-body-secondary mb-0">
+                            Quản lý dịch vụ, đơn vị tính, đơn giá và trạng thái cung cấp.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Đặt phòng -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="Booking"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-calendar-check" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Quản lý đặt phòng</h2>
+                        <p class="text-body-secondary mb-0">
+                            Theo dõi và xử lý các đặt phòng, phòng đặt và trạng thái booking.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Hóa đơn -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="Bill"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-receipt" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Quản lý hóa đơn</h2>
+                        <p class="text-body-secondary mb-0">
+                            Quản lý hóa đơn, chi tiết thanh toán và các khoản thu của khách.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Thống kê -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="Statistics"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Thống kê</h2>
+                        <p class="text-body-secondary mb-0">
+                            Theo dõi số liệu hoạt động và các báo cáo của hệ thống khách sạn.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-home.css" asp-append-version="true" />
+}

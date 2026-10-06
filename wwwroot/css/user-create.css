@@ -1,0 +1,74 @@
+/* =========================================================
+   USER CREATE
+   Hotel Management UI System
+   Đồng bộ layout với Employee Create
+   ========================================================= */
+
+.user-create-page {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.user-create-page .card-header {
+    padding: 1rem 1.25rem;
+}
+
+.user-create-page .card-body {
+    padding: 1.25rem;
+}
+
+.user-create-section-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .7rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.05rem;
+}
+
+.user-employee-assignment,
+.user-security-note {
+    padding: 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-tertiary-bg);
+}
+
+.user-create-page .form-label.required::after {
+    content: " *";
+    color: var(--bs-danger);
+}
+
+.user-create-page .text-danger:empty {
+    display: none;
+}
+
+.user-create-cancel-btn {
+    min-width: 180px;
+}
+
+.user-create-page textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.user-create-page .form-control:focus,
+.user-create-page .form-select:focus {
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
+}
+
+@media (max-width: 767.98px) {
+    .user-create-page .card-header,
+    .user-create-page .card-body {
+        padding: 1rem;
+    }
+
+    .user-create-cancel-btn,
+    #userCreateSubmitButton {
+        width: 100%;
+    }
+}

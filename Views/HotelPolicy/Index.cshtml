@@ -1,0 +1,113 @@
+@model Hotel_Management_Website.Models.ViewModels.HotelPolicy.HotelPolicyViewModel
+@using Hotel_Management_Website.Security
+
+@{
+    var isAdmin = User.IsInRole(AppRoles.Admin);
+    ViewData["Title"] = "Quy định khách sạn";
+    Layout = User.IsInRole(AppRoles.Reception)
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/hotel-policy.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quy định khách sạn",
+        Description = "Xem giờ check in, giờ check out và các quy định chung đang được áp dụng.",
+        Icon = "bi-journal-text"
+    })
+
+<div class="hotel-policy-page">
+    <div class="d-flex justify-content-end mb-4">
+        @if (isAdmin)
+        {
+            <a asp-controller="HotelPolicy"
+               asp-action="Edit"
+               class="btn btn-primary">
+                <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>
+                Chỉnh sửa quy định
+            </a>
+        }
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-5">
+            <section class="card border-0 shadow-sm hotel-policy-card h-100">
+                <div class="card-header bg-transparent border-0 p-4 pb-2">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="hotel-policy-icon bg-primary-subtle text-primary">
+                            <i class="bi bi-clock-history" aria-hidden="true"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h2 class="h5 mb-1 fw-semibold">Thời gian hoạt động</h2>
+                            <p class="text-body-secondary small mb-0">Khung giờ lưu trú mặc định của khách sạn.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4 pt-3">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <div class="hotel-policy-info-box">
+                                <div class="hotel-policy-label">Giờ check in</div>
+                                <div class="hotel-policy-value font-monospace">@Model.CheckInTime.ToString("HH\\:mm")</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="hotel-policy-info-box">
+                                <div class="hotel-policy-label">Giờ check out</div>
+                                <div class="hotel-policy-value font-monospace">@Model.CheckOutTime.ToString("HH\\:mm")</div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="hotel-policy-label mb-1">Ghi chú</div>
+                            <div class="hotel-policy-text-box @(string.IsNullOrWhiteSpace(Model.HotelSettingsNote) ? "is-empty" : "")">
+                                @(string.IsNullOrWhiteSpace(Model.HotelSettingsNote) ? "Chưa có ghi chú." : Model.HotelSettingsNote)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-lg-7">
+            <section class="card border-0 shadow-sm hotel-policy-card h-100">
+                <div class="card-header bg-transparent border-0 p-4 pb-2">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="hotel-policy-icon bg-warning-subtle text-warning-emphasis">
+                            <i class="bi bi-file-text" aria-hidden="true"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h2 class="h5 mb-1 fw-semibold">Quy định chung</h2>
+                            <p class="text-body-secondary small mb-0">Nội dung quy định và ghi chú do khách sạn thiết lập.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4 pt-3">
+                    <div class="hotel-policy-label mb-1">Nội dung quy định</div>
+                    <div class="hotel-policy-content-box @(string.IsNullOrWhiteSpace(Model.PolicyContent) ? "is-empty" : "")">
+                        @(string.IsNullOrWhiteSpace(Model.PolicyContent) ? "Chưa có nội dung quy định." : Model.PolicyContent)
+                    </div>
+
+                    <div class="hotel-policy-label mt-4 mb-1">Ghi chú</div>
+                    <div class="hotel-policy-text-box @(string.IsNullOrWhiteSpace(Model.PolicyNote) ? "is-empty" : "")">
+                        @(string.IsNullOrWhiteSpace(Model.PolicyNote) ? "Chưa có ghi chú." : Model.PolicyNote)
+                    </div>
+
+                    @if (Model.PolicyLastModifiedAt.HasValue)
+                    {
+                        <div class="small text-body-secondary mt-4">
+                            <i class="bi bi-clock me-1" aria-hidden="true"></i>
+                            Cập nhật gần nhất: @Model.PolicyLastModifiedAt.Value.ToString("dd/MM/yyyy HH:mm:ss")
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

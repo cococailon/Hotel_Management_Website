@@ -1,0 +1,193 @@
+@model Hotel_Management_Website.Models.ViewModels.HotelPolicy.HotelPolicyViewModel
+
+@{
+    ViewData["Title"] = "Chỉnh sửa quy định khách sạn";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/hotel-policy.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Chỉnh sửa quy định khách sạn",
+        Description = "Cập nhật giờ lưu trú và các quy định chung. Giờ check in và check out phải cách nhau đúng 22 tiếng.",
+        Icon = "bi-pencil-square"
+    })
+
+<div class="hotel-policy-page">
+    <form asp-controller="HotelPolicy"
+          asp-action="Edit"
+          method="post"
+          id="hotelPolicyEditForm"
+          novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="HotelSettingId" />
+        <input type="hidden" asp-for="PolicyId" />
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger @(ViewData.ModelState.ErrorCount == 0 ? "d-none" : "")" role="alert"></div>
+
+        <section class="card border-0 shadow-sm hotel-policy-card mb-4">
+            <div class="card-header bg-transparent border-0 p-4 pb-2">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hotel-policy-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-clock-history" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 fw-semibold">Thời gian hoạt động</h2>
+                        <p class="text-body-secondary small mb-0">Check in và check out bắt buộc cách nhau đúng 22 tiếng.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4 pt-3">
+                <div class="row g-4">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="CheckInTime" class="form-label fw-semibold"></label>
+                        <input asp-for="CheckInTime"
+                               type="time"
+                               step="60"
+                               class="form-control"
+                               required />
+                        <span asp-validation-for="CheckInTime" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label asp-for="CheckOutTime" class="form-label fw-semibold"></label>
+                        <input asp-for="CheckOutTime"
+                               type="time"
+                               step="60"
+                               class="form-control"
+                               required />
+                        <span asp-validation-for="CheckOutTime" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <div id="hotelPolicyTimeRuleError" class="alert alert-danger d-none mb-3" role="alert">
+                            Giờ check in và giờ check out phải cách nhau đúng 22 tiếng.
+                        </div>
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                            Ví dụ hợp lệ: <strong>14:00 → 12:00 ngày hôm sau</strong>. Hệ thống tính thời gian theo chu kỳ 24 giờ và yêu cầu đúng 22 tiếng.
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="HotelSettingsNote" class="form-label fw-semibold"></label>
+                        <textarea asp-for="HotelSettingsNote"
+                                  class="form-control"
+                                  rows="3"
+                                  maxlength="255"
+                                  placeholder="Ghi chú về giờ lưu trú (không bắt buộc)"></textarea>
+                        <div class="form-text">Tối đa 255 ký tự.</div>
+                        <span asp-validation-for="HotelSettingsNote" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm hotel-policy-card mb-4">
+            <div class="card-header bg-transparent border-0 p-4 pb-2">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hotel-policy-icon bg-warning-subtle text-warning-emphasis">
+                        <i class="bi bi-file-text" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 fw-semibold">Quy định chung</h2>
+                        <p class="text-body-secondary small mb-0">Nội dung được sử dụng để hướng dẫn và áp dụng trong khách sạn.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4 pt-3">
+                <div class="mb-4">
+                    <label asp-for="PolicyContent" class="form-label fw-semibold"></label>
+                    <textarea asp-for="PolicyContent"
+                              class="form-control hotel-policy-content-input"
+                              rows="12"
+                              maxlength="50000"
+                              placeholder="Nhập nội dung quy định chung..."></textarea>
+                    <div class="form-text">Có thể nhập nhiều dòng. Nội dung dài sẽ tự xuống dòng và không làm vỡ giao diện.</div>
+                    <span asp-validation-for="PolicyContent" class="text-danger small"></span>
+                </div>
+
+                <div>
+                    <label asp-for="PolicyNote" class="form-label fw-semibold"></label>
+                    <textarea asp-for="PolicyNote"
+                              class="form-control"
+                              rows="3"
+                              maxlength="255"
+                              placeholder="Ghi chú cho bộ phận quản lý (không bắt buộc)"></textarea>
+                    <div class="form-text">Tối đa 255 ký tự.</div>
+                    <span asp-validation-for="PolicyNote" class="text-danger small"></span>
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mb-4">
+            <a asp-controller="HotelPolicy"
+               asp-action="Index"
+               class="btn btn-outline-secondary">
+                Hủy
+            </a>
+            <button type="submit" class="btn btn-primary" id="hotelPolicySaveButton">
+                <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>
+                Lưu thay đổi
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <partial name="~/Views/Shared/_ValidationScriptsPartial.cshtml" />
+    <script>
+        (() => {
+            const form = document.getElementById('hotelPolicyEditForm');
+            const checkIn = document.getElementById('CheckInTime');
+            const checkOut = document.getElementById('CheckOutTime');
+            const ruleError = document.getElementById('hotelPolicyTimeRuleError');
+
+            if (!form || !checkIn || !checkOut || !ruleError) return;
+
+            const minutesOf = (value) => {
+                if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
+                const [hours, minutes] = value.split(':').map(Number);
+                if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+                return (hours * 60) + minutes;
+            };
+
+            const validateTimeRule = () => {
+                const start = minutesOf(checkIn.value);
+                const end = minutesOf(checkOut.value);
+
+                if (start === null || end === null) {
+                    ruleError.classList.add('d-none');
+                    checkIn.classList.remove('is-invalid');
+                    checkOut.classList.remove('is-invalid');
+                    return true;
+                }
+
+                const elapsed = (end - start + 1440) % 1440;
+                const valid = elapsed === 1320;
+
+                ruleError.classList.toggle('d-none', valid);
+                checkIn.classList.toggle('is-invalid', !valid);
+                checkOut.classList.toggle('is-invalid', !valid);
+                return valid;
+            };
+
+            checkIn.addEventListener('input', validateTimeRule);
+            checkOut.addEventListener('input', validateTimeRule);
+
+            form.addEventListener('submit', (event) => {
+                if (!validateTimeRule()) {
+                    event.preventDefault();
+                    ruleError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        })();
+    </script>
+}

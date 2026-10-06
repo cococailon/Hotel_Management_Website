@@ -1,0 +1,16 @@
+@model Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+
+<div class="hm-state @Model.CssClass" data-ui-state="empty">
+    <i class="bi @Model.Icon hm-state-icon" aria-hidden="true"></i>
+    <div class="fw-medium">@Model.Message</div>
+    @if (!string.IsNullOrWhiteSpace(Model.Description))
+    {
+        <div class="small text-body-secondary">@Model.Description</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.ActionText) && !string.IsNullOrWhiteSpace(Model.ActionId))
+    {
+        <button type="button" class="btn btn-primary btn-sm mt-2" id="@Model.ActionId">
+            @Model.ActionText
+        </button>
+    }
+</div>

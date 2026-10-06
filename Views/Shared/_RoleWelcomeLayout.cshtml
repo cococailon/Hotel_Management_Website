@@ -1,0 +1,178 @@
+@using Hotel_Management_Website.Security
+
+<!DOCTYPE html>
+
+<html lang="vi">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>
+        @ViewData["Title"] - Hotel Management
+    </title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+
+    <link rel="stylesheet"
+          href="~/lib/admin-lte/css/adminlte.min.css" />
+
+    <link rel="stylesheet"
+          href="~/css/ui-system.css" />
+
+    <style>
+
+        body {
+            min-height: 100vh;
+        }
+
+        .app-main {
+            min-height: calc(100vh - 120px);
+        }
+
+    </style>
+
+</head>
+
+
+<body class="bg-body-tertiary">
+
+    <div class="min-vh-100 d-flex flex-column">
+
+
+        <!-- ===================================================== -->
+        <!-- HEADER -->
+        <!-- ===================================================== -->
+
+        <header class="navbar navbar-expand bg-body border-bottom shadow-sm hotel-floating-nav">
+
+            <div class="container-fluid">
+
+                <a asp-controller="Home"
+                   asp-action="Index"
+                   class="navbar-brand fw-bold">
+
+                    Hotel Management
+
+                </a>
+
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="text-end d-none d-sm-block">
+
+                        <div class="fw-semibold">
+                            @(User.FindFirst("FullName")?.Value
+                                                        ?? User.Identity?.Name
+                                                        ?? "User")
+                        </div>
+
+                        <small class="text-body-secondary">
+
+                            @if (User.IsInRole(AppRoles.Admin))
+                            {
+                                @:Admin
+                            }
+                            else if (User.IsInRole(AppRoles.Reception))
+                            {
+                                @:Lễ Tân
+                            }
+                            else if (User.IsInRole(AppRoles.Housekeeping))
+                            {
+                                @:Buồng Phòng
+                            }
+
+                        </small>
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- LOGOUT -->
+                    <!-- ================================================= -->
+
+                    <form asp-controller="Account"
+                          asp-action="Logout"
+                          method="post"
+                          class="m-0">
+
+                        @Html.AntiForgeryToken()
+
+                        <button type="submit"
+                                class="btn btn-outline-danger">
+
+                            Đăng xuất
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- ===================================================== -->
+        <!-- MAIN -->
+        <!-- ===================================================== -->
+
+        <main class="app-main flex-grow-1">
+
+            <div class="container-fluid py-4">
+
+                @RenderBody()
+
+            </div>
+
+        </main>
+
+        <partial name="~/Views/Shared/UI/_ToastHost.cshtml" />
+        <partial name="~/Views/Shared/UI/_ConfirmModal.cshtml" />
+        <partial name="~/Views/Shared/UI/_LoadingOverlay.cshtml" />
+
+        <!-- ===================================================== -->
+        <!-- FOOTER -->
+        <!-- ===================================================== -->
+
+        <footer class="border-top bg-body py-3">
+
+            <div class="container-fluid text-center">
+
+                <small class="text-body-secondary">
+
+                    Hotel Management System
+
+                    &copy; @DateTime.Now.Year
+
+                </small>
+
+            </div>
+
+        </footer>
+
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="~/lib/admin-lte/js/adminlte.min.js"></script>
+
+    <script src="~/js/ui-core.js"></script>
+
+    @await RenderSectionAsync(
+    "Scripts",
+        required: false)
+
+</body>
+
+</html>

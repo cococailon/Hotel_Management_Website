@@ -1,0 +1,156 @@
+﻿@model Hotel_Management_Website.Models.ViewModels.Amenity.AmenityEditViewModel
+
+@{
+    ViewData["Title"] = "Sửa tiện nghi";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/amenity-form.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Sửa tiện nghi",
+        Description = $"Cập nhật thông tin tiện nghi {Model.AmenityCode}.",
+        Icon = "bi-pencil-square"
+    })
+
+<div class="amenity-form-page">
+    <form id="amenityEditForm"
+          asp-controller="Amenity"
+          asp-action="Edit"
+          method="post"
+          novalidate
+          data-native-validation="true"
+          data-ajax="false"
+          data-amenity-form="edit"
+          data-has-active-bookings="@Model.HasActiveBookings.ToString().ToLowerInvariant()">
+        @Html.AntiForgeryToken()
+        <input asp-for="Id" type="hidden" />
+        <input asp-for="ReturnUrl" type="hidden" />
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger amenity-validation-summary" role="alert"></div>
+
+        @if (Model.HasActiveBookings)
+        {
+            <div class="alert alert-warning d-flex gap-2 align-items-start mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true"></i>
+                <div>
+                    <div class="fw-semibold">Tiện nghi đang được sử dụng bởi loại phòng có Booking hoạt động.</div>
+                    <div>Chỉ được sửa <strong>Mô tả</strong> và <strong>Ghi chú</strong>. Mã và tên tiện nghi được giữ nguyên.</div>
+                </div>
+            </div>
+        }
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="amenity-form-section-icon" aria-hidden="true"><i class="bi bi-stars"></i></div>
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">Thông tin tiện nghi</h2>
+                        <p class="text-body-secondary small mb-0">Trạng thái chỉ được thay đổi bằng thao tác riêng trên danh sách.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="AmenityCode" class="form-label required">Mã tiện nghi</label>
+                        <input asp-for="AmenityCode"
+                               class="form-control"
+                               maxlength="50"
+                               autocomplete="off"
+                               spellcheck="false"
+                               readonly="@(Model.HasActiveBookings ? "readonly" : null)" />
+                        @if (Model.HasActiveBookings)
+                        {
+                            <div class="form-text">Không thể sửa khi có Booking hoạt động.</div>
+                        }
+                        <span asp-validation-for="AmenityCode" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="AmenityName" class="form-label required">Tên tiện nghi</label>
+                        <input asp-for="AmenityName"
+                               class="form-control"
+                               maxlength="100"
+                               autocomplete="off"
+                               readonly="@(Model.HasActiveBookings ? "readonly" : null)" />
+                        @if (Model.HasActiveBookings)
+                        {
+                            <div class="form-text">Không thể sửa khi có Booking hoạt động.</div>
+                        }
+                        <span asp-validation-for="AmenityName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <div class="form-label mb-2">Trạng thái</div>
+                        <div class="amenity-readonly-box">
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge text-bg-success">Đang hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-secondary">Dừng hoạt động</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="amenity-form-section-icon" aria-hidden="true"><i class="bi bi-card-text"></i></div>
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">Mô tả và ghi chú</h2>
+                        <p class="text-body-secondary small mb-0">Các thông tin có thể cập nhật trong mọi trạng thái.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <label asp-for="Description" class="form-label">Mô tả</label>
+                    <textarea asp-for="Description" class="form-control" rows="4" maxlength="255"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="Note" class="form-label">Ghi chú</label>
+                    <textarea asp-for="Note" class="form-control" rows="4" maxlength="255"></textarea>
+                    <span asp-validation-for="Note" class="text-danger"></span>
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mb-4">
+            <a href="@(Model.ReturnUrl ?? Url.Action("Index", "Amenity"))"
+               class="btn btn-outline-secondary amenity-form-cancel-btn">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+                Quay lại danh sách
+            </a>
+
+            <button type="submit" class="btn btn-primary" id="amenityEditSubmitButton">
+                <span class="ui-button-content">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+                    Lưu thay đổi
+                </span>
+                <span class="ui-button-loading d-none">
+                    <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                    Đang lưu...
+                </span>
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/native-validation.js" asp-append-version="true"></script>
+    <script src="~/js/amenity-form.js" asp-append-version="true"></script>
+}

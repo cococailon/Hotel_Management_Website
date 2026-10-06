@@ -1,0 +1,406 @@
+@model Hotel_Management_Website.Models.ViewModels.User.UserCreateViewModel
+
+@{
+    ViewData["Title"] = "Tạo tài khoản";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet"
+          href="~/css/user-create.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Tạo tài khoản",
+        Description = "Tạo tài khoản đăng nhập mới cho hệ thống khách sạn.",
+        Icon = "bi-person-plus"
+    })
+
+<div class="user-create-page">
+
+    <form id="userCreateForm"
+          asp-controller="User"
+          asp-action="Create"
+          method="post"
+          data-user-create-form="true"
+          data-can-create-admin="@Model.CanCreateAdmin.ToString().ToLowerInvariant()"
+          novalidate>
+
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly"
+             class="alert alert-danger"
+             role="alert">
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- ACCOUNT INFORMATION -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="user-create-section-icon">
+                        <i class="bi bi-person-vcard" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Thông tin tài khoản
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Thông tin dùng để đăng nhập và xác định tài khoản trong hệ thống.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-4">
+
+                    <!-- UserCode -->
+                    <div class="col-12 col-lg-6">
+
+                        <label asp-for="UserCode"
+                               class="form-label required">
+                            Mã tài khoản
+                        </label>
+
+                        <input asp-for="UserCode"
+                               class="form-control"
+                               autocomplete="off"
+                               maxlength="50"
+                               spellcheck="false"
+                               placeholder="Ví dụ: U001" />
+
+                        <div class="form-text">
+                            Có thể để trống để hệ thống tự sinh mã. Nếu nhập tay, mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.
+                        </div>
+
+                        <span asp-validation-for="UserCode"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- UserName -->
+                    <div class="col-12 col-lg-6">
+
+                        <label asp-for="UserName"
+                               class="form-label required">
+                            Tên đăng nhập
+                        </label>
+
+                        <input asp-for="UserName"
+                               class="form-control"
+                               autocomplete="username"
+                               maxlength="100"
+                               placeholder="Nhập tên đăng nhập" />
+
+                        <div class="form-text">
+                            Tên đăng nhập phải là duy nhất trong hệ thống.
+                        </div>
+
+                        <span asp-validation-for="UserName"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- Password -->
+                    <div class="col-12 col-lg-6">
+
+                        <label asp-for="Password"
+                               class="form-label required">
+                            Mật khẩu
+                        </label>
+
+                        <div class="input-group">
+
+                            <input asp-for="Password"
+                                   type="password"
+                                   class="form-control"
+                                   id="userPassword"
+                                   minlength="5"
+                                   autocomplete="new-password"
+                                   placeholder="Nhập mật khẩu" />
+
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    data-password-input-toggle
+                                    aria-label="Hiện mật khẩu"
+                                    title="Hiện hoặc ẩn mật khẩu">
+                                <i class="bi bi-eye-slash" aria-hidden="true"></i>
+                            </button>
+
+                        </div>
+
+                        <div class="form-text">
+                            Mật khẩu phải có ít nhất 5 ký tự.
+                        </div>
+
+                        <span asp-validation-for="Password"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- Role -->
+                    <div class="col-12 col-lg-6">
+
+                        <label asp-for="Role"
+                               class="form-label required">
+                            Vai trò
+                        </label>
+
+                        <select asp-for="Role"
+                                class="form-select"
+                                id="userRole">
+
+                            @if (Model.CanCreateAdmin)
+                            {
+                                <option value="0">Admin</option>
+                            }
+
+                            <option value="1">Lễ Tân</option>
+                            <option value="2">Buồng Phòng</option>
+
+                        </select>
+
+                        <span asp-validation-for="Role"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================================== -->
+        <!-- ACCESS AND EMPLOYEE ASSIGNMENT -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="user-create-section-icon">
+                        <i class="bi bi-person-badge" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Phân quyền và nhân viên
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Gán tài khoản cho nhân viên phù hợp và xác định trạng thái hoạt động.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-4">
+
+                    <!-- Employee -->
+                    <div class="col-12">
+
+                        <div id="employeeAssignmentBlock"
+                             class="user-employee-assignment">
+
+                            <div class="d-flex align-items-center gap-2 mb-2">
+
+                                <i class="bi bi-person-check text-primary"
+                                   aria-hidden="true"></i>
+
+                                <label asp-for="EmployeeId"
+                                   class="form-label mb-0">
+                                    Gán nhân viên
+                                </label>
+
+                            </div>
+
+                            <select asp-for="EmployeeId"
+                                    class="form-select"
+                                    id="userEmployeeId">
+
+                                <option value="">
+                                    Không gán nhân viên
+                                </option>
+
+                                @foreach (var employee in Model.Employees)
+                                {
+                                    <option value="@employee.Id"
+                                            data-position="@employee.Position"
+                                            data-active="@(employee.IsActive ? "1" : "0")">
+                                        @employee.EmployeeCode - @employee.EmployeeName@(employee.IsActive ? "" : " (Đã nghỉ việc)")
+                                    </option>
+                                }
+
+                            </select>
+
+                            <div class="form-text">
+                                Chỉ nhân viên đúng bộ phận mới được chọn. Gỡ gán bằng cách chọn “Không gán nhân viên”.
+                            </div>
+
+                            <span asp-validation-for="EmployeeId"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="IsActive"
+                               class="form-label required">
+                            Trạng thái
+                        </label>
+
+                        <select asp-for="IsActive"
+                                class="form-select">
+
+                            <option value="true">Đang hoạt động</option>
+                            <option value="false">Dừng hoạt động</option>
+
+                        </select>
+
+                        <span asp-validation-for="IsActive"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================================== -->
+        <!-- NOTE -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="user-create-section-icon">
+                        <i class="bi bi-sticky" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Ghi chú
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Thông tin bổ sung về tài khoản nếu cần.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <label asp-for="Note"
+                       class="form-label">
+                    Ghi chú
+                </label>
+
+                <textarea asp-for="Note"
+                          class="form-control"
+                          rows="4"
+                          maxlength="255"
+                          placeholder="Nhập ghi chú nếu có..."></textarea>
+
+                <div class="d-flex justify-content-between gap-2 mt-1">
+
+                    <span asp-validation-for="Note"
+                          class="text-danger">
+                    </span>
+
+                    <span class="form-text ms-auto">
+                        Tối đa 255 ký tự.
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================================== -->
+        <!-- ACTIONS -->
+        <!-- ===================================================== -->
+
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mb-4">
+
+            <a asp-controller="User"
+               asp-action="Index"
+               class="btn btn-outline-secondary user-create-cancel-btn">
+
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+                Quay lại danh sách
+
+            </a>
+
+            <button type="submit"
+                    class="btn btn-primary"
+                    id="userCreateSubmitButton">
+
+                <span class="ui-button-content">
+                    <i class="bi bi-person-plus me-1" aria-hidden="true"></i>
+                    Tạo tài khoản
+                </span>
+
+                <span class="ui-button-loading d-none">
+                    <span class="spinner-border spinner-border-sm me-1"
+                          role="status"
+                          aria-hidden="true"></span>
+                    Đang tạo...
+                </span>
+
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/user-create.js" asp-append-version="true"></script>
+}

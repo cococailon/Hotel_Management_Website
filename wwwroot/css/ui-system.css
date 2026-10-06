@@ -1,0 +1,146 @@
+
+/* ========================================================= */
+/* FLOATING TOP NAVIGATION                                   */
+/* ========================================================= */
+/*
+   Dùng chung cho toàn bộ layout của hệ thống.
+   Thanh điều hướng bám ở mép trên khi cuộn trang, đồng thời
+   giữ nền/viền/bóng để nội dung bên dưới không xuyên qua.
+*/
+.hotel-floating-nav {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1035 !important;
+    align-self: flex-start;
+    isolation: isolate;
+}
+
+.hotel-floating-nav::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: inherit;
+}
+
+@media (max-width: 575.98px) {
+    .hotel-floating-nav {
+        top: 0 !important;
+    }
+}
+
+/* =========================================================
+   HOTEL MANAGEMENT UI SYSTEM v1.0
+   AdminLTE 4.9.1 / Bootstrap 5
+   ========================================================= */
+
+.hm-page-header-icon {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 44px;
+    border-radius: .75rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.15rem;
+}
+
+.hm-search-wrap {
+    width: min(100%, 360px);
+}
+
+.hm-state {
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.hm-state-icon {
+    font-size: 2rem;
+    margin-bottom: .25rem;
+}
+
+.hm-state-loading {
+    color: var(--bs-secondary-color);
+    flex-direction: row;
+    min-height: 180px;
+}
+
+.hm-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, .18);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hm-loading-overlay-card {
+    min-width: 180px;
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: .75rem;
+    box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .12);
+}
+
+.hm-toast-container {
+    z-index: 2100;
+}
+
+.toast {
+    min-width: 320px;
+    max-width: min(420px, calc(100vw - 2rem));
+}
+
+[data-ui-busy="true"] {
+    pointer-events: none;
+}
+
+.ui-button-loading {
+    display: inline-flex;
+    align-items: center;
+}
+
+.modal .form-label {
+    font-weight: 500;
+}
+
+.modal .required::after {
+    content: " *";
+    color: var(--bs-danger);
+}
+
+.table > :not(caption) > * > * {
+    vertical-align: middle;
+}
+
+.hm-row-actions {
+    display: inline-flex;
+    gap: .35rem;
+}
+
+.hm-row-actions .btn {
+    min-width: 36px;
+}
+
+@media (max-width: 575.98px) {
+    .hm-search-wrap {
+        width: 100%;
+    }
+
+    .toast {
+        min-width: 0;
+        width: 100%;
+    }
+}

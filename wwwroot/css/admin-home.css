@@ -1,0 +1,106 @@
+/* =========================================================
+   HOTEL MANAGEMENT - ADMIN DASHBOARD
+   Responsive dashboard statistics + quick access
+   ========================================================= */
+
+/* =========================================================
+   STATISTICS
+   ========================================================= */
+
+.admin-stat-card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: .9rem;
+}
+
+.admin-stat-card .card-body {
+    padding: 1.1rem 1.15rem;
+}
+
+.admin-stat-value {
+    font-size: clamp(1.35rem, 2vw, 1.8rem);
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    overflow-wrap: anywhere;
+}
+
+.admin-stat-unit {
+    font-size: .9em;
+    font-weight: 600;
+}
+
+.admin-stat-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .75rem;
+    font-size: 1.15rem;
+}
+
+/* =========================================================
+   QUICK ACCESS
+   ========================================================= */
+
+.hm-admin-menu-card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: .9rem;
+    color: inherit;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.hm-admin-menu-card:hover,
+.hm-admin-menu-card:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--bs-box-shadow-sm);
+    border-color: var(--bs-primary-border-subtle);
+}
+
+.hm-admin-menu-card:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+.hm-admin-menu-card .card-body {
+    padding: 1.25rem;
+}
+
+.hm-admin-menu-card .card-footer {
+    padding: 0 1.25rem 1.25rem;
+}
+
+.hm-admin-menu-icon {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .8rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
+    font-size: 1.25rem;
+}
+
+@media (max-width: 575.98px) {
+    .hm-admin-menu-card .card-body {
+        padding: 1rem;
+    }
+
+    .hm-admin-menu-card .card-footer {
+        padding: 0 1rem 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hm-admin-menu-card {
+        transition: none;
+    }
+
+    .hm-admin-menu-card:hover,
+    .hm-admin-menu-card:focus-visible {
+        transform: none;
+    }
+}

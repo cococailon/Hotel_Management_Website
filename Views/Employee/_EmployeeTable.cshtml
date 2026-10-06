@@ -1,0 +1,397 @@
+@model Hotel_Management_Website.Models.ViewModels.Employee.EmployeeListSectionViewModel
+
+@{
+    var returnUrl =
+        Context.Request.PathBase +
+        Context.Request.Path +
+        Context.Request.QueryString;
+}
+
+<div class="employee-table-wrap">
+
+    @if (Model.Employees.Count == 0)
+    {
+        @await Html.PartialAsync(
+        "~/Views/Shared/UI/_EmptyState.cshtml",
+        new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+        {
+            Message = "Không tìm thấy nhân viên nào.",
+            Icon = "bi-people"
+        }
+        )
+        }
+    else
+    {
+        <div class="table-responsive employee-table-responsive">
+
+            <table class="table table-hover table-sm align-middle employee-table mb-0">
+
+                <caption class="visually-hidden">
+                    Danh sách nhân viên bộ phận @Model.Title
+                </caption>
+
+
+                <!-- ================================================= -->
+                <!-- COLUMN WIDTH -->
+                <!-- ================================================= -->
+
+                <colgroup>
+
+                    <col class="employee-col-code" />
+
+                    <col class="employee-col-name" />
+
+                    <col class="employee-col-date" />
+
+                    <col class="employee-col-sex" />
+
+                    <col class="employee-col-date" />
+
+                    <col class="employee-col-date" />
+
+                    <col class="employee-col-status" />
+
+                    <col class="employee-col-updated" />
+
+                    <col class="employee-col-action" />
+
+                </colgroup>
+
+
+                <!-- ================================================= -->
+                <!-- HEADER -->
+                <!-- ================================================= -->
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>
+                            Mã nhân viên
+                        </th>
+
+                        <th>
+                            Tên nhân viên
+                        </th>
+
+                        <th>
+                            Ngày sinh
+                        </th>
+
+                        <th>
+                            Giới tính
+                        </th>
+
+                        <th>
+                            Ngày vào làm
+                        </th>
+
+                        <th>
+                            Ngày nghỉ việc
+                        </th>
+
+                        <th>
+                            Trạng thái
+                        </th>
+
+                        <th>
+                            Ngày chỉnh sửa
+                        </th>
+
+                        <th class="text-center">
+                            Thao tác
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <!-- ================================================= -->
+                <!-- BODY -->
+                <!-- ================================================= -->
+
+                <tbody>
+
+                    @foreach (var employee in Model.Employees)
+                    {
+                        <tr>
+
+                            <!-- ===================================== -->
+                            <!-- MÃ NHÂN VIÊN -->
+                            <!-- ===================================== -->
+
+                            <td>
+
+                                <span class="employee-cell-ellipsis font-monospace"
+                                      title="@employee.EmployeeCode">
+
+                                    @employee.EmployeeCode
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- ===================================== -->
+                            <!-- TÊN NHÂN VIÊN -->
+                            <!-- ===================================== -->
+
+                            <td>
+
+                                <span class="employee-cell-ellipsis fw-semibold"
+                                      title="@employee.EmployeeName">
+
+                                    @employee.EmployeeName
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- ===================================== -->
+                            <!-- NGÀY SINH -->
+                            <!-- ===================================== -->
+
+                            <td class="text-nowrap">
+
+                                @employee.DateOfBirth
+
+                            </td>
+
+
+                            <!-- ===================================== -->
+                            <!-- GIỚI TÍNH -->
+                            <!-- ===================================== -->
+
+                            <td class="text-nowrap">
+
+                                @employee.SexName
+
+                            </td>
+
+
+                            <!-- ===================================== -->
+                            <!-- NGÀY VÀO LÀM -->
+                            <!-- ===================================== -->
+
+                            <td class="text-nowrap">
+
+                                @employee.StartDate
+
+                            </td>
+
+
+                            <!-- ===================================== -->
+                            <!-- NGÀY NGHỈ VIỆC -->
+                            <!-- ===================================== -->
+
+                            <td class="text-nowrap">
+
+                                @(
+                                                        string.IsNullOrWhiteSpace(employee.EndDate)
+                                                        ? "—"
+                                                        : employee.EndDate
+                                                        )
+
+                    </td>
+
+
+                            <!-- ===================================== -->
+                            <!-- TRẠNG THÁI -->
+                            <!-- ===================================== -->
+
+                            <td>
+
+                                <span class="badge @employee.StatusBadgeClass employee-status-badge">
+
+                                    @employee.StatusName
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- ===================================== -->
+                            <!-- NGÀY CHỈNH SỬA -->
+                            <!-- ===================================== -->
+
+                            <td class="text-nowrap">
+
+                                @employee.LastModifiedAt
+
+                            </td>
+
+
+                            <!-- ===================================== -->
+                            <!-- THAO TÁC -->
+                            <!-- ===================================== -->
+
+                            <td>
+
+                                <div class="d-flex
+                                                    align-items-center
+                                                    justify-content-center
+                                                    gap-1
+                                                    employee-action-group">
+
+
+                                    <!-- ================================= -->
+                                    <!-- XEM -->
+                                    <!-- ================================= -->
+
+                                    <a asp-controller="Employee"
+                                       asp-action="Details"
+                                       asp-route-id="@employee.Id"
+                                       asp-route-returnUrl="@returnUrl"
+                                       class="btn btn-sm btn-outline-primary employee-action-btn"
+                                       title="Xem chi tiết nhân viên"
+                                       aria-label="Xem chi tiết nhân viên @employee.EmployeeName">
+
+                                        <i class="bi bi-eye"
+                                           aria-hidden="true"></i>
+
+                                    </a>
+
+
+                                    <!-- ================================= -->
+                                    <!-- SỬA -->
+                                    <!-- ================================= -->
+
+                                    <a asp-controller="Employee"
+                                       asp-action="Edit"
+                                       asp-route-id="@employee.Id"
+                                       asp-route-returnUrl="@returnUrl"
+                                       class="btn btn-sm btn-outline-secondary employee-action-btn"
+                                       title="Sửa thông tin nhân viên"
+                                       aria-label="Sửa thông tin nhân viên @employee.EmployeeName">
+
+                                        <i class="bi bi-pencil-square"
+                                           aria-hidden="true"></i>
+
+                                    </a>
+
+
+                            @if (employee.Status == 1)
+                                    {
+                                        <!-- ================================= -->
+                                        <!-- NGHỈ VIỆC -->
+                                        <!-- ================================= -->
+
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger employee-action-btn employee-leave-btn"
+                                                data-employee-action="leave"
+                                                data-employee-id="@employee.Id"
+                                                data-employee-name="@employee.EmployeeName"
+                                                data-return-url="@returnUrl"
+                                                title="Cho nhân viên nghỉ việc"
+                                                aria-label="Cho nhân viên @employee.EmployeeName nghỉ việc">
+
+                                            <span class="ui-button-content">
+
+                                                <i class="bi bi-person-x"
+                                                   aria-hidden="true"></i>
+
+                                            </span>
+
+
+                                            <span class="ui-button-loading d-none">
+
+                                                <span class="spinner-border spinner-border-sm"
+                                                      role="status"
+                                                      aria-hidden="true"></span>
+
+                                            </span>
+
+                                        </button>
+                                    }
+                                    else if (employee.Status == 0)
+                                    {
+                                        <!-- ================================= -->
+                                        <!-- TRỞ LẠI LÀM VIỆC -->
+                                        <!-- ================================= -->
+
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-success employee-action-btn employee-return-btn"
+                                                data-employee-action="return"
+                                                data-employee-id="@employee.Id"
+                                                data-employee-name="@employee.EmployeeName"
+                                                data-return-url="@returnUrl"
+                                                title="Cho nhân viên trở lại làm việc"
+                                                aria-label="Cho nhân viên @employee.EmployeeName trở lại làm việc">
+
+                                            <span class="ui-button-content">
+
+                                                <i class="bi bi-person-check"
+                                                   aria-hidden="true"></i>
+
+                                            </span>
+
+
+                                            <span class="ui-button-loading d-none">
+
+                                                <span class="spinner-border spinner-border-sm"
+                                                      role="status"
+                                                      aria-hidden="true"></span>
+
+                                            </span>
+
+                                        </button>
+
+
+                                        <!-- ================================= -->
+                                        <!-- XÓA -->
+                                        <!-- ================================= -->
+
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger employee-action-btn employee-delete-btn"
+                                                data-employee-action="delete"
+                                                data-employee-id="@employee.Id"
+                                                data-employee-name="@employee.EmployeeName"
+                                                data-return-url="@returnUrl"
+                                                title="Xóa hồ sơ nhân viên"
+                                                aria-label="Xóa hồ sơ nhân viên @employee.EmployeeName">
+
+                                            <span class="ui-button-content">
+
+                                                <i class="bi bi-trash3"
+                                                   aria-hidden="true"></i>
+
+                                            </span>
+
+
+                                            <span class="ui-button-loading d-none">
+
+                                                <span class="spinner-border spinner-border-sm"
+                                                      role="status"
+                                                      aria-hidden="true"></span>
+
+                                            </span>
+
+                                        </button>
+                                    }
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- PAGINATION -->
+        <!-- ================================================= -->
+        @await Html.PartialAsync(
+        "~/Views/Shared/UI/_Pagination.cshtml",
+        Model.Pagination
+        )
+        }
+
+</div>

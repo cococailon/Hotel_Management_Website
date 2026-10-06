@@ -1,0 +1,302 @@
+@model Hotel_Management_Website.Models.ViewModels.Bill.BillIndexViewModel
+
+@{
+    ViewData["Title"] = "Quản lý hóa đơn";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet"
+          href="~/css/bill-index.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quản lý hóa đơn",
+        Description = "Xem danh sách, tìm kiếm, sắp xếp và xem chi tiết hóa đơn.",
+        Icon = "bi-receipt"
+    })
+
+@if (!string.IsNullOrWhiteSpace(Model.LoadError))
+{
+    @await Html.PartialAsync(
+        "~/Views/Shared/UI/_ErrorState.cshtml",
+        new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+        {
+            Message = Model.LoadError,
+            Icon = "bi-exclamation-triangle"
+        })
+}
+else
+{
+    <form method="get"
+          asp-controller="Bill"
+          asp-action="Index"
+          class="bill-filter-form"
+          data-preserve-scroll="true">
+
+        <section class="bill-section card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-3 min-width-0">
+                        <div class="bill-section-icon" aria-hidden="true">
+                            <i class="bi bi-receipt"></i>
+                        </div>
+                        <div class="min-width-0">
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                <h2 class="h5 mb-0 fw-semibold">Danh sách hóa đơn</h2>
+                                <span class="badge text-bg-secondary bill-count-badge">
+                                    @Model.TotalCount.ToString("N0") hóa đơn
+                                </span>
+                            </div>
+                            <p class="text-body-secondary small mb-0 mt-1">
+                                Tìm kiếm theo mã hóa đơn hoặc mã booking, sắp xếp theo giá trị/ngày và lọc theo trạng thái thanh toán.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body border-bottom bill-filter-panel">
+                <div class="row g-2 g-lg-3 align-items-end">
+                    <div class="col-12 col-xl-5">
+                        <label for="billSearch" class="form-label small fw-semibold">
+                            Tìm kiếm
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </span>
+                            <input id="billSearch"
+                                   type="search"
+                                   class="form-control"
+                                   name="Filter.Search"
+                                   value="@Model.Filter.Search"
+                                   placeholder="Mã hóa đơn hoặc mã booking"
+                                   autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-7 col-xl-5">
+                        <label for="billSort" class="form-label small fw-semibold">
+                            Sắp xếp
+                        </label>
+                        <select id="billSort"
+                                name="Filter.Sort"
+                                class="form-select">
+                            <option value="0" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Bill.BillSortOption.BillCodeAsc ? "selected" : null)">Mã hóa đơn: A-Z</option>
+                            <option value="1" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Bill.BillSortOption.BillCodeDesc ? "selected" : null)">Mã hóa đơn: Z-A</option>
+                            <option value="2" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Bill.BillSortOption.TotalAmountAsc ? "selected" : null)">Tổng tiền: thấp đến cao</option>
+                            <option value="3" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Bill.BillSortOption.TotalAmountDesc ? "selected" : null)">Tổng tiền: cao đến thấp</option>
+                            <option value="4" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Bill.BillSortOption.DepositAmountAsc ? "selected" : null)">Tiền cọc: thấp đến cao</option>
+                            <option value="5" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Bill.BillSortOption.DepositAmountDesc ? "selected" : null)">Tiền cọc: cao đến thấp</option>
+                            <option value="6" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Bill.BillSortOption.PaidAtDesc ? "selected" : null)">Ngày thanh toán: mới đến cũ</option>
+                            <option value="7" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Bill.BillSortOption.PaidAtAsc ? "selected" : null)">Ngày thanh toán: cũ đến mới</option>
+                            <option value="8" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Bill.BillSortOption.LastModifiedDesc ? "selected" : null)">Ngày chỉnh sửa: mới đến cũ</option>
+                            <option value="9" selected="@(Model.Filter.Sort == Hotel_Management_Website.Models.ViewModels.Bill.BillSortOption.LastModifiedAsc ? "selected" : null)">Ngày chỉnh sửa: cũ đến mới</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-5 col-xl-2">
+                        <label for="billStatus" class="form-label small fw-semibold">
+                            Trạng thái
+                        </label>
+                        <div class="d-flex gap-2">
+                            <select id="billStatus"
+                                    name="Filter.Status"
+                                    class="form-select">
+                                <option value="" selected="@(Model.Filter.Status is null ? "selected" : null)">Tất cả</option>
+                                <option value="0" selected="@(Model.Filter.Status == 0 ? "selected" : null)">Thanh toán thành công</option>
+                                <option value="1" selected="@(Model.Filter.Status == 1 ? "selected" : null)">Thanh toán thất bại</option>
+                            </select>
+
+                            <button type="submit"
+                                    class="btn btn-primary bill-filter-submit"
+                                    title="Áp dụng bộ lọc"
+                                    aria-label="Áp dụng bộ lọc">
+                                <span class="ui-button-content">
+                                    <i class="bi bi-funnel" aria-hidden="true"></i>
+                                </span>
+                                <span class="ui-button-loading d-none">
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                </span>
+                            </button>
+
+                            <button type="submit"
+                                    name="Reset"
+                                    value="bill"
+                                    class="btn btn-outline-secondary"
+                                    title="Đặt lại bộ lọc"
+                                    aria-label="Đặt lại bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" name="Filter.CurrentPage" value="1" />
+            <input type="hidden" name="Filter.PageSize" value="@Model.Filter.PageSize" />
+
+            @if (Model.Bills.Count == 0)
+            {
+                @await Html.PartialAsync(
+                    "~/Views/Shared/UI/_EmptyState.cshtml",
+                    new Hotel_Management_Website.Models.ViewModels.UI.StateViewModel
+                    {
+                        Message = "Không có hóa đơn nào để hiển thị.",
+                        Description = "Danh sách hóa đơn hiện đang trống hoặc không có dữ liệu phù hợp với bộ lọc.",
+                        Icon = "bi-receipt-cutoff"
+                    })
+            }
+            else
+            {
+                <div class="bill-table-responsive">
+                    <table class="table table-hover align-middle mb-0 bill-table">
+                        <thead>
+                            <tr>
+                                <th class="bill-col-code">Mã hóa đơn</th>
+                                <th class="bill-col-booking">Mã booking</th>
+                                <th class="bill-col-money text-end">Tổng tiền</th>
+                                <th class="bill-col-money text-end">Tiền đã cọc</th>
+                                <th class="bill-col-money text-end">Thanh toán cuối</th>
+                                <th class="bill-col-paid-at">Ngày thanh toán</th>
+                                <th class="bill-col-status">Trạng thái</th>
+                                <th class="bill-col-action text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var bill in Model.Bills)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="bill-cell-ellipsis font-monospace fw-semibold"
+                                              title="@bill.BillCode">
+                                            @bill.BillCode
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(bill.BookingCode))
+                                        {
+                                            <span class="text-body-secondary">—</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="bill-cell-ellipsis font-monospace"
+                                                  title="@bill.BookingCode">
+                                                @bill.BookingCode
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        @if (bill.TotalAmount.HasValue)
+                                        {
+                                            <span class="bill-money">@bill.TotalAmount.Value.ToString("N0") ₫</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-body-secondary">—</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="bill-money">@bill.DepositAmount.ToString("N0") ₫</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="bill-money fw-semibold">@bill.FinalAmount.ToString("N0") ₫</span>
+                                    </td>
+                                    <td>
+                                        @if (bill.PaidAt.HasValue)
+                                        {
+                                            <span class="bill-datetime">
+                                                @bill.PaidAt.Value.ToString("dd/MM/yyyy")
+                                                <span class="text-body-secondary">
+                                                    @bill.PaidAt.Value.ToString("HH:mm")
+                                                </span>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-body-secondary">Chưa thanh toán</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @bill.StatusBadgeClass bill-status-badge">
+                                            @bill.StatusName
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="bill-action-group justify-content-end">
+                                            <a asp-controller="Bill"
+                                               asp-action="Details"
+                                               asp-route-id="@bill.Id"
+                                               class="btn btn-outline-primary bill-action-btn"
+                                               title="Xem chi tiết"
+                                               aria-label="Xem chi tiết @bill.BillCode">
+                                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                            </a>
+                                            <a asp-controller="Bill"
+                                               asp-action="Print"
+                                               asp-route-id="@bill.Id"
+                                               target="_blank"
+                                               rel="noopener"
+                                               class="btn btn-outline-secondary bill-action-btn"
+                                               title="In hóa đơn"
+                                               aria-label="In hóa đơn @bill.BillCode">
+                                                <i class="bi bi-printer" aria-hidden="true"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @await Html.PartialAsync(
+                "~/Views/Shared/UI/_Pagination.cshtml",
+                Model.Pagination)
+        </section>
+    </form>
+}
+
+@section Scripts
+{
+    <script>
+        (() => {
+            "use strict";
+
+            const form = document.querySelector(".bill-filter-form");
+            if (!form || form.dataset.ajaxBound === "true") {
+                return;
+            }
+
+            form.dataset.ajaxBound = "true";
+
+            form.addEventListener("submit", function (event) {
+                const submitter = event.submitter;
+
+                if (!submitter || submitter.name !== "Filter.CurrentPage") {
+                    const pageField = form.querySelector('[name="Filter.CurrentPage"]');
+                    if (pageField) {
+                        pageField.value = "1";
+                    }
+                }
+
+                if (submitter?.classList.contains("bill-filter-submit")) {
+                    HotelUI.setButtonLoading(
+                        submitter,
+                        true,
+                        "Đang tải..."
+                    );
+                }
+            });
+        })();
+    </script>
+}

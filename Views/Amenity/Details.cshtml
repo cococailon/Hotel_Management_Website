@@ -1,0 +1,179 @@
+@model Hotel_Management_Website.Models.ViewModels.Amenity.AmenityDetailsViewModel
+
+@{
+    var isReception = User.IsInRole("Reception");
+    ViewData["Title"] = "Chi tiết tiện nghi";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/amenity-details.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Chi tiết tiện nghi",
+        Description = "Xem đầy đủ thông tin và trạng thái của tiện nghi.",
+        Icon = "bi-stars"
+    })
+
+<div class="amenity-detail-page">
+    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2 mb-4">
+        <a asp-controller="Amenity" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            Quay lại danh sách
+        </a>
+
+        @if (!isReception)
+        {
+        <a asp-controller="Amenity"
+           asp-action="Edit"
+           asp-route-id="@Model.Id"
+           class="btn btn-primary">
+            <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>
+            Sửa tiện nghi
+        </a>
+        }
+    </div>
+
+    @if (Model.HasActiveBookings)
+    {
+        <div class="alert alert-warning d-flex gap-2 align-items-start mb-4">
+            <i class="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true"></i>
+            <div>
+                <div class="fw-semibold">Tiện nghi đang được dùng bởi loại phòng có Booking hoạt động.</div>
+                <div class="small">Các thay đổi nghiệp vụ của mã, tên và trạng thái sẽ bị giới hạn theo quy định hệ thống.</div>
+            </div>
+        </div>
+    }
+
+    <section class="card border-0 shadow-sm amenity-detail-summary mb-4">
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-center">
+                <div class="col-12 col-lg-auto">
+                    <div class="amenity-detail-avatar" aria-hidden="true">
+                        <i class="bi bi-stars"></i>
+                    </div>
+                </div>
+                <div class="col-12 col-lg">
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 mb-2">
+                        <h1 class="h4 fw-semibold mb-0 amenity-detail-name" title="@Model.AmenityName">@Model.AmenityName</h1>
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge text-bg-success">Đang hoạt động</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Dừng hoạt động</span>
+                        }
+                    </div>
+                    <div class="text-body-secondary">
+                        <span class="font-monospace">@Model.AmenityCode</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="amenity-detail-section-icon" aria-hidden="true"><i class="bi bi-stars"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Thông tin tiện nghi</h2>
+                            <div class="small text-body-secondary">Thông tin cấu hình cơ bản</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <div class="amenity-detail-label">Mã tiện nghi</div>
+                            <div class="amenity-detail-value font-monospace amenity-detail-breakable">@Model.AmenityCode</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="amenity-detail-label">Tên tiện nghi</div>
+                            <div class="amenity-detail-value amenity-detail-breakable">@Model.AmenityName</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="amenity-detail-label">Trạng thái hoạt động</div>
+                            <div class="amenity-detail-value">
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge text-bg-success">Đang hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary">Dừng hoạt động</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="amenity-detail-section-icon" aria-hidden="true"><i class="bi bi-card-text"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Mô tả và ghi chú</h2>
+                            <div class="small text-body-secondary">Thông tin bổ sung về tiện nghi</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-6">
+                            <div class="amenity-detail-label">Mô tả</div>
+                            <div class="amenity-detail-value amenity-detail-note">
+                                @(string.IsNullOrWhiteSpace(Model.Description) ? "Không có mô tả" : Model.Description)
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-6">
+                            <div class="amenity-detail-label">Ghi chú</div>
+                            <div class="amenity-detail-value amenity-detail-note">
+                                @(string.IsNullOrWhiteSpace(Model.Note) ? "Không có ghi chú" : Model.Note)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="amenity-detail-section-icon" aria-hidden="true"><i class="bi bi-clock-history"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Thông tin thời gian</h2>
+                            <div class="small text-body-secondary">Thông tin audit của tiện nghi</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="amenity-detail-label">Ngày tạo</div>
+                            <div class="amenity-detail-value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="amenity-detail-label">Ngày chỉnh sửa gần nhất</div>
+                            <div class="amenity-detail-value">@Model.LastModifiedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,397 @@
+@model Hotel_Management_Website.Models.ViewModels.Employee.EmployeeEditViewModel
+
+@{
+    ViewData["Title"] = "Sửa nhân viên";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var today = DateOnly.FromDateTime(DateTime.Today);
+
+    var positionName = Model.Position == 0
+        ? "Lễ Tân"
+        : "Buồng Phòng";
+
+    var statusName = Model.Status == 1
+        ? "Đang làm"
+        : "Đã nghỉ";
+
+    var statusBadgeClass = Model.Status == 1
+        ? "text-bg-success"
+        : "text-bg-secondary";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/employee-edit.css" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Sửa nhân viên",
+        Description = "Cập nhật thông tin hồ sơ nhân viên.",
+        Icon = "bi-pencil-square"
+    })
+
+<div class="employee-edit-page">
+
+    <form id="employeeEditForm"
+          asp-controller="Employee"
+          asp-action="Edit"
+          method="post"
+          novalidate>
+
+        @Html.AntiForgeryToken()
+
+        <input asp-for="Id" type="hidden" />
+        <input asp-for="Status" type="hidden" />
+        <input asp-for="ReturnUrl" type="hidden" />
+
+        <div asp-validation-summary="ModelOnly"
+             class="alert alert-danger"
+             role="alert">
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- IDENTITY INFORMATION -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="employee-edit-section-icon">
+                        <i class="bi bi-person-vcard" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Thông tin cơ bản
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Thông tin định danh và cá nhân của nhân viên.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-4">
+
+                    <!-- EmployeeCode -->
+                    <div class="col-12 col-lg-6">
+
+                        <label asp-for="EmployeeCode"
+                               class="form-label">
+                            Mã nhân viên
+                        </label>
+
+                        <input asp-for="EmployeeCode"
+                               class="form-control"
+                               maxlength="50"
+                               autocomplete="off"
+                               spellcheck="false" />
+
+                        <div class="form-text">
+                            Mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.
+                        </div>
+
+                        <span asp-validation-for="EmployeeCode" class="text-danger"></span>
+
+                    </div>
+
+                    <!-- EmployeeName -->
+                    <div class="col-12 col-lg-6">
+
+                        <label asp-for="EmployeeName"
+                               class="form-label required">
+                            Tên nhân viên
+                        </label>
+
+                        <input asp-for="EmployeeName"
+                               class="form-control"
+                               autocomplete="off"
+                               maxlength="100"
+                               placeholder="Nhập họ và tên nhân viên" />
+
+                        <span asp-validation-for="EmployeeName"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- DateOfBirth -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="DateOfBirth"
+                               class="form-label required">
+                            Ngày sinh
+                        </label>
+
+                        <input asp-for="DateOfBirth"
+                               type="date"
+                               class="form-control"
+                               max='@today.ToString("yyyy-MM-dd")'
+                               id="employeeEditDateOfBirth" />
+
+                        <span asp-validation-for="DateOfBirth"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- Sex -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="Sex"
+                               class="form-label required">
+                            Giới tính
+                        </label>
+
+                        <select asp-for="Sex"
+                                class="form-select">
+                            <option value="">
+                                -- Chọn giới tính --
+                            </option>
+                            <option value="0">Nam</option>
+                            <option value="1">Nữ</option>
+                            <option value="2">Khác</option>
+                        </select>
+
+                        <span asp-validation-for="Sex"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================================== -->
+        <!-- WORK INFORMATION -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="employee-edit-section-icon">
+                        <i class="bi bi-briefcase" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Thông tin công việc
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Thông tin bộ phận và thời gian làm việc.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-4">
+
+                    <!-- Position -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="Position"
+                               class="form-label required">
+                            Chức vụ
+                        </label>
+
+                        <select asp-for="Position"
+                                class="form-select"
+                                id="employeeEditPosition">
+                            <option value="">
+                                -- Chọn chức vụ --
+                            </option>
+                            <option value="0">Lễ Tân</option>
+                            <option value="1">Buồng Phòng</option>
+                        </select>
+
+                        <span asp-validation-for="Position"
+                              class="text-danger">
+                        </span>
+
+                        <div class="form-text">
+                            Nếu nhân viên có tài khoản Lễ Tân/Buồng Phòng,
+                            quyền tài khoản sẽ được đồng bộ theo chức vụ mới.
+                        </div>
+
+                    </div>
+
+                    <!-- StartDate -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="StartDate"
+                               class="form-label required">
+                            Ngày vào làm
+                        </label>
+
+                        <input asp-for="StartDate"
+                               type="date"
+                               class="form-control"
+                               id="employeeEditStartDate" />
+
+                        <span asp-validation-for="StartDate"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <!-- EndDate -->
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <label asp-for="EndDate"
+                               class="form-label">
+                            Ngày nghỉ việc
+                        </label>
+
+                        <input asp-for="EndDate"
+                               type="date"
+                               class="form-control"
+                               id="employeeEditEndDate"
+                               disabled="@(Model.Status == 1 ? "disabled" : null)" />
+
+                        <div id="employeeEditEndDateHelp"
+                             class="form-text">
+                            @(Model.Status == 1
+                                ? "Nhân viên đang làm nên không có ngày nghỉ việc."
+                                : "Nhập ngày nghỉ việc của nhân viên.")
+                        </div>
+
+                        <span asp-validation-for="EndDate"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================================== -->
+        <!-- NOTE -->
+        <!-- ===================================================== -->
+
+        <section class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-body border-bottom">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <div class="employee-edit-section-icon">
+                        <i class="bi bi-sticky" aria-hidden="true"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="h5 mb-1 fw-semibold">
+                            Ghi chú
+                        </h2>
+
+                        <p class="text-body-secondary small mb-0">
+                            Ghi chú bổ sung về nhân viên.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <label asp-for="Note"
+                       class="form-label">
+                    Ghi chú
+                </label>
+
+                <textarea asp-for="Note"
+                          class="form-control"
+                          rows="4"
+                          maxlength="255"
+                          placeholder="Nhập ghi chú nếu cần..."></textarea>
+
+                <div class="d-flex justify-content-between gap-2 mt-1">
+                    <span class="form-text">
+                        Tối đa 255 ký tự.
+                    </span>
+                </div>
+
+                <span asp-validation-for="Note"
+                      class="text-danger">
+                </span>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================================== -->
+        <!-- ACTIONS -->
+        <!-- ===================================================== -->
+
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mb-4">
+
+            <a href="@(
+                !string.IsNullOrWhiteSpace(Model.ReturnUrl) &&
+                Url.IsLocalUrl(Model.ReturnUrl)
+                    ? Model.ReturnUrl
+                    : Url.Action("Index", "Employee")
+            )"
+               class="btn btn-outline-secondary employee-edit-cancel-btn">
+
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+                Quay lại danh sách
+
+            </a>
+
+            <button type="submit"
+                    id="employeeEditSubmitButton"
+                    class="btn btn-primary">
+
+                <span class="ui-button-content">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+                    Lưu thay đổi
+                </span>
+
+                <span class="ui-button-loading d-none">
+                    <span class="spinner-border spinner-border-sm me-1"
+                          role="status"
+                          aria-hidden="true"></span>
+                    Đang lưu...
+                </span>
+
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/employee-edit.js" asp-append-version="true"></script>
+}

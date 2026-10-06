@@ -1,0 +1,419 @@
+@model Hotel_Management_Website.Models.ViewModels.Booking.BookingFlowViewModel
+
+@{
+    ViewData["Title"] = "Quản lý luồng đặt phòng";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/booking-flow.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Quản lý luồng đặt phòng",
+        Description = $"Booking {Model.BookingCode} · theo dõi và thực hiện đúng bước nghiệp vụ hiện tại.",
+        Icon = "bi-arrow-repeat"
+    })
+
+<div class="booking-flow-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-2 mb-4">
+        <a asp-controller="Booking" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            Quay lại danh sách
+        </a>
+        <a asp-controller="Booking" asp-action="Details" asp-route-id="@Model.BookingId" class="btn btn-outline-primary">
+            <i class="bi bi-eye me-1" aria-hidden="true"></i>
+            Xem chi tiết Booking
+        </a>
+    </div>
+
+    <section class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-center">
+                <div class="col-12 col-xl">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <span class="font-monospace fw-semibold fs-5 booking-breakable">@Model.BookingCode</span>
+                        <span class="badge @Model.BookingTypeBadgeClass">@Model.BookingTypeName</span>
+                        <span class="badge @Model.StatusBadgeClass">@Model.StatusName</span>
+                    </div>
+                    <div class="text-body-secondary">
+                        @Model.ExpectedCheckInAt.ToString("dd/MM/yyyy HH:mm")
+                        <span class="mx-1">→</span>
+                        @Model.ExpectedCheckOutAt.ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                </div>
+                <div class="col-12 col-xl-auto">
+                    <div class="booking-flow-current-status text-xl-end">
+                        <div class="small text-body-secondary">Bước hiện tại</div>
+                        <div class="fw-semibold mt-1">
+                            @switch (Model.Status)
+                            {
+                                case 0:
+                                    @:Chờ Lễ Tân xác nhận
+                                    break;
+                                case 1:
+                                    @:Chờ check in
+                                    break;
+                                case 2:
+                                    @:Khách đang ở
+                                    break;
+                                case 3:
+                                    @:Đã hoàn tất check out
+                                    break;
+                                case 4:
+                                    @:Xác nhận thất bại
+                                    break;
+                                case 5:
+                                    @:Check in thất bại
+                                    break;
+                                case 6:
+                                    @:Check out thất bại
+                                    break;
+                                case 7:
+                                    @:Khách hủy trước check in
+                                    break;
+                                case 8:
+                                    @:Vắng mặt không thông báo
+                                    break;
+                                case 9:
+                                    @:Khách sạn hủy
+                                    break;
+                                default:
+                                    @:Không xác định
+                                    break;
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-7">
+            <section class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="booking-flow-section-icon"><i class="bi bi-person-vcard"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Khách hàng đại diện</h2>
+                            <div class="small text-body-secondary">Thông tin hiện tại của Guest gắn với Booking.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <div class="booking-flow-label">Mã khách hàng</div>
+                            <div class="booking-flow-value font-monospace booking-breakable">@(string.IsNullOrWhiteSpace(Model.GuestCode) ? "Không có" : Model.GuestCode)</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="booking-flow-label">Tên khách hàng</div>
+                            <div class="booking-flow-value booking-breakable">@(string.IsNullOrWhiteSpace(Model.GuestName) ? "Không có" : Model.GuestName)</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="booking-flow-label">Số điện thoại</div>
+                            <div class="booking-flow-value booking-breakable">@(Model.GuestPhoneNumber ?? "Không có")</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="booking-flow-label">Email</div>
+                            <div class="booking-flow-value booking-breakable">@(Model.GuestEmail ?? "Không có")</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="booking-flow-label">Số giấy tờ</div>
+                            <div class="booking-flow-value booking-breakable">@(Model.GuestIdentityNumber ?? "Không có")</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="booking-flow-label">Loại giấy tờ</div>
+                            <div class="booking-flow-value">@Model.GuestIdentityTypeName</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="booking-flow-section-icon"><i class="bi bi-door-open"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">BookingRooms</h2>
+                            <div class="small text-body-secondary">Phòng đã yêu cầu/gán cho Booking.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.Rooms.Count == 0)
+                    {
+                        <div class="text-body-secondary">Booking chưa có BookingRoom.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 booking-flow-table">
+                                <thead>
+                                    <tr>
+                                        <th>Loại phòng</th>
+                                        <th>Phòng</th>
+                                        <th class="text-center">NL</th>
+                                        <th class="text-center">TE</th>
+                                        <th>Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var room in Model.Rooms)
+                                    {
+                                        <tr>
+                                            <td class="booking-breakable"><span class="font-monospace">@room.RoomTypeCode</span> · @room.RoomTypeName</td>
+                                            <td class="booking-breakable">@(string.IsNullOrWhiteSpace(room.RoomCode) ? "Chưa gán" : room.RoomCode + " · " + room.RoomName)</td>
+                                            <td class="text-center">@(room.Adults?.ToString() ?? "—")</td>
+                                            <td class="text-center">@(room.Children?.ToString() ?? "—")</td>
+                                            <td class="booking-breakable">@(string.IsNullOrWhiteSpace(room.Note) ? "—" : room.Note)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <section class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="booking-flow-section-icon"><i class="bi bi-lightning-charge"></i></div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Thao tác theo trạng thái</h2>
+                            <div class="small text-body-secondary">Chỉ hiển thị thao tác hợp lệ của trạng thái hiện tại.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.Status == 0 && Model.BookingType == 0)
+                    {
+                        <div class="booking-flow-next-step p-3 rounded-3 mb-3">
+                            <div class="fw-semibold mb-1">Xác nhận lịch đặt phòng</div>
+                            <div class="small text-body-secondary mb-3">Bấm nút để xác nhận trực tiếp lịch đặt phòng và chuyển sang trạng thái Chờ check in.</div>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-primary w-100" id="bookingConfirmButton">
+                                    <i class="bi bi-check2-circle me-1"></i>
+                                    Xác nhận lịch đặt phòng
+                                </button>
+                                <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#bookingCancelModal">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Hủy lịch đặt phòng
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else if (Model.Status == 0)
+                    {
+                        <div class="booking-flow-next-step p-3 rounded-3 mb-3">
+                            <div class="fw-semibold mb-1">Hủy lịch đặt phòng</div>
+                            <div class="small text-body-secondary mb-3">Chọn lý do hủy để cập nhật trạng thái Booking.</div>
+                            <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#bookingCancelModal">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Hủy lịch đặt phòng
+                            </button>
+                        </div>
+                    }
+                    else if (Model.Status == 1)
+                    {
+                        <div class="booking-flow-next-step p-3 rounded-3 mb-3">
+                            <div class="fw-semibold mb-1">Chờ check in</div>
+                            <div class="small text-body-secondary mb-3">Hoàn tất thông tin khách đại diện, phân người vào từng BookingRoom và chọn phòng thực tế.</div>
+                            <div class="d-grid gap-2">
+                                <a asp-controller="Booking" asp-action="CheckIn" asp-route-id="@Model.BookingId" class="btn btn-primary">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>
+                                    Check in
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#bookingCancelModal">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Hủy lịch đặt phòng
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else if (Model.Status == 2)
+                    {
+                        <div class="booking-flow-next-step p-3 rounded-3 mb-3">
+                            <div class="fw-semibold mb-1">Đang ở</div>
+                            <div class="small text-body-secondary mb-3">Có thể ghi nhận dịch vụ, phí phát sinh và thực hiện check out.</div>
+                            <a asp-controller="Booking" asp-action="CheckOut" asp-route-id="@Model.BookingId" class="btn btn-primary w-100">
+                                <i class="bi bi-box-arrow-right me-1"></i>
+                                Check out
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-light border mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Trạng thái hiện tại không có thao tác chuyển bước trực tiếp từ màn hình này.
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <section class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="booking-flow-label">Người lớn</div>
+                            <div class="fs-5 fw-semibold">@Model.TotalAdults</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="booking-flow-label">Trẻ em</div>
+                            <div class="fs-5 fw-semibold">@Model.TotalChildren</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="booking-flow-label">Tiền cọc</div>
+                            <div class="fw-semibold">@Model.DepositAmount.ToString("N0") ₫</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="booking-flow-label">Ghi chú Booking</div>
+                            <div class="booking-flow-value booking-breakable">@(string.IsNullOrWhiteSpace(Model.BookingNote) ? "Không có" : Model.BookingNote)</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+@if (Model.Status == 0 && Model.BookingType == 0)
+{
+    <form id="bookingConfirmForm" asp-controller="Booking" asp-action="Confirm" method="post" data-ajax="false" class="d-none" data-booking-code="@Model.BookingCode">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="BookingId" value="@Model.BookingId" />
+    </form>
+}
+
+
+@if (Model.Status == 0 || Model.Status == 1)
+{
+    <div class="modal fade" id="bookingCancelModal" tabindex="-1" aria-labelledby="bookingCancelModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bookingCancelModalLabel">Hủy lịch đặt phòng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bookingCancelForm" asp-controller="Booking" asp-action="Cancel" method="post" data-ajax="false">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="BookingId" value="@Model.BookingId" />
+                        <label for="cancelStatus" class="form-label fw-semibold">Lý do hủy <span class="text-danger">*</span></label>
+                        <select id="cancelStatus" name="CancelStatus" class="form-select">
+                            <option value="">-- Chọn lý do --</option>
+                            @if (Model.Status == 0)
+                            {
+                                <option value="4">Xác nhận thất bại</option>
+                                <option value="7">Khách hủy trước check in</option>
+                                <option value="9">Khách sạn hủy</option>
+                            }
+                            else
+                            {
+                                <option value="7">Khách hủy trước check in</option>
+                                <option value="5">Check in thất bại</option>
+                                <option value="8">Vắng mặt không thông báo/liên lạc được</option>
+                                <option value="9">Khách sạn hủy</option>
+                            }
+                        </select>
+                        <div id="cancelStatusError" class="text-danger small mt-2 d-none">Vui lòng chọn lý do hủy.</div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-danger" id="bookingCancelContinue">Tiếp tục</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+@section Scripts
+{
+    <script>
+        (() => {
+            "use strict";
+
+            const confirmButton = document.getElementById("bookingConfirmButton");
+            const confirmForm = document.getElementById("bookingConfirmForm");
+            const bookingCode = confirmForm?.dataset.bookingCode || "Booking này";
+
+            confirmButton?.addEventListener("click", () => {
+                const showConfirm = window.HotelUI?.showConfirm;
+                const submit = () => confirmForm?.submit();
+
+                if (typeof showConfirm === "function") {
+                    showConfirm({
+                        title: "Xác nhận lịch đặt phòng",
+                        message: `Bạn có chắc chắn muốn xác nhận thành công cho Booking ${bookingCode}?`,
+                        note: "Sau khi xác nhận, Booking sẽ chuyển sang trạng thái Chờ check in.",
+                        variant: "primary",
+                        confirmText: "Xác nhận thành công",
+                        onConfirm: submit
+                    });
+                } else {
+                    submit();
+                }
+            });
+
+            const cancelContinue = document.getElementById("bookingCancelContinue");
+            const cancelForm = document.getElementById("bookingCancelForm");
+            const cancelModal = document.getElementById("bookingCancelModal");
+
+            cancelContinue?.addEventListener("click", () => {
+                const select = document.getElementById("cancelStatus");
+                const error = document.getElementById("cancelStatusError");
+                const value = select?.value ?? "";
+
+                if (!value) {
+                    error?.classList.remove("d-none");
+                    select?.focus();
+                    return;
+                }
+
+                error?.classList.add("d-none");
+                bootstrap.Modal.getInstance(cancelModal)?.hide();
+
+                const labels = {
+                    "4": "Xác nhận thất bại",
+                    "7": "Khách hủy trước check in",
+                    "5": "Check in thất bại",
+                    "8": "Vắng mặt không thông báo/liên lạc được",
+                    "9": "Khách sạn hủy"
+                };
+
+                const submit = () => cancelForm?.submit();
+                const showConfirm = window.HotelUI?.showConfirm;
+
+                if (typeof showConfirm === "function") {
+                    showConfirm({
+                        title: "Xác nhận hủy lịch đặt phòng",
+                        message: `Bạn có chắc chắn muốn ghi nhận: ${labels[value] ?? "Lý do đã chọn"}?`,
+                        note: "Thao tác này sẽ thay đổi trạng thái Booking.",
+                        variant: "danger",
+                        confirmText: "Xác nhận hủy",
+                        onConfirm: submit
+                    });
+                } else {
+                    submit();
+                }
+            });
+
+            document.getElementById("cancelStatus")?.addEventListener("change", () => {
+                document.getElementById("cancelStatusError")?.classList.add("d-none");
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,678 @@
+@using System.Globalization
+@using Hotel_Management_Website.Models.ViewModels.Statistics
+@using Hotel_Management_Website.Models.ViewModels.UI
+@model StatisticsViewModel
+
+@{
+    ViewData["Title"] = "Thống kê khách sạn";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var maxRevenueTrend = Model.RevenueTrend.Count == 0
+        ? 1m
+        : Math.Max(1m, Model.RevenueTrend.Max(x => x.Revenue));
+
+    var maxBookingTrend = Model.BookingTrend.Count == 0
+        ? 1
+        : Math.Max(1, Model.BookingTrend.Max(x => x.Count));
+
+    var maxServiceRevenue = Model.Services.Count == 0
+        ? 1m
+        : Math.Max(1m, Model.Services.Max(x => x.Revenue));
+
+    var maxGuestSpending = Model.TopGuests.Count == 0
+        ? 1m
+        : Math.Max(1m, Model.TopGuests.Max(x => x.Spending));
+
+    string WidthPercent(double value)
+    {
+        return $"width:{Math.Clamp(value, 0d, 100d).ToString("0.##", CultureInfo.InvariantCulture)}%";
+    }
+
+    string WidthDecimal(decimal value, decimal max)
+    {
+        var percent = max <= 0m ? 0m : value * 100m / max;
+        return $"width:{Math.Clamp(percent, 0m, 100m).ToString("0.##", CultureInfo.InvariantCulture)}%";
+    }
+
+    string StatusBadge(byte status)
+    {
+        return status switch
+        {
+            0 => "text-bg-warning",
+            1 => "text-bg-info",
+            2 => "text-bg-primary",
+            3 => "text-bg-success",
+            4 => "text-bg-danger",
+            5 => "text-bg-danger",
+            6 => "text-bg-danger",
+            7 => "text-bg-secondary",
+            8 => "text-bg-secondary",
+            9 => "text-bg-dark",
+            _ => "text-bg-secondary"
+        };
+    }
+}
+
+@section Styles
+{
+    <link rel="stylesheet"
+          href="~/css/statistics.css"
+          asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new PageHeaderViewModel
+    {
+        Title = "Thống kê khách sạn",
+        Description = "Theo dõi toàn diện tình hình phòng, đặt phòng, khách hàng, doanh thu, thanh toán, dịch vụ và hoạt động vận hành.",
+        Icon = "bi-bar-chart-line"
+    })
+
+<section class="card border-0 shadow-sm statistics-filter-card mb-4">
+    <div class="card-body">
+        <form method="get"
+              asp-controller="Statistics"
+              asp-action="Index"
+              data-preserve-scroll="true">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label for="statisticsStartDate" class="form-label small fw-semibold">Từ ngày</label>
+                    <input id="statisticsStartDate"
+                           type="date"
+                           class="form-control"
+                           name="startDate"
+                           value="@Model.StartDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-12 col-md-4">
+                    <label for="statisticsEndDate" class="form-label small fw-semibold">Đến ngày</label>
+                    <input id="statisticsEndDate"
+                           type="date"
+                           class="form-control"
+                           name="endDate"
+                           value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-bar-chart me-1" aria-hidden="true"></i>
+                            Xem thống kê
+                        </button>
+                        <a asp-controller="Statistics"
+                           asp-action="Index"
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>
+                            Tháng hiện tại
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="small text-body-secondary mt-3">
+                Kỳ thống kê: <strong>@Model.StartDate.ToString("dd/MM/yyyy")</strong>
+                đến <strong>@Model.EndDate.ToString("dd/MM/yyyy")</strong>.
+                Dữ liệu được tính từ các bản ghi chưa bị xóa mềm.
+            </div>
+        </form>
+    </div>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Model.LoadError))
+{
+    @await Html.PartialAsync(
+        "~/Views/Shared/UI/_ErrorState.cshtml",
+        new StateViewModel
+        {
+            Message = Model.LoadError,
+            Icon = "bi-exclamation-triangle"
+        })
+}
+else
+{
+    <!-- ===================================================== -->
+    <!-- KPI: DOANH THU / THANH TOAN                         -->
+    <!-- ===================================================== -->
+    <div class="d-flex align-items-end justify-content-between gap-3 mb-3">
+        <div>
+            <h2 class="h5 mb-1 fw-semibold">Tài chính trong kỳ</h2>
+            <p class="text-body-secondary small mb-0">Phân tách tiền phòng, dịch vụ, phí phát sinh và tiền thực thu.</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm statistics-kpi-card">
+                <div class="card-body">
+                    <div class="small text-body-secondary fw-semibold">Doanh thu ghi nhận</div>
+                    <div class="statistics-kpi-value mt-2">@Model.BilledRevenue.ToString("N0") <span>₫</span></div>
+                    <div class="small text-body-secondary mt-2">Tổng tiền trên hóa đơn thành công</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm statistics-kpi-card">
+                <div class="card-body">
+                    <div class="small text-body-secondary fw-semibold">Tiền cọc đã thu</div>
+                    <div class="statistics-kpi-value mt-2">@Model.DepositCollected.ToString("N0") <span>₫</span></div>
+                    <div class="small text-body-secondary mt-2">Theo thời gian thanh toán cọc</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm statistics-kpi-card">
+                <div class="card-body">
+                    <div class="small text-body-secondary fw-semibold">Tiền còn lại đã thu</div>
+                    <div class="statistics-kpi-value mt-2">@Model.RemainingCollected.ToString("N0") <span>₫</span></div>
+                    <div class="small text-body-secondary mt-2">FinalAmount của hóa đơn thành công</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm statistics-kpi-card">
+                <div class="card-body">
+                    <div class="small text-body-secondary fw-semibold">Giá trị hóa đơn bình quân</div>
+                    <div class="statistics-kpi-value mt-2">@Model.AverageBillAmount.ToString("N0") <span>₫</span></div>
+                    <div class="small text-body-secondary mt-2">@Model.SuccessfulBillCount hóa đơn thanh toán thành công</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-7">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <h2 class="h6 mb-0 fw-semibold">Cơ cấu doanh thu</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <div class="statistics-mini-value-label">Tiền phòng</div>
+                            <div class="statistics-mini-value">@Model.RoomRevenue.ToString("N0") ₫</div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="statistics-mini-value-label">Dịch vụ</div>
+                            <div class="statistics-mini-value">@Model.ServiceRevenue.ToString("N0") ₫</div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="statistics-mini-value-label">Phí phát sinh</div>
+                            <div class="statistics-mini-value">@Model.AdditionalFeeRevenue.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-12 col-md-6">
+                            <div class="statistics-payment-box">
+                                <div class="fw-semibold mb-2">Tiền cọc</div>
+                                <div class="d-flex justify-content-between gap-3 small py-1">
+                                    <span>Tiền mặt</span>
+                                    <strong>@Model.DepositCash.ToString("N0") ₫</strong>
+                                </div>
+                                <div class="d-flex justify-content-between gap-3 small py-1">
+                                    <span>Chuyển khoản</span>
+                                    <strong>@Model.DepositTransfer.ToString("N0") ₫</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="statistics-payment-box">
+                                <div class="fw-semibold mb-2">Thanh toán còn lại</div>
+                                <div class="d-flex justify-content-between gap-3 small py-1">
+                                    <span>Tiền mặt</span>
+                                    <strong>@Model.RemainingCash.ToString("N0") ₫</strong>
+                                </div>
+                                <div class="d-flex justify-content-between gap-3 small py-1">
+                                    <span>Chuyển khoản</span>
+                                    <strong>@Model.RemainingTransfer.ToString("N0") ₫</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="small text-body-secondary mt-3">
+                        Hóa đơn thất bại trong kỳ: <strong>@Model.FailedBillCount</strong>.
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <h2 class="h6 mb-0 fw-semibold">Xu hướng doanh thu theo tháng</h2>
+                </div>
+                <div class="card-body">
+                    @if (Model.RevenueTrend.Count == 0)
+                    {
+                        <div class="text-body-secondary small">Chưa có dữ liệu doanh thu trong kỳ.</div>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.RevenueTrend)
+                        {
+                            <div class="statistics-bar-row">
+                                <div class="d-flex justify-content-between gap-3 small mb-1">
+                                    <span>@item.Label</span>
+                                    <strong>@item.Revenue.ToString("N0") ₫</strong>
+                                </div>
+                                <div class="progress statistics-progress" role="progressbar" aria-label="@item.Label" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress-bar" style="@WidthDecimal(item.Revenue, maxRevenueTrend)"></div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- ROOM STATUS                                            -->
+    <!-- ===================================================== -->
+    <div class="d-flex align-items-end justify-content-between gap-3 mb-3">
+        <div>
+            <h2 class="h5 mb-1 fw-semibold">Tình trạng phòng</h2>
+            <p class="text-body-secondary small mb-0">Ảnh chụp hiện tại và mức sử dụng phòng trong kỳ.</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3 col-xxl-2">
+            <div class="card h-100 border-0 shadow-sm statistics-status-card">
+                <div class="card-body"><div class="small text-body-secondary">Tổng phòng</div><div class="statistics-number mt-2">@Model.TotalRooms</div></div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3 col-xxl-2">
+            <div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Đang hoạt động</div><div class="statistics-number mt-2">@Model.ActiveRooms</div></div></div>
+        </div>
+        <div class="col-6 col-lg-3 col-xxl-2">
+            <div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Đang sử dụng</div><div class="statistics-number mt-2">@Model.OccupiedRooms</div></div></div>
+        </div>
+        <div class="col-6 col-lg-3 col-xxl-2">
+            <div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Trống</div><div class="statistics-number mt-2">@Model.AvailableRooms</div></div></div>
+        </div>
+        <div class="col-6 col-lg-3 col-xxl-2">
+            <div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Chờ dọn</div><div class="statistics-number mt-2">@Model.WaitingCleanRooms</div></div></div>
+        </div>
+        <div class="col-6 col-lg-3 col-xxl-2">
+            <div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Đang dọn</div><div class="statistics-number mt-2">@Model.CleaningRooms</div></div></div>
+        </div>
+        <div class="col-6 col-lg-3 col-xxl-2">
+            <div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Bảo trì</div><div class="statistics-number mt-2">@Model.MaintenanceRooms</div></div></div>
+        </div>
+        <div class="col-12 col-lg-6 col-xxl-3">
+            <div class="card h-100 border-0 shadow-sm statistics-highlight-card"><div class="card-body"><div class="small text-body-secondary">Công suất hiện tại</div><div class="statistics-kpi-value mt-2">@Model.CurrentOccupancyRate.ToString("0.##")%</div><div class="small text-body-secondary">@Model.OccupiedRooms/@Model.ActiveRooms phòng hoạt động đang sử dụng</div></div></div>
+        </div>
+        <div class="col-12 col-lg-6 col-xxl-3">
+            <div class="card h-100 border-0 shadow-sm statistics-highlight-card"><div class="card-body"><div class="small text-body-secondary">Tỷ lệ lấp đầy trong kỳ</div><div class="statistics-kpi-value mt-2">@Model.PeriodOccupancyRate.ToString("0.##")%</div><div class="small text-body-secondary">@Model.OccupiedRoomNights.ToString("0.##") / @Model.AvailableRoomNights.ToString("0.##") room-night</div></div></div>
+        </div>
+    </div>
+
+    <section class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-body border-bottom py-3">
+            <h2 class="h6 mb-0 fw-semibold">Tình trạng phòng theo loại phòng</h2>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 statistics-table">
+                    <thead>
+                        <tr>
+                            <th>Loại phòng</th>
+                            <th class="text-end">Tổng</th>
+                            <th class="text-end">Hoạt động</th>
+                            <th class="text-end">Đang ở</th>
+                            <th class="text-end">Trống</th>
+                            <th class="text-end">Chờ dọn</th>
+                            <th class="text-end">Đang dọn</th>
+                            <th class="text-end">Bảo trì</th>
+                            <th class="text-end">Công suất</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RoomTypes.Count == 0)
+                        {
+                            <tr><td colspan="9" class="text-center py-4 text-body-secondary">Chưa có dữ liệu loại phòng.</td></tr>
+                        }
+                        else
+                        {
+                            foreach (var item in Model.RoomTypes)
+                            {
+                                <tr>
+                                    <td><strong>@item.Code</strong><div class="small text-body-secondary text-truncate statistics-max-name">@item.Name</div></td>
+                                    <td class="text-end">@item.Total</td>
+                                    <td class="text-end">@item.Active</td>
+                                    <td class="text-end">@item.Occupied</td>
+                                    <td class="text-end">@item.Available</td>
+                                    <td class="text-end">@item.WaitingClean</td>
+                                    <td class="text-end">@item.Cleaning</td>
+                                    <td class="text-end">@item.Maintenance</td>
+                                    <td class="text-end fw-semibold">@item.OccupancyRate.ToString("0.##")%</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- BOOKINGS                                               -->
+    <!-- ===================================================== -->
+    <div class="d-flex align-items-end justify-content-between gap-3 mb-3">
+        <div>
+            <h2 class="h5 mb-1 fw-semibold">Đặt phòng và lưu trú</h2>
+            <p class="text-body-secondary small mb-0">Quy mô Booking, nguồn Booking, trạng thái, số khách và thời gian lưu trú.</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Tổng Booking</div><div class="statistics-number mt-2">@Model.TotalBookings</div></div></div></div>
+        <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Đặt trước</div><div class="statistics-number mt-2">@Model.PreBookingCount</div></div></div></div>
+        <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Tại quầy</div><div class="statistics-number mt-2">@Model.DirectBookingCount</div></div></div></div>
+        <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Thành công</div><div class="statistics-number mt-2">@Model.SuccessfulBookingCount</div></div></div></div>
+        <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Hủy/thất bại</div><div class="statistics-number mt-2">@Model.CancelledOrFailedBookingCount</div></div></div></div>
+        <div class="col-6 col-lg-3 col-xxl-2"><div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Đã check out</div><div class="statistics-number mt-2">@Model.CheckedOutCount</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Người lớn</div><div class="statistics-number mt-2">@Model.TotalAdults</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Trẻ em</div><div class="statistics-number mt-2">@Model.TotalChildren</div></div></div></div>
+        <div class="col-12 col-lg-3"><div class="card h-100 border-0 shadow-sm statistics-highlight-card"><div class="card-body"><div class="small text-body-secondary">Lead time bình quân</div><div class="statistics-kpi-value mt-2">@Model.AverageLeadTimeDays.ToString("0.##") ngày</div><div class="small text-body-secondary">Từ lúc tạo Booking đến check in dự kiến</div></div></div></div>
+        <div class="col-12 col-lg-3"><div class="card h-100 border-0 shadow-sm statistics-highlight-card"><div class="card-body"><div class="small text-body-secondary">Số đêm lưu trú bình quân</div><div class="statistics-kpi-value mt-2">@Model.AverageStayNights.ToString("0.##")</div><div class="small text-body-secondary">Theo ngày thực tế nếu có, ngược lại theo dự kiến</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Check in thực tế</div><div class="statistics-number mt-2">@Model.ActualCheckInCount</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card h-100 border-0 shadow-sm statistics-status-card"><div class="card-body"><div class="small text-body-secondary">Check out thực tế</div><div class="statistics-number mt-2">@Model.ActualCheckOutCount</div></div></div></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-7">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <h2 class="h6 mb-0 fw-semibold">Trạng thái Booking trong kỳ</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        @foreach (var item in Model.BookingStatuses)
+                        {
+                            <div class="col-12 col-md-6">
+                                <div class="statistics-list-row">
+                                    <div class="d-flex justify-content-between gap-3 align-items-center">
+                                        <span class="min-width-0 d-flex align-items-center gap-2">
+                                            <span class="badge @StatusBadge(item.Status)">@item.Status</span>
+                                            <span class="text-truncate">@item.Name</span>
+                                        </span>
+                                        <strong class="flex-shrink-0">@item.Count</strong>
+                                    </div>
+                                    <div class="progress statistics-progress mt-2" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@item.Percentage.ToString("0.##", CultureInfo.InvariantCulture)">
+                                        <div class="progress-bar" style="@WidthPercent(item.Percentage)"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <h2 class="h6 mb-0 fw-semibold">Xu hướng số Booking theo tháng</h2>
+                </div>
+                <div class="card-body">
+                    @if (Model.BookingTrend.Count == 0)
+                    {
+                        <div class="text-body-secondary small">Chưa có Booking trong kỳ.</div>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.BookingTrend)
+                        {
+                            <div class="statistics-bar-row">
+                                <div class="d-flex justify-content-between gap-3 small mb-1">
+                                    <span>@item.Label</span>
+                                    <strong>@item.Count</strong>
+                                </div>
+                                <div class="progress statistics-progress" role="progressbar" aria-label="@item.Label" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress-bar" style="@WidthDecimal(item.Count, maxBookingTrend)"></div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <section class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-body border-bottom py-3">
+            <h2 class="h6 mb-0 fw-semibold">Cơ cấu hình thức đặt phòng</h2>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                @foreach (var item in Model.BookingTypes)
+                {
+                    <div class="col-12 col-md-6">
+                        <div class="statistics-payment-box">
+                            <div class="d-flex justify-content-between gap-3">
+                                <strong>@item.Name</strong>
+                                <strong>@item.Count Booking</strong>
+                            </div>
+                            <div class="progress statistics-progress mt-2">
+                                <div class="progress-bar" style="@WidthPercent(item.Percentage)"></div>
+                            </div>
+                            <div class="small text-body-secondary mt-2">@item.Percentage.ToString("0.##")% tổng Booking trong kỳ</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- GUESTS                                                  -->
+    <!-- ===================================================== -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-5">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <h2 class="h6 mb-0 fw-semibold">Khách hàng và cơ cấu giới tính</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-6"><div class="statistics-mini-value-label">Tổng khách đang lưu</div><div class="statistics-mini-value">@Model.ActiveGuestCount</div></div>
+                        <div class="col-6"><div class="statistics-mini-value-label">Khách tạo mới trong kỳ</div><div class="statistics-mini-value">@Model.NewGuestCount</div></div>
+                    </div>
+                    @foreach (var item in Model.GuestSexes)
+                    {
+                        <div class="statistics-list-row">
+                            <div class="d-flex justify-content-between gap-3 small"><span>@item.Name</span><strong>@item.Count (@item.Percentage.ToString("0.##")%)</strong></div>
+                            <div class="progress statistics-progress mt-2"><div class="progress-bar" style="@WidthPercent(item.Percentage)"></div></div>
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-7">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <h2 class="h6 mb-0 fw-semibold">Khách hàng có mức chi tiêu cao nhất trong kỳ</h2>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 statistics-table">
+                            <thead><tr><th>Khách hàng</th><th class="text-end">Đã thanh toán</th><th style="width:35%">Tương quan</th></tr></thead>
+                            <tbody>
+                                @if (Model.TopGuests.Count == 0)
+                                {
+                                    <tr><td colspan="3" class="text-center py-4 text-body-secondary">Chưa có dữ liệu.</td></tr>
+                                }
+                                else
+                                {
+                                    foreach (var item in Model.TopGuests)
+                                    {
+                                        <tr>
+                                            <td><strong>@item.GuestCode</strong><div class="small text-body-secondary text-truncate statistics-max-name">@item.GuestName</div></td>
+                                            <td class="text-end fw-semibold">@item.Spending.ToString("N0") ₫</td>
+                                            <td><div class="progress statistics-progress"><div class="progress-bar" style="@WidthDecimal(item.Spending, maxGuestSpending)"></div></div></td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- SERVICES / FEES                                       -->
+    <!-- ===================================================== -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-7">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <h2 class="h6 mb-0 fw-semibold">Top dịch vụ theo doanh thu</h2>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 statistics-table">
+                            <thead><tr><th>Dịch vụ</th><th class="text-end">Lượt dùng</th><th class="text-end">Doanh thu</th><th style="width:30%"></th></tr></thead>
+                            <tbody>
+                                @if (Model.Services.Count == 0)
+                                {
+                                    <tr><td colspan="4" class="text-center py-4 text-body-secondary">Chưa có dịch vụ phát sinh trong kỳ.</td></tr>
+                                }
+                                else
+                                {
+                                    foreach (var item in Model.Services)
+                                    {
+                                        <tr>
+                                            <td><strong>@item.Code</strong><div class="small text-body-secondary text-truncate statistics-max-name">@item.Name</div></td>
+                                            <td class="text-end">@item.UsageCount</td>
+                                            <td class="text-end fw-semibold">@item.Revenue.ToString("N0") ₫</td>
+                                            <td><div class="progress statistics-progress"><div class="progress-bar" style="@WidthDecimal(item.Revenue, maxServiceRevenue)"></div></div></td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-xl-5">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <h2 class="h6 mb-0 fw-semibold">Phí phát sinh theo loại</h2>
+                </div>
+                <div class="card-body">
+                    @foreach (var item in Model.FeeTypes)
+                    {
+                        <div class="statistics-list-row">
+                            <div class="d-flex justify-content-between gap-3 small"><span>@item.Name</span><strong>@item.Revenue.ToString("N0") ₫</strong></div>
+                            <div class="small text-body-secondary mt-1">@item.Count khoản phát sinh</div>
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- ROOM REVENUE / RESOURCE COUNTS                        -->
+    <!-- ===================================================== -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-7">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <h2 class="h6 mb-0 fw-semibold">Doanh thu tiền phòng theo loại phòng</h2>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 statistics-table">
+                            <thead><tr><th>Loại phòng</th><th class="text-end">Doanh thu</th></tr></thead>
+                            <tbody>
+                                @if (Model.RoomRevenueByType.Count == 0)
+                                {
+                                    <tr><td colspan="2" class="text-center py-4 text-body-secondary">Chưa có doanh thu tiền phòng.</td></tr>
+                                }
+                                else
+                                {
+                                    foreach (var item in Model.RoomRevenueByType)
+                                    {
+                                        <tr><td><strong>@item.Code</strong><div class="small text-body-secondary">@item.Name</div></td><td class="text-end fw-semibold">@item.Revenue.ToString("N0") ₫</td></tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body border-bottom py-3">
+                    <h2 class="h6 mb-0 fw-semibold">Tài nguyên hiện tại</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 small">
+                        <div class="col-6"><div class="statistics-resource-label">Loại phòng đang kinh doanh</div><strong>@Model.ActiveRoomTypeCount</strong></div>
+                        <div class="col-6"><div class="statistics-resource-label">Loại phòng ngừng</div><strong>@Model.InactiveRoomTypeCount</strong></div>
+                        <div class="col-6"><div class="statistics-resource-label">Dịch vụ đang hoạt động</div><strong>@Model.ActiveServiceCount</strong></div>
+                        <div class="col-6"><div class="statistics-resource-label">Dịch vụ ngừng</div><strong>@Model.InactiveServiceCount</strong></div>
+                        <div class="col-6"><div class="statistics-resource-label">Tiện nghi đang hoạt động</div><strong>@Model.ActiveAmenityCount</strong></div>
+                        <div class="col-6"><div class="statistics-resource-label">Tiện nghi ngừng</div><strong>@Model.InactiveAmenityCount</strong></div>
+                        <div class="col-6"><div class="statistics-resource-label">Nhân viên đang làm</div><strong>@Model.WorkingEmployeeCount</strong></div>
+                        <div class="col-6"><div class="statistics-resource-label">Nhân viên đã nghỉ</div><strong>@Model.FormerEmployeeCount</strong></div>
+                        <div class="col-6"><div class="statistics-resource-label">Tài khoản hoạt động</div><strong>@Model.ActiveUserCount</strong></div>
+                        <div class="col-6"><div class="statistics-resource-label">Tài khoản bị khóa</div><strong>@Model.InactiveUserCount</strong></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- STAFF ACTIVITY                                         -->
+    <!-- ===================================================== -->
+    <section class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-body border-bottom py-3">
+            <h2 class="h6 mb-0 fw-semibold">Hoạt động tài khoản trong kỳ</h2>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 statistics-table">
+                    <thead><tr><th>Mã tài khoản</th><th>Tài khoản</th><th class="text-end">Booking tạo</th><th class="text-end">Hóa đơn tạo</th></tr></thead>
+                    <tbody>
+                        @if (Model.StaffActivities.Count == 0)
+                        {
+                            <tr><td colspan="4" class="text-center py-4 text-body-secondary">Chưa có hoạt động trong kỳ.</td></tr>
+                        }
+                        else
+                        {
+                            foreach (var item in Model.StaffActivities)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@item.UserCode</td>
+                                    <td>@item.UserName</td>
+                                    <td class="text-end">@item.BookingsCreated</td>
+                                    <td class="text-end">@item.BillsCreated</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <div class="small text-body-secondary statistics-footnote">
+        <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+        Thống kê doanh thu sử dụng <strong>TotalAmount</strong> của hóa đơn thanh toán thành công; số tiền còn lại đã thu sử dụng <strong>FinalAmount</strong>; tiền cọc lấy từ Booking có thời gian thanh toán trong kỳ. Công suất kỳ được tính theo số room-night có gắn phòng và dữ liệu lưu trú hiện có.
+    </div>
+
+    <div class="small text-body-secondary mt-2">
+        <i class="bi bi-clock me-1" aria-hidden="true"></i>
+        Cập nhật lúc @Model.GeneratedAt.ToString("dd/MM/yyyy HH:mm:ss")
+    </div>
+}

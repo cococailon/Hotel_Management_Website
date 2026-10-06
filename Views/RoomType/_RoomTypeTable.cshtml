@@ -1,0 +1,118 @@
+@model Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeIndexViewModel
+
+<div class="table-responsive roomtype-table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0 roomtype-table">
+        <caption class="visually-hidden">Danh sách loại phòng</caption>
+        <colgroup>
+            <col class="roomtype-col-code" />
+            <col class="roomtype-col-name" />
+            <col class="roomtype-col-number" />
+            <col class="roomtype-col-number" />
+            <col class="roomtype-col-price" />
+            <col class="roomtype-col-deposit" />
+            <col class="roomtype-col-area" />
+            <col class="roomtype-col-status" />
+            <col class="roomtype-col-action" />
+        </colgroup>
+        <thead class="table-light">
+            <tr>
+                <th>Mã loại phòng</th>
+                <th>Tên loại phòng</th>
+                <th>Người lớn</th>
+                <th>Trẻ em</th>
+                <th>Giá / đêm</th>
+                <th>Cọc</th>
+                <th>Diện tích</th>
+                <th>Trạng thái</th>
+                <th class="text-center">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.RoomTypes)
+        {
+            <tr>
+                <td><span class="roomtype-cell-ellipsis font-monospace fw-semibold" title="@item.RoomTypeCode">@item.RoomTypeCode</span></td>
+                <td><span class="roomtype-cell-ellipsis fw-semibold" title="@item.RoomTypeName">@item.RoomTypeName</span></td>
+                <td>@item.MaxAdults</td>
+                <td>@item.MaxChildren</td>
+                <td>@item.PricePerNight.ToString("N0") ₫</td>
+                <td>@item.DepositPercent.ToString("0.##")%</td>
+                <td>@item.Area.ToString("0.##") m²</td>
+                <td>
+                    @if (item.IsActive)
+                    {
+                        <span class="badge text-bg-success roomtype-status-badge">Đang hoạt động</span>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-secondary roomtype-status-badge">Dừng hoạt động</span>
+                    }
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center align-items-center gap-1 roomtype-action-group">
+                        <a asp-controller="RoomType"
+                           asp-action="Details"
+                           asp-route-id="@item.Id"
+                           asp-route-returnUrl="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)"
+                           class="btn btn-outline-primary btn-sm roomtype-action-btn"
+                           title="Xem thêm"
+                           aria-label="Xem thêm @item.RoomTypeCode">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </a>
+
+                        @if (!User.IsInRole("Reception"))
+                        {
+                            <a asp-controller="RoomType"
+                               asp-action="Edit"
+                               asp-route-id="@item.Id"
+                               asp-route-returnUrl="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)"
+                               class="btn btn-outline-secondary btn-sm roomtype-action-btn"
+                               title="Sửa loại phòng"
+                               aria-label="Sửa @item.RoomTypeCode">
+                                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                            </a>
+
+                            @if (item.IsActive && item.CanDeactivate)
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-warning btn-sm roomtype-action-btn"
+                                    data-roomtype-action="deactivate"
+                                    data-id="@item.Id"
+                                    data-name="@item.RoomTypeCode - @item.RoomTypeName"
+                                    data-allowed="true"
+                                    title="Dừng hoạt động"
+                                    aria-label="Dừng hoạt động @item.RoomTypeCode">
+                                <i class="bi bi-pause-circle" aria-hidden="true"></i>
+                            </button>
+                        }
+                        else if (!item.IsActive)
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-success btn-sm roomtype-action-btn"
+                                    data-roomtype-action="activate"
+                                    data-id="@item.Id"
+                                    data-name="@item.RoomTypeCode - @item.RoomTypeName"
+                                    title="Mở hoạt động"
+                                    aria-label="Mở hoạt động @item.RoomTypeCode">
+                                <i class="bi bi-play-circle" aria-hidden="true"></i>
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-outline-danger btn-sm roomtype-action-btn @(item.CanDelete ? "" : "disabled")"
+                                    data-roomtype-action="delete"
+                                    data-id="@item.Id"
+                                    data-name="@item.RoomTypeCode - @item.RoomTypeName"
+                                    data-allowed="@(item.CanDelete ? "true" : "false")"
+                                    title="@(item.CanDelete ? "Xóa loại phòng" : "Chưa đủ điều kiện xóa")"
+                                    aria-label="Xóa @item.RoomTypeCode">
+                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                            </button>
+                            }
+                        }
+                    </div>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

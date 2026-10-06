@@ -1,0 +1,867 @@
+@model Hotel_Management_Website.Models.ViewModels.Booking.BookingCheckOutViewModel
+
+@{
+    ViewData["Title"] = "Check out";
+    Layout = User.IsInRole("Reception")
+        ? "~/Views/Shared/_ReceptionLayout.cshtml"
+        : "~/Views/Shared/_AdminLayout.cshtml";
+    var nowLocal = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/booking-flow.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Check out",
+        Description = "Ghi nhận dịch vụ, phí phát sinh, tình trạng phòng và kết quả thanh toán trước khi hoàn tất Booking.",
+        Icon = "bi-box-arrow-right"
+    })
+
+<div class="booking-flow-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-2 mb-4">
+        <a asp-controller="Booking" asp-action="Flow" asp-route-id="@Model.BookingId" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+            Quay lại quản lý luồng
+        </a>
+        <a asp-controller="Booking" asp-action="Details" asp-route-id="@Model.BookingId" class="btn btn-outline-primary">
+            <i class="bi bi-eye me-1" aria-hidden="true"></i>
+            Xem chi tiết
+        </a>
+    </div>
+
+    @{
+        var topErrors = ViewData.ModelState
+            .Where(x => string.IsNullOrWhiteSpace(x.Key))
+            .SelectMany(x => x.Value?.Errors.Select(e => e.ErrorMessage) ?? Enumerable.Empty<string>())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    @if (topErrors.Count > 0)
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-4" role="alert">
+            <div class="fw-semibold mb-2">
+                <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>
+                Vui lòng kiểm tra lại thông tin.
+            </div>
+            <ul class="mb-0 ps-4">
+                @foreach (var error in topErrors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <form asp-controller="Booking"
+          asp-action="CheckOut"
+          method="post"
+          id="bookingCheckOutForm"
+          data-ajax="false">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="BookingId" />
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-flow-section-icon">
+                        <i class="bi bi-person-vcard" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thông tin khách hàng</h2>
+                        <div class="small text-body-secondary">
+                            Các trường thông tin khách hàng đều được kiểm tra lại trước khi hoàn tất check out.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="GuestCode" class="form-label fw-semibold">Mã khách hàng <span class="text-danger">*</span></label>
+                        <input asp-for="GuestCode" class="form-control font-monospace" maxlength="50" autocomplete="off" pattern="\S+" required />
+                        <div class="form-text">Không được chứa dấu cách hoặc khoảng trắng; mã khách hàng không được trùng khách khác.</div>
+                        <span asp-validation-for="GuestCode" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="GuestName" class="form-label fw-semibold">Tên khách hàng <span class="text-danger">*</span></label>
+                        <input asp-for="GuestName" class="form-control" maxlength="100" autocomplete="name" required />
+                        <span asp-validation-for="GuestName" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestDateOfBirth" class="form-label fw-semibold">Ngày sinh <span class="text-danger">*</span></label>
+                        <input asp-for="GuestDateOfBirth" type="date" class="form-control" max="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        <span asp-validation-for="GuestDateOfBirth" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestSex" class="form-label fw-semibold">Giới tính <span class="text-danger">*</span></label>
+                        <select asp-for="GuestSex" class="form-select" required>
+                            <option value="">-- Chọn --</option>
+                            <option value="0">Nam</option>
+                            <option value="1">Nữ</option>
+                            <option value="2">Khác</option>
+                        </select>
+                        <span asp-validation-for="GuestSex" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestAddress" class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
+                        <input asp-for="GuestAddress" class="form-control" maxlength="255" autocomplete="street-address" required />
+                        <span asp-validation-for="GuestAddress" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestPhoneNumber" class="form-label fw-semibold">Số điện thoại</label>
+                        <input asp-for="GuestPhoneNumber" id="checkoutGuestPhone" class="form-control" maxlength="20" autocomplete="tel" />
+                        <span asp-validation-for="GuestPhoneNumber" class="text-danger" data-checkout-guest-contact-validation="true"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestEmail" class="form-label fw-semibold">Email</label>
+                        <input asp-for="GuestEmail" id="checkoutGuestEmail" type="email" class="form-control" maxlength="4000" autocomplete="email" />
+                        <span asp-validation-for="GuestEmail" class="text-danger"></span>
+                        <div class="form-text">Phải nhập ít nhất số điện thoại hoặc email.</div>
+                    </div>
+                    <div class="col-12 col-md-7">
+                        <label asp-for="GuestIdentityNumber" class="form-label fw-semibold">Số giấy tờ <span class="text-danger">*</span></label>
+                        <input asp-for="GuestIdentityNumber" class="form-control" maxlength="50" required />
+                        <span asp-validation-for="GuestIdentityNumber" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-5">
+                        <label asp-for="GuestIdentityType" class="form-label fw-semibold">Loại giấy tờ <span class="text-danger">*</span></label>
+                        <select asp-for="GuestIdentityType" class="form-select" required>
+                            <option value="">-- Chọn --</option>
+                            <option value="0">CCCD</option>
+                            <option value="1">Giấy phép lái xe</option>
+                            <option value="2">Hộ chiếu</option>
+                        </select>
+                        <span asp-validation-for="GuestIdentityType" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="GuestNote" class="form-label fw-semibold">Ghi chú khách hàng</label>
+                        <textarea asp-for="GuestNote" class="form-control" rows="2" maxlength="255"></textarea>
+                        <span asp-validation-for="GuestNote" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-flow-section-icon">
+                        <i class="bi bi-receipt" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thông tin hóa đơn</h2>
+                        <div class="small text-body-secondary">
+                            Mã hóa đơn được tự sinh theo mã lớn nhất hiện có và vẫn có thể chỉnh sửa.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="BillCode" class="form-label fw-semibold">Mã hóa đơn <span class="text-danger">*</span></label>
+                        <input asp-for="BillCode" class="form-control font-monospace" maxlength="50" autocomplete="off" pattern="\S+" required />
+                        <div class="form-text">Mặc định tự sinh theo công thức <strong>HD + số lớn nhất hiện có + 1</strong>; không được chứa dấu cách.</div>
+                        <span asp-validation-for="BillCode" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="BillNote" class="form-label fw-semibold">Ghi chú hóa đơn</label>
+                        <textarea asp-for="BillNote" class="form-control" rows="2" maxlength="255"></textarea>
+                        <span asp-validation-for="BillNote" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-flow-section-icon">
+                        <i class="bi bi-door-open" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Dịch vụ, phí phát sinh và tình trạng phòng</h2>
+                        <div class="small text-body-secondary">
+                            Chỉnh sửa hoặc xóa dữ liệu đã có từ trước, hoặc thêm dữ liệu mới cho từng BookingRoom.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                @for (var i = 0; i < Model.Rooms.Count; i++)
+                {
+                    var room = Model.Rooms[i];
+                    <div class="booking-checkout-room-card border rounded-3 p-3 mb-4"
+                         data-room-index="@i"
+                         data-room-base="@room.RoomBaseAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+
+                        <input type="hidden" asp-for="Rooms[i].BookingRoomId" />
+
+                        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+                            <div>
+                                <div class="fw-semibold booking-breakable">
+                                    <span class="font-monospace">@room.RoomTypeCode</span> · @room.RoomTypeName
+                                </div>
+                                <div class="small text-body-secondary mt-1">
+                                    Phòng: @(string.IsNullOrWhiteSpace(room.RoomCode) ? "Chưa xác định" : room.RoomCode)
+                                    <span class="mx-1">·</span>
+                                    Số đêm đã ở: <strong>@room.StayNights</strong>
+                                </div>
+                            </div>
+
+                            <div class="form-check form-switch align-self-lg-center">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       name="Rooms[@i].NeedsMaintenance"
+                                       value="true"
+                                       id="maintenance_@i"
+                                       checked="@(room.NeedsMaintenance ? "checked" : null)" />
+                                <input type="hidden" name="Rooms[@i].NeedsMaintenance" value="false" />
+                                <label class="form-check-label fw-semibold" for="maintenance_@i">
+                                    <i class="bi bi-tools me-1" aria-hidden="true"></i>
+                                    Cần bảo trì sau check out
+                                </label>
+                                <div class="small text-body-secondary">
+                                    Tích chọn: phòng chuyển Bảo trì và Dừng hoạt động.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="booking-create-summary-item h-100">
+                                    <div class="booking-create-summary-label">Tiền phòng</div>
+                                    <div class="booking-create-summary-value" data-room-base>
+                                        @room.RoomBaseAmount.ToString("N0") ₫
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="booking-create-summary-item h-100">
+                                    <div class="booking-create-summary-label">Dịch vụ</div>
+                                    <div class="booking-create-summary-value" data-room-service-total>
+                                        @room.ServiceTotalAmount.ToString("N0") ₫
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="booking-create-summary-item h-100">
+                                    <div class="booking-create-summary-label">Phí phát sinh</div>
+                                    <div class="booking-create-summary-value" data-room-fee-total>
+                                        @room.FeeTotalAmount.ToString("N0") ₫
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="booking-create-summary-item booking-create-summary-highlight h-100">
+                                    <div class="booking-create-summary-label">Tổng tiền phòng</div>
+                                    <div class="booking-create-summary-value" data-room-total>
+                                        @room.RoomTotalAmount.ToString("N0") ₫
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                <div class="fw-semibold">Dịch vụ đã sử dụng</div>
+                                <button type="button" class="btn btn-sm btn-outline-primary add-service-row" data-room-index="@i">
+                                    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+                                    Thêm dịch vụ
+                                </button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="min-width:250px">Dịch vụ</th>
+                                            <th style="width:135px">Giá</th>
+                                            <th style="width:140px">Loại giá</th>
+                                            <th style="width:190px">Đã dùng vào lúc</th>
+                                            <th style="width:170px">Thành tiền</th>
+                                            <th style="min-width:180px">Ghi chú</th>
+                                            <th style="width:64px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="service-rows" data-room-index="@i">
+                                        @for (var j = 0; j < room.ServiceInputs.Count; j++)
+                                        {
+                                            var input = room.ServiceInputs[j];
+                                            <tr>
+                                                <td>
+                                                    <input type="hidden" name="Rooms[@i].ServiceInputs[@j].Id" value="@(input.Id?.ToString() ?? string.Empty)" />
+                                                    <select name="Rooms[@i].ServiceInputs[@j].ServiceId"
+                                                            class="form-select checkout-service-select"
+                                                            required>
+                                                        <option value="">-- Chọn dịch vụ --</option>
+                                                        @foreach (var service in Model.Services)
+                                                        {
+                                                            var selected = service.Id == input.ServiceId;
+                                                            <option value="@service.Id"
+                                                                    data-unit-price="@service.UnitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                                    data-price-unit="@service.PriceUnitType"
+                                                                    data-active="@(service.IsActive ? "1" : "0")"
+                                                                    selected="@(selected ? "selected" : null)"
+                                                                    disabled="@((!service.IsActive && !selected) ? "disabled" : null)">
+                                                                @service.ServiceCode · @service.ServiceName
+                                                            </option>
+                                                        }
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <span class="small fw-semibold checkout-service-price">
+                                                        @input.UnitPrice.ToString("N0") ₫
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="small text-body-secondary checkout-service-price-unit">
+                                                        @(string.IsNullOrWhiteSpace(input.PriceUnitType) ? "—" : input.PriceUnitType)
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <input name="Rooms[@i].ServiceInputs[@j].UsedAt"
+                                                           class="form-control checkout-service-used-at"
+                                                           type="datetime-local"
+                                                           max="@nowLocal"
+                                                           required
+                                                           value="@(input.UsedAt?.ToString("yyyy-MM-ddTHH:mm"))" />
+                                                </td>
+                                                <td>
+                                                    <input name="Rooms[@i].ServiceInputs[@j].TotalPrice"
+                                                           class="form-control checkout-service-total"
+                                                           type="number"
+                                                           min="0"
+                                                           step="0.01"
+                                                           required
+                                                           value="@input.TotalPrice.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                                                </td>
+                                                <td>
+                                                    <input name="Rooms[@i].ServiceInputs[@j].Note"
+                                                           class="form-control"
+                                                           maxlength="255"
+                                                           value="@input.Note" />
+                                                </td>
+                                                <td class="text-end">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-dynamic-row" title="Xóa dịch vụ">
+                                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                <div class="fw-semibold">Phí phát sinh</div>
+                                <button type="button" class="btn btn-sm btn-outline-primary add-fee-row" data-room-index="@i">
+                                    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+                                    Thêm phí
+                                </button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="min-width:220px">Tên phí</th>
+                                            <th style="width:190px">Loại phí</th>
+                                            <th style="width:160px">Thành tiền</th>
+                                            <th style="min-width:220px">Mô tả</th>
+                                            <th style="width:64px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="fee-rows" data-room-index="@i">
+                                        @for (var j = 0; j < room.FeeInputs.Count; j++)
+                                        {
+                                            var fee = room.FeeInputs[j];
+                                            <tr>
+                                                <td>
+                                                    <input type="hidden" name="Rooms[@i].FeeInputs[@j].Id" value="@(fee.Id?.ToString() ?? string.Empty)" />
+                                                    <input name="Rooms[@i].FeeInputs[@j].FeeName"
+                                                           class="form-control"
+                                                           maxlength="100"
+                                                           value="@fee.FeeName"
+                                                           required />
+                                                </td>
+                                                <td>
+                                                    <select name="Rooms[@i].FeeInputs[@j].FeeType" class="form-select">
+                                                        <option value="0" selected="@(fee.FeeType == 0 ? "selected" : null)">Phí mua đồ hộ</option>
+                                                        <option value="1" selected="@(fee.FeeType == 1 ? "selected" : null)">Phí hỏng hóc / mất mát</option>
+                                                        <option value="2" selected="@(fee.FeeType == 2 ? "selected" : null)">Khác</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input name="Rooms[@i].FeeInputs[@j].TotalFee"
+                                                           class="form-control checkout-fee-total"
+                                                           type="number"
+                                                           min="0.01"
+                                                           step="0.01"
+                                                           value="@fee.TotalFee.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                           required />
+                                                </td>
+                                                <td>
+                                                    <input name="Rooms[@i].FeeInputs[@j].Description"
+                                                           class="form-control"
+                                                           maxlength="255"
+                                                           value="@fee.Description" />
+                                                </td>
+                                                <td class="text-end">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-dynamic-row" title="Xóa phí">
+                                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label asp-for="Rooms[i].Note" class="form-label fw-semibold">Ghi chú BookingRoom</label>
+                                <textarea asp-for="Rooms[i].Note" class="form-control" rows="2" maxlength="255"></textarea>
+                                <span asp-validation-for="Rooms[i].Note" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-flow-section-icon"><i class="bi bi-calculator" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Tổng thanh toán</h2>
+                        <div class="small text-body-secondary">Tự động cập nhật ngay khi thêm, sửa hoặc xóa dịch vụ và phí phát sinh.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <div class="booking-create-summary-item h-100">
+                            <div class="booking-create-summary-label">Tổng tiền</div>
+                            <div class="booking-create-summary-value" id="checkoutTotalAmount">@Model.TotalAmount.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="booking-create-summary-item h-100">
+                            <div class="booking-create-summary-label">Tiền đã thanh toán trước</div>
+                            <div class="booking-create-summary-value" id="checkoutPaidDeposit">@Model.PaidDepositAmount.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="booking-create-summary-item booking-create-summary-highlight h-100">
+                            <div class="booking-create-summary-label">Tiền phải trả</div>
+                            <div class="booking-create-summary-value" id="checkoutFinalAmount">@Model.FinalAmount.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-flow-section-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thanh toán hóa đơn</h2>
+                        <div class="small text-body-secondary">Xác nhận đã nhận tiền hoặc ghi nhận thanh toán thất bại.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                    <input asp-for="PaymentReceived" class="form-check-input" id="paymentReceived" />
+                    <label asp-for="PaymentReceived" class="form-check-label fw-semibold">Đã nhận thanh toán từ khách hàng</label>
+                </div>
+
+                <div id="paymentFields" class="row g-3 d-none">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Phương thức thanh toán <span class="text-danger">*</span></label>
+                        <div class="d-flex flex-wrap gap-3 pt-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" asp-for="PaymentMethod" value="0" id="checkoutCash" />
+                                <label class="form-check-label" for="checkoutCash">Tiền mặt</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" asp-for="PaymentMethod" value="1" id="checkoutTransfer" />
+                                <label class="form-check-label" for="checkoutTransfer">Chuyển khoản</label>
+                            </div>
+                        </div>
+                        <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 d-none" id="checkoutReferenceWrap">
+                        <label asp-for="ReferenceCode" class="form-label fw-semibold">Mã giao dịch <span class="text-danger">*</span></label>
+                        <input asp-for="ReferenceCode" class="form-control" maxlength="100" />
+                        <span asp-validation-for="ReferenceCode" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label asp-for="BookingNote" class="form-label fw-semibold">Ghi chú check out / Booking</label>
+                    <textarea asp-for="BookingNote" class="form-control" rows="3" maxlength="255"></textarea>
+                    <span asp-validation-for="BookingNote" class="text-danger"></span>
+                </div>
+
+                <div class="alert alert-warning mt-4 mb-0" id="paymentResultHint">
+                    <i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i>
+                    Nếu không tích xác nhận đã nhận thanh toán, hệ thống sẽ ghi nhận Booking = Check out thất bại và Bill = Thanh toán thất bại.
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mb-4">
+            <a asp-controller="Booking" asp-action="Flow" asp-route-id="@Model.BookingId" class="btn btn-outline-secondary">Hủy</a>
+            <button type="submit" class="btn btn-primary" id="bookingCheckOutSubmit">
+                <span class="ui-button-content"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i> Xác nhận check out</span>
+                <span class="ui-button-loading d-none"><span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Đang xử lý...</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<template id="serviceRowTemplate">
+    <tr>
+        <td>
+            <input type="hidden" name="Rooms[__ROOM__].ServiceInputs[__INDEX__].Id" value="" />
+            <select name="Rooms[__ROOM__].ServiceInputs[__INDEX__].ServiceId" class="form-select checkout-service-select" required>
+                <option value="">-- Chọn dịch vụ --</option>
+                @foreach (var service in Model.Services)
+                {
+                    <option value="@service.Id"
+                            data-unit-price="@service.UnitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                            data-price-unit="@service.PriceUnitType"
+                            data-active="@(service.IsActive ? "1" : "0")"
+                            disabled="@(!service.IsActive ? "disabled" : null)">
+                        @service.ServiceCode · @service.ServiceName
+                    </option>
+                }
+            </select>
+        </td>
+        <td><span class="small fw-semibold checkout-service-price">0 ₫</span></td>
+        <td><span class="small text-body-secondary checkout-service-price-unit">—</span></td>
+        <td><input name="Rooms[__ROOM__].ServiceInputs[__INDEX__].UsedAt" class="form-control checkout-service-used-at" type="datetime-local" max="@nowLocal" required /></td>
+        <td><input name="Rooms[__ROOM__].ServiceInputs[__INDEX__].TotalPrice" class="form-control checkout-service-total" type="number" min="0" step="0.01" value="0" required /></td>
+        <td><input name="Rooms[__ROOM__].ServiceInputs[__INDEX__].Note" class="form-control" maxlength="255" /></td>
+        <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-dynamic-row" title="Xóa dịch vụ"><i class="bi bi-trash" aria-hidden="true"></i></button></td>
+    </tr>
+</template>
+
+<template id="feeRowTemplate">
+    <tr>
+        <td>
+            <input type="hidden" name="Rooms[__ROOM__].FeeInputs[__INDEX__].Id" value="" />
+            <input name="Rooms[__ROOM__].FeeInputs[__INDEX__].FeeName" class="form-control" maxlength="100" required />
+        </td>
+        <td>
+            <select name="Rooms[__ROOM__].FeeInputs[__INDEX__].FeeType" class="form-select">
+                <option value="0">Phí mua đồ hộ</option>
+                <option value="1">Phí hỏng hóc / mất mát</option>
+                <option value="2">Khác</option>
+            </select>
+        </td>
+        <td><input name="Rooms[__ROOM__].FeeInputs[__INDEX__].TotalFee" class="form-control checkout-fee-total" type="number" min="0.01" step="0.01" required /></td>
+        <td><input name="Rooms[__ROOM__].FeeInputs[__INDEX__].Description" class="form-control" maxlength="255" /></td>
+        <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-dynamic-row" title="Xóa phí"><i class="bi bi-trash" aria-hidden="true"></i></button></td>
+    </tr>
+</template>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            "use strict";
+
+            const form = document.getElementById("bookingCheckOutForm");
+            if (!form) return;
+
+            const paymentReceived = document.getElementById("paymentReceived");
+            const paymentFields = document.getElementById("paymentFields");
+            const referenceWrap = document.getElementById("checkoutReferenceWrap");
+            const paymentHint = document.getElementById("paymentResultHint");
+            const paidDeposit = Number("@Model.PaidDepositAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)");
+            const checkoutGuestPhone = document.getElementById("checkoutGuestPhone");
+            const checkoutGuestEmail = document.getElementById("checkoutGuestEmail");
+            const checkoutGuestContactValidation = document.querySelector('[data-checkout-guest-contact-validation="true"]');
+
+            const clearCheckoutGuestContactError = () => {
+                if (checkoutGuestContactValidation) checkoutGuestContactValidation.textContent = "";
+                checkoutGuestPhone?.classList.remove("is-invalid");
+                checkoutGuestEmail?.classList.remove("is-invalid");
+            };
+
+            const validateCheckoutGuestContact = () => {
+                const hasPhone = Boolean(checkoutGuestPhone?.value.trim());
+                const hasEmail = Boolean(checkoutGuestEmail?.value.trim());
+                if (hasPhone || hasEmail) {
+                    clearCheckoutGuestContactError();
+                    return true;
+                }
+                if (checkoutGuestContactValidation) checkoutGuestContactValidation.textContent = "Phải nhập ít nhất số điện thoại hoặc email.";
+                checkoutGuestPhone?.classList.add("is-invalid");
+                checkoutGuestEmail?.classList.add("is-invalid");
+                return false;
+            };
+
+            checkoutGuestPhone?.addEventListener("input", validateCheckoutGuestContact);
+            checkoutGuestEmail?.addEventListener("input", validateCheckoutGuestContact);
+
+            const money = value =>
+                new Intl.NumberFormat("vi-VN").format(Math.round(Number(value || 0))) + " ₫";
+
+            const updateServiceMeta = row => {
+                const select = row?.querySelector(".checkout-service-select");
+                if (!select) return;
+
+                const option = select.options[select.selectedIndex];
+                const price = Number(option?.dataset.unitPrice || 0);
+                const priceUnit = option?.dataset.priceUnit || "";
+
+                const priceEl = row.querySelector(".checkout-service-price");
+                const priceUnitEl = row.querySelector(".checkout-service-price-unit");
+                if (priceEl) priceEl.textContent = money(price);
+                if (priceUnitEl) priceUnitEl.textContent = priceUnit.trim() || "—";
+            };
+
+            const updateRoomSummary = roomIndex => {
+                const roomCard = document.querySelector(`.booking-checkout-room-card[data-room-index="${roomIndex}"]`);
+                if (!roomCard) return;
+
+                const base = Number(roomCard.dataset.roomBase || 0);
+                const serviceTotal = [...roomCard.querySelectorAll(".checkout-service-total")]
+                    .reduce((sum, input) => sum + Math.max(0, Number(input.value || 0)), 0);
+                const feeTotal = [...roomCard.querySelectorAll(".checkout-fee-total")]
+                    .reduce((sum, input) => sum + Math.max(0, Number(input.value || 0)), 0);
+                const roomTotal = base + serviceTotal + feeTotal;
+
+                roomCard.querySelector("[data-room-service-total]")?.replaceChildren(document.createTextNode(money(serviceTotal)));
+                roomCard.querySelector("[data-room-fee-total]")?.replaceChildren(document.createTextNode(money(feeTotal)));
+                roomCard.querySelector("[data-room-total]")?.replaceChildren(document.createTextNode(money(roomTotal)));
+            };
+
+            const updateGrandSummary = () => {
+                let grand = 0;
+                document.querySelectorAll(".booking-checkout-room-card[data-room-index]").forEach(roomCard => {
+                    const base = Number(roomCard.dataset.roomBase || 0);
+                    const service = [...roomCard.querySelectorAll(".checkout-service-total")]
+                        .reduce((sum, input) => sum + Math.max(0, Number(input.value || 0)), 0);
+                    const fee = [...roomCard.querySelectorAll(".checkout-fee-total")]
+                        .reduce((sum, input) => sum + Math.max(0, Number(input.value || 0)), 0);
+                    grand += base + service + fee;
+                });
+
+                const finalAmount = Math.max(0, grand - paidDeposit);
+                document.getElementById("checkoutTotalAmount")?.replaceChildren(document.createTextNode(money(grand)));
+                document.getElementById("checkoutPaidDeposit")?.replaceChildren(document.createTextNode(money(paidDeposit)));
+                document.getElementById("checkoutFinalAmount")?.replaceChildren(document.createTextNode(money(finalAmount)));
+            };
+
+            const updatePayment = () => {
+                const received = Boolean(paymentReceived?.checked);
+                paymentFields?.classList.toggle("d-none", !received);
+                paymentHint?.classList.toggle("alert-warning", !received);
+                paymentHint?.classList.toggle("alert-success", received);
+                if (paymentHint) {
+                    paymentHint.innerHTML = received
+                        ? '<i class="bi bi-check-circle me-1"></i>Hệ thống sẽ ghi nhận Booking = Đã check out và Bill = Thanh toán thành công.'
+                        : '<i class="bi bi-exclamation-circle me-1"></i>Nếu không tích xác nhận đã nhận thanh toán, hệ thống sẽ ghi nhận Booking = Check out thất bại và Bill = Thanh toán thất bại.';
+                }
+                updateReference();
+            };
+
+            const updateReference = () => {
+                const selectedMethod = document.querySelector('input[name="PaymentMethod"]:checked');
+                const show = Boolean(paymentReceived?.checked && selectedMethod?.value === "1");
+                referenceWrap?.classList.toggle("d-none", !show);
+                const input = document.getElementById("ReferenceCode");
+                if (input) input.required = show;
+            };
+
+            const refreshAllServiceMeta = () => {
+                document.querySelectorAll(".service-rows tr").forEach(updateServiceMeta);
+            };
+
+            const addDynamicRow = (templateId, body, roomIndex, nextIndex) => {
+                const template = document.getElementById(templateId);
+                if (!template || !body) return;
+                const html = template.innerHTML
+                    .replaceAll("__ROOM__", String(roomIndex))
+                    .replaceAll("__INDEX__", String(nextIndex));
+                body.insertAdjacentHTML("beforeend", html);
+                const newRow = body.lastElementChild;
+                if (newRow && templateId === "serviceRowTemplate") {
+                    updateServiceMeta(newRow);
+                }
+                updateRoomSummary(roomIndex);
+                updateGrandSummary();
+            };
+
+            document.querySelectorAll(".add-service-row").forEach(button => {
+                const roomIndex = button.dataset.roomIndex;
+                button.dataset.nextIndex = String(
+                    document.querySelector(`.service-rows[data-room-index="${roomIndex}"]`)?.querySelectorAll("tr").length ?? 0
+                );
+                button.addEventListener("click", () => {
+                    const body = document.querySelector(`.service-rows[data-room-index="${roomIndex}"]`);
+                    const nextIndex = Number(button.dataset.nextIndex || 0);
+                    addDynamicRow("serviceRowTemplate", body, roomIndex, nextIndex);
+                    button.dataset.nextIndex = String(nextIndex + 1);
+                });
+            });
+
+            document.querySelectorAll(".add-fee-row").forEach(button => {
+                const roomIndex = button.dataset.roomIndex;
+                button.dataset.nextIndex = String(
+                    document.querySelector(`.fee-rows[data-room-index="${roomIndex}"]`)?.querySelectorAll("tr").length ?? 0
+                );
+                button.addEventListener("click", () => {
+                    const body = document.querySelector(`.fee-rows[data-room-index="${roomIndex}"]`);
+                    const nextIndex = Number(button.dataset.nextIndex || 0);
+                    addDynamicRow("feeRowTemplate", body, roomIndex, nextIndex);
+                    button.dataset.nextIndex = String(nextIndex + 1);
+                });
+            });
+
+            document.addEventListener("click", event => {
+                const button = event.target.closest(".remove-dynamic-row");
+                if (!button) return;
+
+                const card = button.closest(".booking-checkout-room-card");
+                const row = button.closest("tr");
+                row?.remove();
+
+                if (card) {
+                    updateRoomSummary(card.dataset.roomIndex);
+                }
+                updateGrandSummary();
+            });
+
+            form.addEventListener("change", event => {
+                const serviceSelect = event.target.closest(".checkout-service-select");
+                if (serviceSelect) {
+                    updateServiceMeta(serviceSelect.closest("tr"));
+                }
+
+                const card = event.target.closest(".booking-checkout-room-card");
+                if (card) {
+                    updateRoomSummary(card.dataset.roomIndex);
+                    updateGrandSummary();
+                }
+            });
+
+            form.addEventListener("input", event => {
+                const card = event.target.closest(".booking-checkout-room-card");
+                if (card) {
+                    updateRoomSummary(card.dataset.roomIndex);
+                    updateGrandSummary();
+                }
+            });
+
+            const normalizeDynamicIndexes = () => {
+                document.querySelectorAll(".service-rows[data-room-index]").forEach(body => {
+                    const roomIndex = body.dataset.roomIndex;
+                    body.querySelectorAll("tr").forEach((row, index) => {
+                        row.querySelectorAll("input, select, textarea").forEach(field => {
+                            field.name = field.name.replace(
+                                new RegExp(`Rooms\\[${roomIndex}\\]\\.ServiceInputs\\[\\d+\\]`),
+                                `Rooms[${roomIndex}].ServiceInputs[${index}]`
+                            );
+                        });
+                    });
+                });
+
+                document.querySelectorAll(".fee-rows[data-room-index]").forEach(body => {
+                    const roomIndex = body.dataset.roomIndex;
+                    body.querySelectorAll("tr").forEach((row, index) => {
+                        row.querySelectorAll("input, select, textarea").forEach(field => {
+                            field.name = field.name.replace(
+                                new RegExp(`Rooms\\[${roomIndex}\\]\\.FeeInputs\\[\\d+\\]`),
+                                `Rooms[${roomIndex}].FeeInputs[${index}]`
+                            );
+                        });
+                    });
+                });
+            };
+
+            paymentReceived?.addEventListener("change", updatePayment);
+            document.querySelectorAll('input[name="PaymentMethod"]').forEach(x => x.addEventListener("change", updateReference));
+
+            form.addEventListener("submit", event => {
+                event.preventDefault();
+                normalizeDynamicIndexes();
+
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                if (!validateCheckoutGuestContact()) {
+                    checkoutGuestPhone?.focus();
+                    return;
+                }
+
+                const received = Boolean(paymentReceived?.checked);
+                const method = document.querySelector('input[name="PaymentMethod"]:checked')?.value;
+
+                if (received && !method) {
+                    window.HotelUI?.toast?.("warning", "Chưa chọn phương thức thanh toán", "Vui lòng chọn phương thức thanh toán.");
+                    return;
+                }
+
+                if (received && method === "1" && !document.getElementById("ReferenceCode")?.value.trim()) {
+                    document.getElementById("ReferenceCode")?.focus();
+                    window.HotelUI?.toast?.("warning", "Thiếu mã giao dịch", "Thanh toán chuyển khoản bắt buộc phải có mã giao dịch.");
+                    return;
+                }
+
+                const submit = () => {
+                    const button = document.getElementById("bookingCheckOutSubmit");
+                    if (button && window.HotelUI?.setButtonLoading) {
+                        window.HotelUI.setButtonLoading(button, true, "Đang xử lý...");
+                    }
+                    form.submit();
+                };
+
+                const showConfirm = window.HotelUI?.showConfirm;
+                if (typeof showConfirm === "function") {
+                    showConfirm({
+                        title: "Xác nhận check out",
+                        message: "Bạn có chắc chắn muốn hoàn tất check out với các dữ liệu hiện tại?",
+                        note: received
+                            ? "Hệ thống sẽ ghi nhận thanh toán thành công và kết thúc Booking."
+                            : "Booking sẽ ở trạng thái Check out thất bại và Bill sẽ ở trạng thái Thanh toán thất bại.",
+                        variant: received ? "primary" : "warning",
+                        confirmText: "Xác nhận check out",
+                        onConfirm: submit
+                    });
+                } else {
+                    submit();
+                }
+            });
+
+            refreshAllServiceMeta();
+            document.querySelectorAll(".booking-checkout-room-card[data-room-index]").forEach(card => {
+                updateRoomSummary(card.dataset.roomIndex);
+            });
+            updateGrandSummary();
+            updatePayment();
+        })();
+    </script>
+}
