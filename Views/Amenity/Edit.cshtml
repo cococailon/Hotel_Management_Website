@@ -1,4 +1,4 @@
-﻿@model Hotel_Management_Website.Models.ViewModels.Amenity.AmenityEditViewModel
+@model Hotel_Management_Website.Models.ViewModels.Amenity.AmenityEditViewModel
 
 @{
     ViewData["Title"] = "Sửa tiện nghi";
@@ -33,14 +33,12 @@
         <input asp-for="Id" type="hidden" />
         <input asp-for="ReturnUrl" type="hidden" />
 
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger amenity-validation-summary" role="alert"></div>
-
         @if (Model.HasActiveBookings)
         {
             <div class="alert alert-warning d-flex gap-2 align-items-start mb-4" role="alert">
                 <i class="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true"></i>
                 <div>
-                    <div class="fw-semibold">Tiện nghi đang được sử dụng bởi loại phòng có Booking hoạt động.</div>
+                    <div class="fw-semibold">Tiện nghi đang được sử dụng bởi loại phòng nằm trong lịch đặt phòng có trạng thái chờ xác nhận, chờ check in, đang ở.</div>
                     <div>Chỉ được sửa <strong>Mô tả</strong> và <strong>Ghi chú</strong>. Mã và tên tiện nghi được giữ nguyên.</div>
                 </div>
             </div>
@@ -52,7 +50,6 @@
                     <div class="amenity-form-section-icon" aria-hidden="true"><i class="bi bi-stars"></i></div>
                     <div>
                         <h2 class="h5 mb-1 fw-semibold">Thông tin tiện nghi</h2>
-                        <p class="text-body-secondary small mb-0">Trạng thái chỉ được thay đổi bằng thao tác riêng trên danh sách.</p>
                     </div>
                 </div>
             </div>
@@ -62,14 +59,14 @@
                         <label asp-for="AmenityCode" class="form-label required">Mã tiện nghi</label>
                         <input asp-for="AmenityCode"
                                class="form-control"
+                               style="@(Model.HasActiveBookings ? "background-color: #343a40;" : null)"
                                maxlength="50"
                                autocomplete="off"
                                spellcheck="false"
                                readonly="@(Model.HasActiveBookings ? "readonly" : null)" />
-                        @if (Model.HasActiveBookings)
-                        {
-                            <div class="form-text">Không thể sửa khi có Booking hoạt động.</div>
-                        }
+                        <div class="form-text">
+                            Mã bắt buộc nhập, chỉ gồm chữ cái và chữ số, không chứa dấu cách/ký tự đặc biệt và không được trùng.
+                        </div>
                         <span asp-validation-for="AmenityCode" class="text-danger"></span>
                     </div>
 
@@ -77,28 +74,11 @@
                         <label asp-for="AmenityName" class="form-label required">Tên tiện nghi</label>
                         <input asp-for="AmenityName"
                                class="form-control"
+                               style="@(Model.HasActiveBookings ? "background-color: #343a40;" : null)"
                                maxlength="100"
                                autocomplete="off"
                                readonly="@(Model.HasActiveBookings ? "readonly" : null)" />
-                        @if (Model.HasActiveBookings)
-                        {
-                            <div class="form-text">Không thể sửa khi có Booking hoạt động.</div>
-                        }
                         <span asp-validation-for="AmenityName" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-12 col-lg-6">
-                        <div class="form-label mb-2">Trạng thái</div>
-                        <div class="amenity-readonly-box">
-                            @if (Model.IsActive)
-                            {
-                                <span class="badge text-bg-success">Đang hoạt động</span>
-                            }
-                            else
-                            {
-                                <span class="badge text-bg-secondary">Dừng hoạt động</span>
-                            }
-                        </div>
                     </div>
                 </div>
             </div>

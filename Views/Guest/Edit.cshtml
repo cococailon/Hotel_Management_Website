@@ -20,7 +20,7 @@
         Icon = "bi-pencil-square"
     })
 
-<form asp-controller="Guest" asp-action="Edit" method="post" class="guest-edit-form" id="guestEditForm">
+<form asp-controller="Guest" asp-action="Edit" method="post" class="guest-edit-form" id="guestEditForm" data-details-editable="@(Model.CanEditDetails.ToString().ToLowerInvariant())" data-require-full-details="@(Model.RequireFullDetails.ToString().ToLowerInvariant())">
     @Html.AntiForgeryToken()
     <input asp-for="Id" type="hidden" />
     <div asp-validation-summary="ModelOnly" class="alert alert-danger guest-validation-summary" role="alert"></div>
@@ -78,17 +78,17 @@
                 </div>
                 <div class="col-12 col-md-6">
                     <label asp-for="PhoneNumber" class="form-label">Số điện thoại</label>
-                    <input asp-for="PhoneNumber" class="form-control" maxlength="20" inputmode="tel" disabled="@detailsDisabled" />
+                    <input asp-for="PhoneNumber" class="form-control" maxlength="30" inputmode="tel" autocomplete="tel" title="Số điện thoại có thể nhập theo định dạng quốc tế, ví dụ +84912345678 hoặc +1 (202) 555-0123." disabled="@detailsDisabled" />
                     <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                 </div>
                 <div class="col-12 col-md-6">
                     <label asp-for="Email" class="form-label">Email</label>
-                    <input asp-for="Email" type="email" class="form-control" maxlength="4000" autocomplete="email" disabled="@detailsDisabled" />
+                    <input asp-for="Email" type="email" class="form-control" maxlength="254" autocomplete="email" disabled="@detailsDisabled" />
                     <span asp-validation-for="Email" class="text-danger small"></span>
                 </div>
                 <div class="col-12 col-md-6">
                     <label asp-for="IdentityNumber" class="form-label">Số giấy tờ @(fullRequired ? Html.Raw("<span class='text-danger'>*</span>") : "")</label>
-                    <input asp-for="IdentityNumber" class="form-control" maxlength="50" disabled="@detailsDisabled" />
+                    <input asp-for="IdentityNumber" class="form-control" maxlength="50" autocomplete="off" title="CCCD/GPLX: 12 chữ số. Hộ chiếu: 5-20 ký tự chữ và số." disabled="@detailsDisabled" />
                     <span asp-validation-for="IdentityNumber" class="text-danger small"></span>
                 </div>
                 <div class="col-12 col-md-6">
@@ -109,10 +109,13 @@
             {
                 <div class="alert alert-light border small mt-4 mb-0">
                     <i class="bi bi-info-circle me-1"></i>
-                    Phải nhập <strong>ít nhất Số điện thoại hoặc Email</strong>. Mã khách hàng không được chứa khoảng trắng và không được trùng với khách hàng khác.
                     @if (Model.RequireFullDetails)
                     {
-                        <span>Ở trạng thái <strong>Đang ở</strong>, Ngày sinh, Giới tính, Địa chỉ, Số giấy tờ và Loại giấy tờ đều bắt buộc.</span>
+                        <span>Ở trạng thái <strong>Đang ở</strong>, Ngày sinh, Giới tính, Địa chỉ, <strong>Số điện thoại</strong>, Số giấy tờ và Loại giấy tờ đều bắt buộc; Email không bắt buộc.</span>
+                    }
+                    else
+                    {
+                        <span>Phải nhập <strong>ít nhất Số điện thoại hoặc Email</strong>. Mã khách hàng chỉ gồm chữ và số, không được trùng với khách hàng khác.</span>
                     }
                 </div>
             }

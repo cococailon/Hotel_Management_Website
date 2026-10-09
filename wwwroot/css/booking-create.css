@@ -11,6 +11,7 @@
 .booking-create-room-table-wrap, .booking-create-room-summary-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .booking-create-room-table { min-width: 1050px; }
 .booking-create-room-table th, .booking-create-room-table td, .booking-create-room-summary th, .booking-create-room-summary td { vertical-align: middle; }
+.booking-create-room-table thead th { background-color: #fff !important; color: #000 !important; }
 .booking-create-room-table .form-control { min-width: 90px; }
 .booking-create-room-table .room-note-input { min-width: 200px; }
 .booking-create-room-summary { min-width: 760px; }

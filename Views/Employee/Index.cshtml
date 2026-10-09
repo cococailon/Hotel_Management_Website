@@ -707,6 +707,11 @@ else
            name="returnUrl"
            id="employeeReturnToWorkReturnUrl" />
 
+    <input type="hidden"
+           name="activateLinkedUser"
+           id="employeeReturnToWorkActivateLinkedUser"
+           value="false" />
+
 </form>
 
 
@@ -985,13 +990,16 @@ else
                         "Bạn có chắc muốn cho nhân viên \"{name}\" trở lại làm việc?",
 
                     note:
-                        "Hệ thống sẽ chuyển nhân viên sang trạng thái đang làm việc và kích hoạt lại tài khoản User liên kết với nhân viên đó nếu có.",
+                        "Hệ thống sẽ chuyển nhân viên sang trạng thái đang làm việc và thực hiện tùy chọn kích hoạt lại tài khoản User liên kết với nhân viên đó nếu có.",
 
                     confirmText:
                         "Trở lại làm việc",
 
                     variant:
-                        "success"
+                        "success",
+
+                    showActivateLinkedUser:
+                        true
                 },
 
 
@@ -1004,7 +1012,7 @@ else
                         "Bạn có chắc muốn xóa hồ sơ của nhân viên \"{name}\"?",
 
                     note:
-                        "Hệ thống sẽ xóa hồ sơ nhân viên và dừng hoạt động tài khoản User liên kết của nhân viên đó nếu có.",
+                        "",
 
                     confirmText:
                         "Xóa nhân viên",
@@ -1356,8 +1364,31 @@ else
                     variant:
                         config.variant,
 
+                    showActivateLinkedUser:
+                        config.showActivateLinkedUser === true,
+
                     onConfirm:
                         async function () {
+
+                            if (action === "return") {
+
+                                const activateCheckbox =
+                                    document.getElementById(
+                                        "uiConfirmActivateLinkedUser"
+                                    );
+
+                                const activateInput =
+                                    document.getElementById(
+                                        "employeeReturnToWorkActivateLinkedUser"
+                                    );
+
+                                if (activateInput) {
+                                    activateInput.value =
+                                        activateCheckbox?.checked === true
+                                            ? "true"
+                                            : "false";
+                                }
+                            }
 
                             await executeAction(
 

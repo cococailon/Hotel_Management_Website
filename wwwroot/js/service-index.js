@@ -33,12 +33,12 @@
         const name = button.dataset.name || "dịch vụ này";
         if (!id) return error("Không tìm thấy mã dịch vụ.");
         if (button.dataset.allowed === "false") {
-            return error(action === "delete" ? "Không thể xóa vì dịch vụ đang được sử dụng bởi loại phòng có Booking hoạt động." : "Không thể thực hiện vì dịch vụ đang được sử dụng bởi loại phòng có Booking hoạt động.");
+            return error(action === "delete" ? "Không thể xóa vì dịch vụ đang được sử dụng bởi loại phòng nằm trong lịch đặt phòng có trạng thái chờ xác nhận, chờ check in hoặc đang ở." : "Không thể thực hiện vì dịch vụ đang được sử dụng bởi loại phòng có Booking hoạt động.");
         }
 
         const map = {
-            deactivate: { form: "serviceDeactivateForm", input: "serviceDeactivateId", title: "Xác nhận dừng hoạt động", message: `Bạn có chắc muốn dừng hoạt động ${name} không?`, note: "Toàn bộ RoomTypeServices tương ứng đang hoạt động sẽ được chuyển sang dừng hoạt động.", text: "Dừng hoạt động", variant: "warning" },
-            delete: { form: "serviceDeleteForm", input: "serviceDeleteId", title: "Xác nhận xóa dịch vụ", message: `Bạn có chắc muốn xóa ${name} không?`, note: "Chỉ dịch vụ đã dừng hoạt động và không còn liên quan tới loại phòng có Booking hoạt động mới được xóa.", text: "Xóa dịch vụ", variant: "danger" }
+            deactivate: { form: "serviceDeactivateForm", input: "serviceDeactivateId", title: "Xác nhận dừng hoạt động", message: `Bạn có chắc muốn dừng hoạt động ${name} không?`, note: "Toàn bộ Dịch vụ trong loại phòng tương ứng đang hoạt động sẽ được chuyển sang dừng hoạt động.", text: "Dừng hoạt động", variant: "warning" },
+            delete: { form: "serviceDeleteForm", input: "serviceDeleteId", title: "Xác nhận xóa dịch vụ", message: `Bạn có chắc muốn xóa ${name} không?`, note: "Chỉ dịch vụ đã dừng hoạt động và loại phòng của nó không nằm trong các lịch đặt phòng có trạng thái chờ xác nhận, chờ check in hoặc đang ở thì mới được xóa.", text: "Xóa dịch vụ", variant: "danger" }
         };
         const cfg = map[action];
         if (!cfg) return;

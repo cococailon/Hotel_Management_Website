@@ -34,16 +34,6 @@
             <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
             Quay lại danh sách
         </a>
-
-        <div class="d-flex flex-column flex-sm-row gap-2">
-            <a asp-controller="Booking" asp-action="Details" asp-route-id="@Model.BookingId" class="btn btn-outline-primary">
-                <i class="bi bi-eye me-1" aria-hidden="true"></i>
-                Xem chi tiết
-            </a>
-            <span class="badge @Model.StatusBadgeClass booking-edit-status-badge align-self-start align-self-sm-center">
-                @Model.StatusName
-            </span>
-        </div>
     </div>
 
     <form asp-controller="Booking"
@@ -64,7 +54,6 @@
                     </div>
                     <div class="min-width-0">
                         <h2 class="h6 mb-0 fw-semibold">Thông tin lịch đặt phòng</h2>
-                        <div class="small text-body-secondary">Thông tin hệ thống của Booking được giữ nguyên, chỉ các thuộc tính được phép mới có thể sửa.</div>
                     </div>
                 </div>
             </div>
@@ -103,9 +92,6 @@
                             </div>
                             <div>
                                 <h2 class="h6 mb-0 fw-semibold">Thông tin số người</h2>
-                                <div class="small text-body-secondary">
-                                    @(Model.CanEditPeople ? "Có thể chỉnh sửa ở trạng thái hiện tại." : "Không được chỉnh sửa ở trạng thái hiện tại.")
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -159,7 +145,6 @@
                             </div>
                             <div>
                                 <h2 class="h6 mb-0 fw-semibold">Ghi chú Booking</h2>
-                                <div class="small text-body-secondary">Cho phép chỉnh sửa ở mọi trạng thái của Booking.</div>
                             </div>
                         </div>
                     </div>
@@ -232,6 +217,7 @@
                             <input asp-for="Guest.GuestCode"
                                    class="form-control font-monospace"
                                    maxlength="50"
+                                   data-guest-code
                                    autocomplete="off"
                                    pattern="\S+"
                                    title="Mã khách hàng không được chứa dấu cách hoặc khoảng trắng."
@@ -244,6 +230,7 @@
                             <input asp-for="Guest.Name"
                                    class="form-control"
                                    maxlength="100"
+                                   data-guest-name
                                    autocomplete="name"
                                    required="@Model.CanEditGuestDetails"
                                    disabled="@guestDetailsDisabled" />
@@ -255,6 +242,7 @@
                             <input asp-for="Guest.DateOfBirth"
                                    type="date"
                                    class="form-control"
+                                   data-guest-dob
                                    max="@DateTime.Today.ToString("yyyy-MM-dd")"
                                    required="@requiredFull"
                                    disabled="@guestDetailsDisabled" />
@@ -265,6 +253,7 @@
                             <label asp-for="Guest.Sex" class="form-label">Giới tính @(requiredFull ? Html.Raw("<span class='text-danger'>*</span>") : Html.Raw(""))</label>
                             <select asp-for="Guest.Sex"
                                     class="form-select"
+                                    data-guest-sex
                                     required="@requiredFull"
                                     disabled="@guestDetailsDisabled">
                                 <option value="">-- Chọn giới tính --</option>
@@ -280,6 +269,7 @@
                             <input asp-for="Guest.Address"
                                    class="form-control"
                                    maxlength="255"
+                                   data-guest-address
                                    autocomplete="street-address"
                                    required="@requiredFull"
                                    disabled="@guestDetailsDisabled" />
@@ -290,10 +280,13 @@
                             <label asp-for="Guest.PhoneNumber" class="form-label">Số điện thoại</label>
                             <input asp-for="Guest.PhoneNumber"
                                    class="form-control"
-                                   maxlength="20"
+                                   maxlength="30"
+                                   inputmode="tel"
                                    autocomplete="tel"
+                                   title="Số điện thoại có thể nhập theo định dạng quốc tế, ví dụ +84912345678, +1 (202) 555-0123."
                                    data-guest-phone
-                                   disabled="@guestDetailsDisabled" />
+                                   disabled="@guestDetailsDisabled"
+                                   required="@(Model.RequireFullGuestDetails ? "required" : null)" />
                             <span asp-validation-for="Guest.PhoneNumber" class="text-danger small" data-guest-phone-error></span>
                         </div>
 
@@ -302,7 +295,7 @@
                             <input asp-for="Guest.Email"
                                    type="email"
                                    class="form-control"
-                                   maxlength="4000"
+                                   maxlength="254"
                                    autocomplete="email"
                                    data-guest-email
                                    disabled="@guestDetailsDisabled" />
@@ -315,6 +308,7 @@
                                    class="form-control"
                                    maxlength="50"
                                    autocomplete="off"
+                                   title="CCCD/GPLX: 12 chữ số. Hộ chiếu: 5-20 chữ và số."
                                    data-guest-identity-number
                                    required="@requiredFull"
                                    disabled="@guestDetailsDisabled" />
@@ -349,6 +343,7 @@
                             <label asp-for="Guest.Note" class="form-label">Ghi chú khách hàng</label>
                             <textarea asp-for="Guest.Note"
                                       class="form-control booking-edit-textarea"
+                                      data-guest-note
                                       rows="3"
                                       maxlength="255"
                                       placeholder="Nhập ghi chú cho khách hàng..."
@@ -370,10 +365,7 @@
                         <i class="bi bi-door-open"></i>
                     </div>
                     <div class="min-width-0">
-                        <h2 class="h6 mb-0 fw-semibold">Các BookingRoom đã đặt</h2>
-                        <div class="small text-body-secondary">
-                            Ghi chú phòng luôn có thể sửa. @(Model.CanEditServices ? "Dịch vụ và phí phát sinh cũng có thể thêm, sửa hoặc xóa." : "Dịch vụ và phí phát sinh không thuộc phạm vi chỉnh sửa của trạng thái hiện tại.")
-                        </div>
+                        <h2 class="h6 mb-0 fw-semibold">Các phòng đã đặt</h2>
                     </div>
                 </div>
             </div>
@@ -383,7 +375,7 @@
                 {
                     <div class="booking-edit-empty-note">
                         <i class="bi bi-door-closed me-2" aria-hidden="true"></i>
-                        Booking không có BookingRoom hợp lệ.
+                        Lịch đặt phòng không có phòng nào.
                     </div>
                 }
                 else
@@ -437,7 +429,6 @@
                                             <div class="d-flex align-items-start align-items-sm-center justify-content-between gap-2 mb-2">
                                                 <div>
                                                     <h3 class="h6 mb-1 fw-semibold">Dịch vụ</h3>
-                                                    <div class="small text-body-secondary">Có thể thêm, sửa hoặc xóa từng dòng dịch vụ.</div>
                                                 </div>
                                                 <button type="button"
                                                         class="btn btn-sm btn-outline-primary text-nowrap"
@@ -485,7 +476,7 @@
                                                                     <input asp-for="Rooms[roomIndex].ServiceInputs[serviceIndex].TotalPrice"
                                                                            class="form-control text-end"
                                                                            min="0"
-                                                                           step="1000"
+                                                                           step="0.01"
                                                                            inputmode="decimal" />
                                                                     <span class="input-group-text">₫</span>
                                                                 </div>
@@ -553,7 +544,7 @@
                                                                        name="Rooms[@roomIndex].ServiceInputs[__INDEX__].TotalPrice"
                                                                        class="form-control text-end"
                                                                        min="0"
-                                                                       step="1000"
+                                                                       step="0.01"
                                                                        value="0"
                                                                        inputmode="decimal" />
                                                                 <span class="input-group-text">₫</span>
@@ -583,7 +574,6 @@
                                             <div class="d-flex align-items-start align-items-sm-center justify-content-between gap-2 mb-2">
                                                 <div>
                                                     <h3 class="h6 mb-1 fw-semibold">Phí phát sinh</h3>
-                                                    <div class="small text-body-secondary">Có thể thêm, sửa hoặc xóa phí phát sinh của BookingRoom.</div>
                                                 </div>
                                                 <button type="button"
                                                         class="btn btn-sm btn-outline-primary text-nowrap"
@@ -625,7 +615,7 @@
                                                                     <input asp-for="Rooms[roomIndex].FeeInputs[feeIndex].TotalFee"
                                                                            class="form-control text-end"
                                                                            min="0.01"
-                                                                           step="1000"
+                                                                           step="0.01"
                                                                            inputmode="decimal" />
                                                                     <span class="input-group-text">₫</span>
                                                                 </div>
@@ -682,7 +672,7 @@
                                                         <div class="col-12 col-sm-7">
                                                             <label class="form-label">Thành tiền</label>
                                                             <div class="input-group">
-                                                                <input type="number" name="Rooms[@roomIndex].FeeInputs[__INDEX__].TotalFee" class="form-control text-end" min="0.01" step="1000" value="0" inputmode="decimal" />
+                                                                <input type="number" name="Rooms[@roomIndex].FeeInputs[__INDEX__].TotalFee" class="form-control text-end" min="0.01" step="0.01" value="0" inputmode="decimal" />
                                                                 <span class="input-group-text">₫</span>
                                                             </div>
                                                         </div>
@@ -722,7 +712,7 @@
         </section>
 
         <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 pb-4">
-            <a asp-controller="Booking" asp-action="Details" asp-route-id="@Model.BookingId" class="btn btn-outline-secondary">
+            <a asp-controller="Booking" asp-action="Index" class="btn btn-outline-secondary">
                 Hủy thay đổi
             </a>
             <button type="submit" class="btn btn-primary" id="bookingEditSubmitButton" data-ui-submit>
@@ -845,6 +835,304 @@
                 }
             });
 
+            const guestCode = form.querySelector("[data-guest-code]");
+            const guestName = form.querySelector("[data-guest-name]");
+            const guestDob = form.querySelector("[data-guest-dob]");
+            const guestSex = form.querySelector("[data-guest-sex]");
+            const guestAddress = form.querySelector("[data-guest-address]");
+            const guestPhone = form.querySelector("[data-guest-phone]");
+            const guestEmail = form.querySelector("[data-guest-email]");
+            const guestIdentityNumber = form.querySelector("[data-guest-identity-number]");
+            const guestIdentityType = form.querySelector("[data-guest-identity-type]");
+            const guestNote = form.querySelector("[data-guest-note]");
+            const guestDetailsEditable = form.querySelector('[name="Guest.GuestCode"]:not(:disabled)') !== null;
+            const requireFullGuestDetails = @Model.RequireFullGuestDetails.ToString().ToLowerInvariant();
+
+            const getMessageElement = (input) => {
+                if (!input?.name) return null;
+                return form.querySelector(`[data-valmsg-for="${CSS.escape(input.name)}"]`);
+            };
+
+            const setFieldError = (input, message) => {
+                if (!input) return;
+                input.classList.add("is-invalid");
+                input.setAttribute("aria-invalid", "true");
+                const messageElement = getMessageElement(input);
+                if (messageElement) {
+                    messageElement.textContent = message;
+                    messageElement.classList.remove("field-validation-valid");
+                    messageElement.classList.add("field-validation-error");
+                }
+            };
+
+            const clearFieldError = (input) => {
+                if (!input) return;
+                input.classList.remove("is-invalid");
+                input.removeAttribute("aria-invalid");
+                const messageElement = getMessageElement(input);
+                if (messageElement) {
+                    messageElement.textContent = "";
+                    messageElement.classList.remove("field-validation-error");
+                    messageElement.classList.add("field-validation-valid");
+                }
+            };
+
+            const validateCode = (input, label) => {
+                if (!guestDetailsEditable) return true;
+                const value = input?.value.trim() ?? "";
+                if (!value) {
+                    setFieldError(input, `${label} không được để trống.`);
+                    return false;
+                }
+                if (!/^[A-Za-z0-9]+$/.test(value)) {
+                    setFieldError(input, `${label} chỉ được bao gồm chữ hoa, chữ thường và số, không chứa dấu cách và ký tự đặc biệt.`);
+                    return false;
+                }
+                if (value.length > 50) {
+                    setFieldError(input, `${label} không được vượt quá 50 ký tự.`);
+                    return false;
+                }
+                clearFieldError(input);
+                return true;
+            };
+
+            const validateName = () => {
+                if (!guestDetailsEditable) return true;
+                const value = guestName?.value.trim() ?? "";
+                if (!value) {
+                    setFieldError(guestName, "Tên khách hàng không được để trống.");
+                    return false;
+                }
+                if (value.length > 100) {
+                    setFieldError(guestName, "Tên khách hàng không được vượt quá 100 ký tự.");
+                    return false;
+                }
+                clearFieldError(guestName);
+                return true;
+            };
+
+            const validateDob = () => {
+                if (!guestDetailsEditable) return true;
+                const value = guestDob?.value ?? "";
+                if (!value) {
+                    if (requireFullGuestDetails) {
+                        setFieldError(guestDob, "Ngày sinh là bắt buộc khi Booking đang ở trạng thái Đang ở.");
+                        return false;
+                    }
+                    clearFieldError(guestDob);
+                    return true;
+                }
+                const date = new Date(`${value}T00:00:00`);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (Number.isNaN(date.getTime()) || date > today) {
+                    setFieldError(guestDob, "Ngày sinh không được lớn hơn ngày hiện tại.");
+                    return false;
+                }
+                clearFieldError(guestDob);
+                return true;
+            };
+
+            const validateSex = () => {
+                if (!guestDetailsEditable) return true;
+                const value = guestSex?.value ?? "";
+                if (!value) {
+                    if (requireFullGuestDetails) {
+                        setFieldError(guestSex, "Giới tính là bắt buộc khi Booking đang ở trạng thái Đang ở.");
+                        return false;
+                    }
+                    clearFieldError(guestSex);
+                    return true;
+                }
+                if (!["0", "1", "2"].includes(value)) {
+                    setFieldError(guestSex, "Giới tính khách hàng không hợp lệ.");
+                    return false;
+                }
+                clearFieldError(guestSex);
+                return true;
+            };
+
+            const validateAddress = () => {
+                if (!guestDetailsEditable) return true;
+                const value = guestAddress?.value.trim() ?? "";
+                if (!value && requireFullGuestDetails) {
+                    setFieldError(guestAddress, "Địa chỉ là bắt buộc khi Booking đang ở trạng thái Đang ở.");
+                    return false;
+                }
+                if (value.length > 255) {
+                    setFieldError(guestAddress, "Địa chỉ không được vượt quá 255 ký tự.");
+                    return false;
+                }
+                clearFieldError(guestAddress);
+                return true;
+            };
+
+            const normalizePhone = (raw) => {
+                let value = String(raw ?? "").trim().replace(/[\s().-]/g, "");
+                if (value.startsWith("00")) value = "+" + value.slice(2);
+                return value;
+            };
+
+                    const validatePhone = () => {
+            if (!guestDetailsEditable) return true;
+
+            const value = guestPhone?.value.trim() ?? "";
+            const emailValue = guestEmail?.value.trim() ?? "";
+
+            // Booking đang ở: SĐT bắt buộc, Email không bắt buộc.
+            if (requireFullGuestDetails && !value) {
+                setFieldError(
+                    guestPhone,
+                    "Số điện thoại là bắt buộc khi Booking đang ở trạng thái Đang ở."
+                );
+                return false;
+            }
+
+            // Booking Chờ xác nhận / Chờ check in:
+            // phải có ít nhất SĐT hoặc Email.
+            if (!requireFullGuestDetails && !value && !emailValue) {
+                setFieldError(
+                    guestPhone,
+                    "Khách hàng phải có ít nhất số điện thoại hoặc email."
+                );
+
+                if (guestEmail) {
+                    setFieldError(
+                        guestEmail,
+                        "Khách hàng phải có ít nhất số điện thoại hoặc email."
+                    );
+                }
+
+                return false;
+            }
+
+            // Nếu không có SĐT ở trường hợp không bắt buộc thì không validate format.
+            if (!value) {
+                clearFieldError(guestPhone);
+                return true;
+            }
+
+            if (value.length > 30) {
+                setFieldError(
+                    guestPhone,
+                    "Số điện thoại nhập vào không được vượt quá 30 ký tự."
+                );
+                return false;
+            }
+
+            const normalized = normalizePhone(value);
+
+            const valid = normalized.startsWith("+")
+                ? /^\+[1-9][0-9]{6,14}$/.test(normalized)
+                : /^[0-9]{7,15}$/.test(normalized);
+
+            if (!valid) {
+                setFieldError(
+                    guestPhone,
+                    "Số điện thoại không hợp lệ. Có thể nhập số quốc tế; sau khi chuẩn hóa phải có 7-15 chữ số."
+                );
+                return false;
+            }
+
+            clearFieldError(guestPhone);
+            return true;
+        };
+
+                    const validateEmail = () => {
+            if (!guestDetailsEditable) return true;
+
+            const value = guestEmail?.value.trim() ?? "";
+
+            // Email luôn không bắt buộc.
+            // Với Status 0/1, validatePhone() đã chịu trách nhiệm
+            // kiểm tra điều kiện "ít nhất SĐT hoặc Email".
+            if (!value) {
+                clearFieldError(guestEmail);
+                return true;
+            }
+
+            if (
+                value.length > 254 ||
+                !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(value)
+            ) {
+                setFieldError(
+                    guestEmail,
+                    "Email không đúng định dạng hoặc vượt quá 254 ký tự."
+                );
+                return false;
+            }
+
+            clearFieldError(guestEmail);
+            return true;
+        };
+
+            const validateIdentity = () => {
+                if (!guestDetailsEditable) return true;
+                const number = guestIdentityNumber?.value.trim() ?? "";
+                const type = guestIdentityType?.value ?? "";
+
+                if (!number) {
+                    if (requireFullGuestDetails) {
+                        setFieldError(guestIdentityNumber, "Số giấy tờ là bắt buộc khi Booking đang ở trạng thái Đang ở.");
+                        return false;
+                    }
+                    clearFieldError(guestIdentityNumber);
+                    if (!type) clearFieldError(guestIdentityType);
+                    return true;
+                }
+
+                if (number.length > 50) {
+                    setFieldError(guestIdentityNumber, "Số giấy tờ không được vượt quá 50 ký tự.");
+                    return false;
+                }
+
+                if (!["0", "1", "2"].includes(type)) {
+                    setFieldError(guestIdentityType, "Vui lòng chọn loại giấy tờ khi nhập số giấy tờ.");
+                    return false;
+                }
+
+                if (type === "0" && !/^\d{12}$/.test(number)) {
+                    setFieldError(guestIdentityNumber, "CCCD phải gồm đúng 12 chữ số.");
+                    return false;
+                }
+                if (type === "1" && !/^\d{12}$/.test(number)) {
+                    setFieldError(guestIdentityNumber, "Giấy phép lái xe phải gồm đúng 12 chữ số.");
+                    return false;
+                }
+                if (type === "2" && !/^[A-Za-z0-9]{5,20}$/.test(number)) {
+                    setFieldError(guestIdentityNumber, "Hộ chiếu phải gồm 5-20 ký tự chữ và số, không chứa dấu cách hoặc ký tự đặc biệt.");
+                    return false;
+                }
+
+                clearFieldError(guestIdentityNumber);
+                clearFieldError(guestIdentityType);
+                return true;
+            };
+
+            const validateNote = () => {
+                if (!guestDetailsEditable) return true;
+                const value = guestNote?.value.trim() ?? "";
+                if (value.length > 255) {
+                    setFieldError(guestNote, "Ghi chú khách hàng không được vượt quá 255 ký tự.");
+                    return false;
+                }
+                clearFieldError(guestNote);
+                return true;
+            };
+
+            if (guestDetailsEditable) {
+                guestCode?.addEventListener("input", () => validateCode(guestCode, "Mã khách hàng"));
+                guestName?.addEventListener("input", validateName);
+                guestDob?.addEventListener("input", validateDob);
+                guestSex?.addEventListener("change", validateSex);
+                guestAddress?.addEventListener("input", validateAddress);
+                guestPhone?.addEventListener("input", validatePhone);
+                guestEmail?.addEventListener("input", validateEmail);
+                guestIdentityNumber?.addEventListener("input", validateIdentity);
+                guestIdentityType?.addEventListener("change", validateIdentity);
+                guestNote?.addEventListener("input", validateNote);
+            }
+
             form.addEventListener("submit", (event) => {
                 if (confirmed) {
                     return;
@@ -852,30 +1140,39 @@
 
                 event.preventDefault();
 
-                const guestDetailsEditable = form.querySelector('[name="Guest.GuestCode"]:not(:disabled)') !== null;
                 if (guestDetailsEditable) {
-                    const phone = form.querySelector("[data-guest-phone]");
-                    const email = form.querySelector("[data-guest-email]");
-                    const phoneError = form.querySelector("[data-guest-phone-error]");
-                    const emailError = form.querySelector("[data-guest-email-error]");
+                    const checks = [
+                        () => validateCode(guestCode, "Mã khách hàng"),
+                        validateName,
+                        validateDob,
+                        validateSex,
+                        validateAddress,
+                        validatePhone,
+                        validateEmail,
+                        validateIdentity,
+                        validateNote
+                    ];
 
-                    [phoneError, emailError].forEach((x) => {
-                        if (x) {
-                            x.textContent = "";
+                    let firstInvalid = null;
+                    let hasGuestError = false;
+
+                    for (const check of checks) {
+                        if (!check()) {
+                            hasGuestError = true;
+                            if (!firstInvalid) {
+                                firstInvalid = form.querySelector(".is-invalid");
+                            }
                         }
-                    });
-
-                    let customInvalid = false;
-                    if (phone && email && !phone.value.trim() && !email.value.trim()) {
-                        const message = "Phải nhập ít nhất Số điện thoại hoặc Email.";
-                        if (phoneError) phoneError.textContent = message;
-                        if (emailError) emailError.textContent = message;
-                        customInvalid = true;
                     }
 
-                    if (customInvalid) {
-                        const firstCustomInvalid = form.querySelector("[data-guest-phone-error]:not(:empty), [data-guest-email-error]:not(:empty)");
-                        firstCustomInvalid?.parentElement?.querySelector("input, select")?.focus();
+                    const invalids = Array.from(form.querySelectorAll(".is-invalid"));
+                    if (invalids.length > 0) {
+                        firstInvalid = invalids[0];
+                    }
+
+                    if (hasGuestError || invalids.length > 0) {
+                        firstInvalid?.focus();
+                        firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
                         return;
                     }
                 }
@@ -884,6 +1181,7 @@
                     form.classList.add("was-validated");
                     const firstInvalid = form.querySelector(":invalid");
                     firstInvalid?.focus();
+                    firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
                     return;
                 }
 

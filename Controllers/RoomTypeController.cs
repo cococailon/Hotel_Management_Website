@@ -116,6 +116,29 @@ public sealed class RoomTypeController : Controller
     }
 
     [AdminAccess]
+    [HttpGet]
+    public async Task<IActionResult> GetNextCode(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var code = await _roomTypeService.GetNextRoomTypeCodeAsync(cancellationToken);
+            return Json(new { code });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Không thể tự sinh mã loại phòng.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                message = "Không thể tự sinh mã loại phòng. Vui lòng thử lại."
+            });
+        }
+    }
+
+    [AdminAccess]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
@@ -123,13 +146,7 @@ public sealed class RoomTypeController : Controller
         CancellationToken cancellationToken)
     {
         model ??= new RoomTypeCreateViewModel();
-        model.RoomTypeCode = (model.RoomTypeCode ?? string.Empty).Trim().ToUpperInvariant();
-
-        if (string.IsNullOrWhiteSpace(model.RoomTypeCode))
-        {
-            model.RoomTypeCode = await _roomTypeService.GetNextRoomTypeCodeAsync(cancellationToken);
-            ModelState.Remove(nameof(RoomTypeCreateViewModel.RoomTypeCode));
-        }
+        model.RoomTypeCode = (model.RoomTypeCode ?? string.Empty).Trim();
 
         if (!ModelState.IsValid)
         {
@@ -151,7 +168,6 @@ public sealed class RoomTypeController : Controller
 
             if (!result.Succeeded)
             {
-                ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Không thể tạo loại phòng.");
                 await _roomTypeService.PopulateCreateLookupsAsync(model, cancellationToken);
                 return View(model);
             }

@@ -1,4 +1,4 @@
-﻿@model Hotel_Management_Website.Models.ViewModels.Amenity.AmenityCreateViewModel
+@model Hotel_Management_Website.Models.ViewModels.Amenity.AmenityCreateViewModel
 
 ﻿@{
     ViewData["Title"] = "Tạo tiện nghi";
@@ -30,8 +30,6 @@
           data-amenity-form="create">
         @Html.AntiForgeryToken()
 
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger amenity-validation-summary" role="alert"></div>
-
         <section class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-body border-bottom">
                 <div class="d-flex align-items-center gap-3">
@@ -45,14 +43,24 @@
             <div class="card-body">
                 <div class="row g-4">
                     <div class="col-12 col-lg-6">
-                        <label asp-for="AmenityCode" class="form-label required">Mã tiện nghi</label>
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <label asp-for="AmenityCode" class="form-label required mb-0">Mã tiện nghi</label>
+                            <button type="button"
+                                    id="generateAmenityCodeButton"
+                                    class="btn btn-outline-primary btn-sm"
+                                    data-endpoint="@Url.Action("GetNextAmenityCode", "Amenity")">
+                                <i class="bi bi-magic me-1" aria-hidden="true"></i>Tự sinh mã
+                            </button>
+                        </div>
                         <input asp-for="AmenityCode"
                                class="form-control"
                                maxlength="50"
                                autocomplete="off"
                                spellcheck="false" />
                         <span asp-validation-for="AmenityCode" class="text-danger"></span>
-                        <div class="form-text">Mặc định tự sinh theo dạng <strong>TN + số</strong>. Có thể nhập thủ công nhưng không được chứa khoảng trắng.</div>
+                        <div class="form-text">
+                            Mã bắt buộc nhập, chỉ gồm chữ cái và chữ số, không chứa dấu cách/ký tự đặc biệt và không được trùng.
+                        </div>
                     </div>
 
                     <div class="col-12 col-lg-6">

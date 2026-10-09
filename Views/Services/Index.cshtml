@@ -22,7 +22,7 @@
         Title = "Quản lý dịch vụ",
         Description = isReception
             ? "Xem danh sách, tìm kiếm, sắp xếp và lọc các dịch vụ."
-            : "Xem, tìm kiếm, sắp xếp, lọc và quản lý trạng thái dịch vụ.",
+            : "",
         Icon = "bi-cone-striped"
     })
 
@@ -185,7 +185,7 @@ else
                                     <div class="fw-semibold service-price-cell">
                                         @(item.UnitPrice.GetValueOrDefault() <= 0
                                             ? "Miễn phí"
-                                            : item.UnitPrice.Value.ToString("N0", CultureInfo.InvariantCulture) + " ₫")
+                                            : item.UnitPrice.Value.ToString("#,##0.##", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) + " ₫")
                                     </div>
                                     @if (!string.IsNullOrWhiteSpace(item.PriceUnitType))
                                     {
@@ -312,7 +312,6 @@ else
                         <label class="form-check-label fw-semibold" for="serviceReactivateAssociationsCheckbox">
                             Mở hoạt động lại toàn bộ dịch vụ trong các loại phòng
                         </label>
-                        <div class="form-text">Chỉ các RoomTypeServices chưa bị xóa và đang dừng hoạt động mới được mở lại.</div>
                     </div>
                 </div>
                 <div class="modal-footer">

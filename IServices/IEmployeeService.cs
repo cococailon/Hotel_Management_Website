@@ -48,6 +48,7 @@ public interface IEmployeeService
     Task<(bool Succeeded, string? ErrorMessage, int ActivatedUserCount)> ReturnToWorkAsync(
         Guid id,
         Guid currentUserId,
+        bool activateLinkedUser,
         CancellationToken cancellationToken = default);
 
     Task<(bool Succeeded, string? ErrorMessage, int DeactivatedUserCount)> DeleteAsync(

@@ -201,7 +201,7 @@ public sealed class BookingController : Controller
         }
 
         TempData["SuccessMessage"] = $"Đã cập nhật lịch đặt phòng {model.BookingCode} thành công.";
-        return RedirectToAction(nameof(Details), new { id = model.BookingId });
+        return RedirectToAction(nameof(Index));
     }
 
     [ReceptionOnlyAccess]
@@ -824,7 +824,23 @@ public sealed class BookingController : Controller
         TempData["SuccessMessage"] =
             $"Đã tạo và check in trực tiếp lịch đặt phòng {result.Model.BookingCode} thành công. Booking đang ở trạng thái Đang ở.";
 
-        return RedirectToAction(nameof(Flow), new { id = result.BookingId });
+        return RedirectToAction(nameof(Index));
+    }
+
+    [ReceptionOnlyAccess]
+    [HttpGet]
+    public async Task<IActionResult> GetNextBookingCode(CancellationToken cancellationToken)
+    {
+        var code = await _bookingService.GetNextBookingCodeAsync(cancellationToken);
+        return Json(new { code });
+    }
+
+    [ReceptionOnlyAccess]
+    [HttpGet]
+    public async Task<IActionResult> GetNextGuestCode(CancellationToken cancellationToken)
+    {
+        var code = await _bookingService.GetNextGuestCodeAsync(cancellationToken);
+        return Json(new { code });
     }
 
     [ReceptionOnlyAccess]
@@ -1004,6 +1020,70 @@ public sealed class BookingController : Controller
 
     [ReceptionOnlyAccess]
     [HttpGet]
+    public async Task<IActionResult> PaymentRecovery(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty)
+            return NotFound();
+
+        var model = await _bookingService.GetPaymentRecoveryModelAsync(id, cancellationToken);
+        if (model is null)
+        {
+            TempData["ErrorMessage"] = "Chỉ có lịch đặt phòng ở trạng thái Check out thất bại và có hóa đơn Thanh toán thất bại mới được tiếp nhận thanh toán lại.";
+            return RedirectToAction(nameof(Flow), new { id });
+        }
+
+        return View(model);
+    }
+
+    [ReceptionOnlyAccess]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PaymentRecovery(
+        BookingPaymentRecoveryViewModel model,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(out var currentUserId))
+            return Challenge();
+
+        if (!ModelState.IsValid)
+        {
+            var rebuilt = await _bookingService.GetPaymentRecoveryModelAsync(model.BookingId, cancellationToken);
+            if (rebuilt is not null)
+            {
+                CopyPaymentRecoveryPostedFields(rebuilt, model);
+                return View(rebuilt);
+            }
+
+            TempData["ErrorMessage"] = "Lịch đặt phòng không còn ở trạng thái Check out thất bại hoặc hóa đơn đã được xử lý.";
+            return RedirectToAction(nameof(Flow), new { id = model.BookingId });
+        }
+
+        var result = await _bookingService.CompletePaymentRecoveryAsync(model, currentUserId, cancellationToken);
+        if (!result.Succeeded)
+        {
+            ModelState.Clear();
+            ApplyFieldErrors(result.FieldErrors);
+            if (!result.FieldErrors.ContainsKey(string.Empty))
+                ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Không thể ghi nhận thanh toán lại.");
+
+            var rebuilt = await _bookingService.GetPaymentRecoveryModelAsync(model.BookingId, cancellationToken);
+            if (rebuilt is not null)
+            {
+                CopyPaymentRecoveryPostedFields(rebuilt, model);
+                return View(rebuilt);
+            }
+
+            return RedirectToAction(nameof(Flow), new { id = model.BookingId });
+        }
+
+        TempData["SuccessMessage"] = "Đã ghi nhận thanh toán lại thành công. Booking đã chuyển từ Check out thất bại sang Đã check out.";
+        return RedirectToAction(nameof(Flow), new { id = model.BookingId });
+    }
+
+    [ReceptionOnlyAccess]
+    [HttpGet]
     public async Task<IActionResult> CheckOut(
         Guid id,
         CancellationToken cancellationToken)
@@ -1129,6 +1209,58 @@ public sealed class BookingController : Controller
             room.Note = postedRoom.Note;
             room.ServiceInputs = postedRoom.ServiceInputs ?? new List<BookingEditServiceItemViewModel>();
             room.FeeInputs = postedRoom.FeeInputs ?? new List<BookingEditFeeItemViewModel>();
+        }
+    }
+
+    private static void CopyPaymentRecoveryPostedFields(
+        BookingPaymentRecoveryViewModel target,
+        BookingPaymentRecoveryViewModel source)
+    {
+        target.GuestCode = source.GuestCode;
+        target.GuestName = source.GuestName;
+        target.GuestDateOfBirth = source.GuestDateOfBirth;
+        target.GuestSex = source.GuestSex;
+        target.GuestAddress = source.GuestAddress;
+        target.GuestPhoneNumber = source.GuestPhoneNumber;
+        target.GuestEmail = source.GuestEmail;
+        target.GuestIdentityNumber = source.GuestIdentityNumber;
+        target.GuestIdentityType = source.GuestIdentityType;
+        target.GuestNote = source.GuestNote;
+        target.BookingNote = source.BookingNote;
+        target.BillNote = source.BillNote;
+        target.PaymentReceived = source.PaymentReceived;
+        target.PaymentMethod = source.PaymentMethod;
+        target.ReferenceCode = source.ReferenceCode;
+
+        var postedRooms = (source.Rooms ?? new List<BookingPaymentRecoveryRoomViewModel>())
+            .Where(x => x is not null && x.BookingRoomId != Guid.Empty)
+            .GroupBy(x => x.BookingRoomId)
+            .ToDictionary(x => x.Key, x => x.First());
+
+        foreach (var room in target.Rooms)
+        {
+            if (!postedRooms.TryGetValue(room.BookingRoomId, out var postedRoom))
+                continue;
+
+            room.Note = postedRoom.Note;
+
+            var postedServices = (postedRoom.Services ?? new List<BookingPaymentRecoveryServiceViewModel>())
+                .GroupBy(x => x.Id)
+                .ToDictionary(x => x.Key, x => x.First());
+            foreach (var service in room.Services)
+            {
+                if (postedServices.TryGetValue(service.Id, out var postedService))
+                    service.Note = postedService.Note;
+            }
+
+            var postedFees = (postedRoom.Fees ?? new List<BookingPaymentRecoveryFeeViewModel>())
+                .GroupBy(x => x.Id)
+                .ToDictionary(x => x.Key, x => x.First());
+            foreach (var fee in room.Fees)
+            {
+                if (postedFees.TryGetValue(fee.Id, out var postedFee))
+                    fee.Description = postedFee.Description;
+            }
         }
     }
 

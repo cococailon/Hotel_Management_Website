@@ -13,7 +13,6 @@ public sealed class RoomListItemViewModel
     public int LeftToRightOrder { get; init; }
     public byte Status { get; init; }
     public bool IsActive { get; init; }
-    public bool RoomTypeIsActive { get; init; }
 
     public string StatusName => Status switch
     {
@@ -42,7 +41,6 @@ public sealed class RoomListItemViewModel
 
     public bool CanEditPositionAndIdentity => Status != 1;
     public bool CanDeactivate => Status != 1 && IsActive;
-    public bool CanActivate => !IsActive && RoomTypeIsActive;
-    public bool ActivationBlockedByRoomType => !IsActive && !RoomTypeIsActive;
+    public bool CanActivate => !IsActive;
     public bool CanDelete => !IsActive && Status != 1;
 }

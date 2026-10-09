@@ -29,10 +29,16 @@ public sealed class BookingCreateViewModel
 
     public string BookingTypeName => BookingType == 1 ? "Trực tiếp tại quầy" : "Đặt trước";
 
+    [Required(ErrorMessage = "Mã đặt phòng không được để trống.")]
+    [RegularExpression("^[A-Za-z0-9]+$", ErrorMessage = "Mã đặt phòng chỉ được bao gồm chữ hoa, chữ thường và số, không chứa dấu cách và ký tự đặc biệt.")]
+    [StringLength(50, ErrorMessage = "Mã đặt phòng không được vượt quá 50 ký tự.")]
     public string BookingCode { get; set; } = string.Empty;
     public string? BookingNote { get; set; }
     [BindNever]
     public Guid? GuestId { get; set; }
+    [Required(ErrorMessage = "Mã khách hàng không được để trống.")]
+    [RegularExpression("^[A-Za-z0-9]+$", ErrorMessage = "Mã khách hàng chỉ được bao gồm chữ hoa, chữ thường và số, không chứa dấu cách và ký tự đặc biệt.")]
+    [StringLength(50, ErrorMessage = "Mã khách hàng không được vượt quá 50 ký tự.")]
     public string GuestCode { get; set; } = string.Empty;
     public string GuestName { get; set; } = string.Empty;
     public DateTime? GuestDateOfBirth { get; set; }

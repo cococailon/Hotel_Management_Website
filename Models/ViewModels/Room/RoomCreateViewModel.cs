@@ -1,11 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Hotel_Management_Website.Models.ViewModels.Room;
 
 public sealed class RoomCreateViewModel
 {
     [Display(Name = "Mã phòng")]
-    [RegularExpression(@"^\S+$", ErrorMessage = "Mã phòng không được chứa dấu cách hoặc khoảng trắng.")]
+    [Required(ErrorMessage = "Vui lòng nhập mã phòng.")]
+    [RegularExpression(@"^[A-Za-z0-9]+$", ErrorMessage = "Mã phòng chỉ được bao gồm chữ hoa, chữ thường và số; không được chứa dấu cách hoặc ký tự đặc biệt.")]
     [StringLength(50, ErrorMessage = "Mã phòng không được vượt quá {1} ký tự.")]
     public string RoomCode { get; set; } = string.Empty;
 
@@ -15,15 +16,15 @@ public sealed class RoomCreateViewModel
     public string RoomName { get; set; } = string.Empty;
 
     [Display(Name = "Tầng")]
-    [Range(1, 1000, ErrorMessage = "Tầng phải từ 1 đến 1000.")]
+    [Range(1, 1000000, ErrorMessage = "Tầng phải từ 1 đến 1 triệu.")]
     public int Floor { get; set; } = 1;
 
     [Display(Name = "Hàng")]
-    [Range(1, 1000, ErrorMessage = "Hàng phải từ 1 đến 1000.")]
+    [Range(1, 1000000, ErrorMessage = "Hàng phải từ 1 đến 1 triệu.")]
     public int Row { get; set; } = 1;
 
     [Display(Name = "Thứ tự")]
-    [Range(1, 1000, ErrorMessage = "Thứ tự phải từ 1 đến 1000.")]
+    [Range(1, 1000000, ErrorMessage = "Thứ tự phải từ 1 đến 1 triệu.")]
     public int LeftToRightOrder { get; set; } = 1;
 
     [Display(Name = "Loại phòng")]

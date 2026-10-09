@@ -79,3 +79,19 @@
         width: 100%;
     }
 }
+
+
+.employee-generate-code-button {
+    white-space: nowrap;
+}
+
+.employee-generate-code-button:disabled {
+    cursor: wait;
+}
+
+
+/* Business validation messages for employee date fields. Kept separate from jQuery unobtrusive validation so blur/submit cannot clear them. */
+.employee-date-validation-message {
+    display: block;
+    min-height: 1.25rem;
+}

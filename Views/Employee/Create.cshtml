@@ -74,19 +74,28 @@
                     <!-- EmployeeCode -->
                     <div class="col-12 col-lg-6">
 
-                        <label asp-for="EmployeeCode"
-                               class="form-label required">
-                            Mã nhân viên
-                        </label>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                            <label asp-for="EmployeeCode"
+                                   class="form-label required mb-0">
+                                Mã nhân viên
+                            </label>
+
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm employee-generate-code-button"
+                                    id="employeeGenerateCodeButton">
+                                <i class="bi bi-magic me-1" aria-hidden="true"></i>
+                                Tự sinh mã
+                            </button>
+                        </div>
 
                         <input asp-for="EmployeeCode"
                                class="form-control"
                                autocomplete="off"
                                maxlength="50"
-                               placeholder="Ví dụ: NV001" />
+                               placeholder="Ví dụ: NV1" />
 
                         <div class="form-text">
-                            Có thể để trống để hệ thống tự sinh mã. Nếu nhập tay, mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.
+                            Mã bắt buộc nhập, chỉ gồm chữ cái và chữ số, không chứa dấu cách/ký tự đặc biệt và không được trùng. Nút <strong>Tự sinh mã</strong> tạo mã theo dạng NV1, NV2, NV100...
                         </div>
 
                         <span asp-validation-for="EmployeeCode"
@@ -128,8 +137,17 @@
                                class="form-control"
                                max='@today.ToString("yyyy-MM-dd")' />
 
-                        <span asp-validation-for="DateOfBirth"
-                              class="text-danger">
+                        @{
+                            var dateOfBirthServerError = string.Join(
+                                " ",
+                                ViewData.ModelState[nameof(Model.DateOfBirth)]?.Errors
+                                    .Select(e => e.ErrorMessage)
+                                    .Where(e => !string.IsNullOrWhiteSpace(e))
+                                    ?? Enumerable.Empty<string>());
+                        }
+                        <span id="DateOfBirthBusinessValidationMessage"
+                              class="text-danger employee-date-validation-message">
+                            @dateOfBirthServerError
                         </span>
 
                     </div>
@@ -234,8 +252,17 @@
                                type="date"
                                class="form-control" />
 
-                        <span asp-validation-for="StartDate"
-                              class="text-danger">
+                        @{
+                            var startDateServerError = string.Join(
+                                " ",
+                                ViewData.ModelState[nameof(Model.StartDate)]?.Errors
+                                    .Select(e => e.ErrorMessage)
+                                    .Where(e => !string.IsNullOrWhiteSpace(e))
+                                    ?? Enumerable.Empty<string>());
+                        }
+                        <span id="StartDateBusinessValidationMessage"
+                              class="text-danger employee-date-validation-message">
+                            @startDateServerError
                         </span>
 
                     </div>
@@ -280,8 +307,17 @@
                             Bắt buộc nếu trạng thái là Đã nghỉ.
                         </div>
 
-                        <span asp-validation-for="EndDate"
-                              class="text-danger">
+                        @{
+                            var endDateServerError = string.Join(
+                                " ",
+                                ViewData.ModelState[nameof(Model.EndDate)]?.Errors
+                                    .Select(e => e.ErrorMessage)
+                                    .Where(e => !string.IsNullOrWhiteSpace(e))
+                                    ?? Enumerable.Empty<string>());
+                        }
+                        <span id="EndDateBusinessValidationMessage"
+                              class="text-danger employee-date-validation-message">
+                            @endDateServerError
                         </span>
 
                     </div>
@@ -401,34 +437,78 @@
             const statusSelect = document.getElementById("employeeStatus");
             const endDateInput = document.getElementById("employeeEndDate");
             const confirmModal = document.getElementById("uiConfirmModal");
+            const generateCodeButton = document.getElementById("employeeGenerateCodeButton");
+            const employeeCodeInput = document.getElementById("EmployeeCode");
 
-            if (!form || !submitButton || !statusSelect || !endDateInput || !confirmModal) {
+            if (!form || !submitButton || !statusSelect || !endDateInput || !confirmModal || !employeeCodeInput || !generateCodeButton) {
                 return;
             }
 
             let confirmedSubmit = false;
             let isSubmitting = false;
 
+            const getLocalToday = () => {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, "0");
+                const day = String(now.getDate()).padStart(2, "0");
+                return `${year}-${month}-${day}`;
+            };
+
+            const generateEmployeeCode = async () => {
+                generateCodeButton.disabled = true;
+                const originalHtml = generateCodeButton.innerHTML;
+                generateCodeButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Đang sinh...';
+                try {
+                    const response = await fetch('@Url.Action("GenerateCode", "Employee")', {
+                        method: "GET",
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.success || !data.code) {
+                        throw new Error(data.message || "Không thể tự sinh mã nhân viên.");
+                    }
+
+                    employeeCodeInput.value = data.code;
+                    setFieldError("EmployeeCode", "");
+                    employeeCodeInput.focus();
+                } catch (error) {
+                    window.HotelUI?.toast?.(
+                        "error",
+                        "Không thể tự sinh mã",
+                        error?.message || "Không thể tự sinh mã nhân viên. Vui lòng thử lại."
+                    );
+                } finally {
+                    generateCodeButton.disabled = false;
+                    generateCodeButton.innerHTML = originalHtml;
+                }
+            };
+
+            generateCodeButton.addEventListener("click", generateEmployeeCode);
+
             const syncEndDateState = () => {
                 const isWorking = statusSelect.value === "1";
 
-                if (isWorking) {
-                    endDateInput.value = "";
-                    endDateInput.disabled = true;
-                    endDateInput.classList.remove("is-invalid");
-                } else {
-                    endDateInput.disabled = false;
-                }
+                // Chỉ thay đổi trạng thái nhập (disabled), tuyệt đối không tự xóa
+                // giá trị Ngày nghỉ việc của người dùng.
+                endDateInput.disabled = isWorking;
+
+            };
+
+            const dateValidationMessageIds = {
+                DateOfBirth: "DateOfBirthBusinessValidationMessage",
+                StartDate: "StartDateBusinessValidationMessage",
+                EndDate: "EndDateBusinessValidationMessage"
             };
 
             const setFieldError = (fieldName, message) => {
                 const input = document.getElementById(fieldName);
-                const messageElement = document.querySelector(`[data-valmsg-for="${fieldName}"]`);
+                const messageElement = dateValidationMessageIds[fieldName]
+                    ? document.getElementById(dateValidationMessageIds[fieldName])
+                    : document.querySelector(`[data-valmsg-for="${fieldName}"]`);
 
                 if (messageElement) {
                     messageElement.textContent = message || "";
-                    messageElement.classList.toggle("field-validation-error", Boolean(message));
-                    messageElement.classList.toggle("field-validation-valid", !message);
                 }
 
                 if (input) {
@@ -452,40 +532,66 @@
                 const dob = dobInput?.value || "";
                 const start = startInput?.value || "";
                 const end = endDateInput.value || "";
-                const today = new Date().toISOString().slice(0, 10);
+                const today = getLocalToday();
                 const status = statusSelect.value;
 
-                if (dob && dob > today) {
-                    setFieldError("DateOfBirth", "Ngày sinh không được lớn hơn ngày hiện tại.");
-                    dobInput?.focus();
-                    return false;
+                let isValid = true;
+                let firstInvalidInput = null;
+
+                const addError = (fieldName, input, message) => {
+                    setFieldError(fieldName, message);
+                    isValid = false;
+
+                    if (!firstInvalidInput && input) {
+                        firstInvalidInput = input;
+                    }
+                };
+
+                if (dob && dob >= today) {
+                    addError(
+                        "DateOfBirth",
+                        dobInput,
+                        "Ngày sinh phải bé hơn ngày hiện tại."
+                    );
                 }
 
                 if (dob && start && dob >= start) {
-                    setFieldError("StartDate", "Ngày vào làm phải sau ngày sinh.");
-                    startInput?.focus();
-                    return false;
+                    addError(
+                        "StartDate",
+                        startInput,
+                        "Ngày vào làm phải sau ngày sinh."
+                    );
                 }
 
                 if (status === "0" && !end) {
-                    setFieldError("EndDate", "Nhân viên đã nghỉ việc phải có ngày nghỉ việc.");
-                    endDateInput.focus();
-                    return false;
+                    addError(
+                        "EndDate",
+                        endDateInput,
+                        "Nhân viên đã nghỉ việc phải có ngày nghỉ việc."
+                    );
                 }
 
                 if (status === "1" && end) {
-                    setFieldError("EndDate", "Nhân viên đang làm không được có ngày nghỉ việc.");
-                    endDateInput.focus();
-                    return false;
+                    addError(
+                        "EndDate",
+                        endDateInput,
+                        "Nhân viên đang làm không được có ngày nghỉ việc."
+                    );
                 }
 
                 if (start && end && end < start) {
-                    setFieldError("EndDate", "Ngày nghỉ việc không được trước ngày vào làm.");
-                    endDateInput.focus();
-                    return false;
+                    addError(
+                        "EndDate",
+                        endDateInput,
+                        "Ngày nghỉ việc không được trước ngày vào làm."
+                    );
                 }
 
-                return true;
+                if (firstInvalidInput) {
+                    firstInvalidInput.focus();
+                }
+
+                return isValid;
             };
 
             statusSelect.addEventListener("change", () => {
@@ -493,17 +599,113 @@
                 setFieldError("EndDate", "");
             });
 
-            document.getElementById("DateOfBirth")?.addEventListener("change", () => {
-                setFieldError("DateOfBirth", "");
-                setFieldError("StartDate", "");
+            const validateDateFieldsOnChange = (changedField) => {
+                const dobInput = document.getElementById("DateOfBirth");
+                const startInput = document.getElementById("StartDate");
+                const dob = dobInput?.value || "";
+                const start = startInput?.value || "";
+                const end = endDateInput.value || "";
+                const today = getLocalToday();
+
+                // Validation theo đúng trường vừa thay đổi và các trường có
+                // quan hệ trực tiếp với trường đó. Không xóa/đổi value input.
+                if (changedField === "DateOfBirth") {
+                    setFieldError("DateOfBirth", "");
+                    setFieldError("StartDate", "");
+
+                    if (dob && dob >= today) {
+                        setFieldError(
+                            "DateOfBirth",
+                            "Ngày sinh phải bé hơn ngày hiện tại."
+                        );
+                    }
+
+                    if (dob && start && dob >= start) {
+                        setFieldError(
+                            "StartDate",
+                            "Ngày vào làm phải sau ngày sinh."
+                        );
+                    }
+
+                    return;
+                }
+
+                if (changedField === "StartDate") {
+                    setFieldError("StartDate", "");
+
+                    if (dob && start && dob >= start) {
+                        setFieldError(
+                            "StartDate",
+                            "Ngày vào làm phải sau ngày sinh."
+                        );
+                    }
+
+                    // Khi người dùng vừa thay đổi Ngày vào làm, lỗi quan hệ
+                    // với Ngày nghỉ việc được hiển thị ngay tại Ngày vào làm.
+                    if (start && end && end < start) {
+                        setFieldError(
+                            "StartDate",
+                            "Ngày vào làm không được sau ngày nghỉ việc."
+                        );
+                    }
+
+                    return;
+                }
+
+                if (changedField === "EndDate") {
+                    setFieldError("EndDate", "");
+
+                    if (start && end && end < start) {
+                        setFieldError(
+                            "EndDate",
+                            "Ngày nghỉ việc không được trước ngày vào làm."
+                        );
+                    }
+                }
+            };
+
+            const dateOfBirthInput = document.getElementById("DateOfBirth");
+            const startDateInput = document.getElementById("StartDate");
+
+            dateOfBirthInput?.addEventListener("change", () => {
+                validateDateFieldsOnChange("DateOfBirth");
             });
 
-            document.getElementById("StartDate")?.addEventListener("change", () => {
-                setFieldError("StartDate", "");
+            startDateInput?.addEventListener("change", () => {
+                validateDateFieldsOnChange("StartDate");
+            });
+
+            // jQuery Validate có thể xử lý focusout/blur sau khi validation
+            // nghiệp vụ đã ghi lỗi tùy chỉnh vào asp-validation-for và xóa
+            // thông báo khi giá trị HTML cơ bản vẫn được xem là hợp lệ.
+            // Re-validate ở cuối vòng event để giữ nguyên lỗi nghiệp vụ mà
+            // không thay đổi giá trị người dùng đã nhập.
+            dateOfBirthInput?.addEventListener("blur", () => {
+                window.setTimeout(() => {
+                    validateDateFieldsOnChange("DateOfBirth");
+                }, 0);
+            });
+
+            startDateInput?.addEventListener("blur", () => {
+                window.setTimeout(() => {
+                    validateDateFieldsOnChange("StartDate");
+                }, 0);
+            });
+
+            endDateInput.addEventListener("blur", () => {
+                window.setTimeout(() => {
+                    validateDateFieldsOnChange("EndDate");
+                }, 0);
+            });
+
+            employeeCodeInput.addEventListener("input", () => {
+                if (/^[A-Za-z0-9]*$/.test(employeeCodeInput.value)) {
+                    setFieldError("EmployeeCode", "");
+                }
             });
 
             endDateInput.addEventListener("change", () => {
-                setFieldError("EndDate", "");
+                validateDateFieldsOnChange("EndDate");
             });
 
             syncEndDateState();
@@ -519,7 +721,13 @@
                     return;
                 }
 
-                // Validate DataAnnotation/jQuery trước.
+                // Business validation phải chạy trước jQuery validation để
+                // lỗi nghiệp vụ được ghi trực tiếp vào đúng asp-validation-for.
+                if (!validateBusinessRules()) {
+                    return;
+                }
+
+                // Sau khi business validation hợp lệ mới chạy DataAnnotation/jQuery.
                 if (
                     window.jQuery &&
                     typeof window.jQuery.fn.validate === "function" &&
@@ -528,15 +736,16 @@
                     return;
                 }
 
-                const employeeCode = document.getElementById("EmployeeCode")?.value?.trim() || "";
-                if (employeeCode && /\s/.test(employeeCode)) {
-                    setFieldError("EmployeeCode", "Mã nhân viên không được chứa dấu cách hoặc khoảng trắng.");
-                    document.getElementById("EmployeeCode")?.focus();
+                const employeeCode = employeeCodeInput.value.trim();
+                if (!employeeCode) {
+                    setFieldError("EmployeeCode", "Vui lòng nhập mã nhân viên.");
+                    employeeCodeInput.focus();
                     return;
                 }
 
-                // Sau validation cơ bản mới kiểm tra business rule.
-                if (!validateBusinessRules()) {
+                if (!/^[A-Za-z0-9]+$/.test(employeeCode)) {
+                    setFieldError("EmployeeCode", "Mã nhân viên chỉ được chứa chữ cái và chữ số, không chứa dấu cách hoặc ký tự đặc biệt.");
+                    employeeCodeInput.focus();
                     return;
                 }
 
@@ -547,7 +756,7 @@
                 window.HotelUI?.showConfirm({
                     title: "Xác nhận tạo nhân viên",
                     message: `Bạn có chắc muốn tạo nhân viên "${employeeName}" không?`,
-                    note: "Sau khi xác nhận, thông tin nhân viên sẽ được lưu vào hệ thống.",
+                    note: "",
                     confirmText: "Tạo nhân viên",
                     icon: "bi-person-plus",
                     variant: "primary",

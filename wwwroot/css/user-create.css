@@ -72,3 +72,8 @@
         width: 100%;
     }
 }
+/* Account-code generator */
+#userGenerateCodeButton {
+    white-space: nowrap;
+}
+

@@ -75,6 +75,15 @@ public interface IBookingService
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 
+    Task<BookingPaymentRecoveryViewModel?> GetPaymentRecoveryModelAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
+    Task<BookingActionResult> CompletePaymentRecoveryAsync(
+        BookingPaymentRecoveryViewModel model,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default);
+
     Task<BookingCreateStep2Result> CreateAsync(
         BookingCreateStep1ViewModel step1,
         BookingCreateStep2ViewModel step2,
@@ -91,6 +100,12 @@ public interface IBookingService
     Task<BookingDirectCreateResult> CreateDirectAsync(
         BookingDirectCreateViewModel model,
         Guid currentUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<string> GetNextBookingCodeAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<string> GetNextGuestCodeAsync(
         CancellationToken cancellationToken = default);
 }
 

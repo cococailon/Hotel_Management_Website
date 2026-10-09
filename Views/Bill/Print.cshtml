@@ -7,11 +7,11 @@
     Layout = null;
     var culture = CultureInfo.GetCultureInfo("vi-VN");
 
-    var hotelName = Configuration["InvoiceHotel:Name"];
-    var hotelAddress = Configuration["InvoiceHotel:Address"];
-    var hotelTaxCode = Configuration["InvoiceHotel:TaxCode"];
-    var hotelPhone = Configuration["InvoiceHotel:Phone"];
-    var hotelEmail = Configuration["InvoiceHotel:Email"];
+    var hotelName = "Hotel MW";
+    var hotelAddress = "Số 3 phố Cầu Giấy, phường Láng, thành phố Hà Nội";
+    var hotelTaxCode = "123456789";
+    var hotelPhone = "0123456789";
+    var hotelEmail = "info@hotelmw.com";
 
     var roomSubtotal = Model.Details.Sum(detail =>
         Math.Max(0m,
@@ -97,9 +97,6 @@
             <div class="invoice-title-block">
                 <div class="invoice-title">HÓA ĐƠN THANH TOÁN</div>
                 <div class="invoice-title-subtitle">HOTEL / LODGING INVOICE</div>
-                <div class="invoice-status @(Model.Status == 0 ? "is-success" : "is-failed")">
-                    @Model.StatusName.ToUpperInvariant()
-                </div>
             </div>
         </header>
 
@@ -148,7 +145,7 @@
                 </div>
 
                 <div class="invoice-meta-card stay-summary-card">
-                    <div class="meta-row"><span>Số đêm lưu trú</span><strong>@(stayNights > 0 ? stayNights.ToString("N0", culture) : "—")</strong></div>
+                    <div class="meta-row"><span>Số đêm lưu trú</span><strong>@(stayNights > 0 ? stayNights.ToString("N0", culture) : "1")</strong></div>
                     <div class="meta-row"><span>Tổng tiền hóa đơn</span><strong>@DisplayMoney(totalAmount)</strong></div>
                     <div class="meta-row"><span>Đã đặt cọc</span><strong>@DisplayMoney(depositAmount)</strong></div>
                     <div class="meta-row"><span>Còn phải thanh toán</span><strong>@DisplayMoney(finalAmount)</strong></div>
@@ -260,11 +257,6 @@
 
         <section class="invoice-summary">
             <div class="summary-note">
-                @if (!string.IsNullOrWhiteSpace(Model.Note))
-                {
-                    <div class="invoice-section-title">GHI CHÚ HÓA ĐƠN</div>
-                    <div class="note-box">@Model.Note</div>
-                }
                 <div class="invoice-section-title summary-payment-title">THANH TOÁN</div>
                 <div class="payment-group">
                     <div class="payment-block">
@@ -279,7 +271,7 @@
                     </div>
 
                     <div class="payment-block">
-                        <div class="payment-block-title">THANH TOÁN SỐ TIỀN CÒN LẠI</div>
+                        <div class="payment-block-title">THANH TOÁN CUỐI</div>
                         <div class="payment-row"><span>Số tiền</span><strong>@DisplayMoney(finalAmount)</strong></div>
                         <div class="payment-row"><span>Hình thức</span><strong>@(Model.Status == 0 ? (Model.PaymentMethod == 1 ? "Chuyển khoản" : "Tiền mặt") : "Thanh toán thất bại")</strong></div>
                         <div class="payment-row"><span>Mã giao dịch</span><strong class="mono wrap">@(Model.Status == 0 ? DisplayOrDash(Model.ReferenceCode) : "—")</strong></div>
@@ -299,7 +291,7 @@
                 <div class="summary-row"><span>TỔNG CỘNG</span><strong>@DisplayMoney(totalAmount)</strong></div>
                 <div class="summary-row"><span>Đã đặt cọc</span><strong>- @DisplayMoney(depositAmount)</strong></div>
                 <div class="summary-divider"></div>
-                <div class="summary-row grand"><span>CÒN PHẢI THANH TOÁN</span><strong>@DisplayMoney(finalAmount)</strong></div>
+                <div class="summary-row grand"><span>THANH TOÁN CUỐI</span><strong>@DisplayMoney(finalAmount)</strong></div>
             </div>
         </section>
 

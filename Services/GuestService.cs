@@ -1,5 +1,6 @@
 using System.Data;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using Hotel_Management_Website.IServices;
 using Hotel_Management_Website.Models;
 using Hotel_Management_Website.Models.ViewModels.Guest;
@@ -70,7 +71,6 @@ public sealed class GuestService : IGuestService
             })
             .ToListAsync(cancellationToken);
 
-        await PopulatePermissionsAsync(guests, cancellationToken);
 
         return new GuestIndexViewModel
         {
@@ -392,35 +392,6 @@ public sealed class GuestService : IGuestService
             .ToListAsync(cancellationToken);
     }
 
-    private async Task PopulatePermissionsAsync(
-        IReadOnlyList<GuestListItemViewModel> guests,
-        CancellationToken cancellationToken)
-    {
-        if (guests.Count == 0)
-            return;
-
-        var ids = guests.Select(x => x.Id).ToArray();
-        var rows = await _context.Bookings
-            .AsNoTracking()
-            .Where(x => x.GuestId.HasValue && ids.Contains(x.GuestId.Value) && !x.IsDeleted)
-            .Select(x => new { GuestId = x.GuestId!.Value, x.Status })
-            .ToListAsync(cancellationToken);
-
-        foreach (var guest in guests)
-        {
-            var statuses = rows
-                .Where(x => x.GuestId == guest.Id)
-                .Select(x => x.Status)
-                .ToList();
-
-            var rule = ResolveRule(statuses);
-            guest.CanEditDetails = rule.CanEditDetails;
-            guest.RequireFullDetails = rule.RequireFullDetails;
-            guest.CanEditNoteOnly = rule.CanEditNoteOnly;
-            guest.CanDelete = statuses.Count > 0 && statuses.All(DeletableStatuses.Contains);
-        }
-    }
-
     private static GuestRule ResolveRule(IReadOnlyCollection<byte> statuses)
     {
         if (statuses.Count == 0)
@@ -448,7 +419,7 @@ public sealed class GuestService : IGuestService
             return "Khách hàng hiện không có Booking đang tồn tại; chỉ cho phép sửa Ghi chú.";
 
         if (rule.RequireFullDetails)
-            return "Có Booking đang ở trạng thái Đang ở: Mã, Tên, Ngày sinh, Giới tính, Địa chỉ, liên hệ và giấy tờ phải được khai báo đầy đủ.";
+            return "Có Booking đang ở trạng thái Đang ở: Mã, Tên, Ngày sinh, Giới tính, Địa chỉ, Số điện thoại, giấy tờ phải được khai báo đầy đủ; Email không bắt buộc.";
 
         if (rule.CanEditDetails)
             return "Booking đang ở Chờ xác nhận hoặc Chờ check in: Mã và Tên bắt buộc; phải có ít nhất Số điện thoại hoặc Email; các thông tin còn lại được phép để trống.";
@@ -464,8 +435,9 @@ public sealed class GuestService : IGuestService
         var code = model.GuestCode?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(code))
             errors[nameof(GuestEditViewModel.GuestCode)] = "Mã khách hàng không được để trống.";
-        else if (model.GuestCode.Any(char.IsWhiteSpace))
-            errors[nameof(GuestEditViewModel.GuestCode)] = "Mã khách hàng không được chứa dấu cách hoặc khoảng trắng.";
+        else if (!IsValidAlphanumericCode(code))
+            errors[nameof(GuestEditViewModel.GuestCode)] =
+                "Mã khách hàng chỉ được bao gồm chữ hoa, chữ thường và số, không chứa dấu cách và ký tự đặc biệt.";
         else if (code.Length > 50)
             errors[nameof(GuestEditViewModel.GuestCode)] = "Mã khách hàng không được vượt quá 50 ký tự.";
 
@@ -482,7 +454,8 @@ public sealed class GuestService : IGuestService
         }
         else if (requireFullDetails)
         {
-            errors[nameof(GuestEditViewModel.DateOfBirth)] = "Ngày sinh là bắt buộc khi Booking đang ở trạng thái Đang ở.";
+            errors[nameof(GuestEditViewModel.DateOfBirth)] =
+                "Ngày sinh là bắt buộc khi Booking đang ở trạng thái Đang ở.";
         }
 
         if (model.Sex.HasValue)
@@ -492,46 +465,165 @@ public sealed class GuestService : IGuestService
         }
         else if (requireFullDetails)
         {
-            errors[nameof(GuestEditViewModel.Sex)] = "Giới tính là bắt buộc khi Booking đang ở trạng thái Đang ở.";
+            errors[nameof(GuestEditViewModel.Sex)] =
+                "Giới tính là bắt buộc khi Booking đang ở trạng thái Đang ở.";
         }
 
         var address = model.Address?.Trim();
         if (requireFullDetails && string.IsNullOrWhiteSpace(address))
-            errors[nameof(GuestEditViewModel.Address)] = "Địa chỉ là bắt buộc khi Booking đang ở trạng thái Đang ở.";
+            errors[nameof(GuestEditViewModel.Address)] =
+                "Địa chỉ là bắt buộc khi Booking đang ở trạng thái Đang ở.";
         else if (!string.IsNullOrWhiteSpace(address) && address.Length > 255)
             errors[nameof(GuestEditViewModel.Address)] = "Địa chỉ không được vượt quá 255 ký tự.";
 
         var phone = model.PhoneNumber?.Trim();
         var email = model.Email?.Trim();
-        if (string.IsNullOrWhiteSpace(phone) && string.IsNullOrWhiteSpace(email))
+
+        if (requireFullDetails)
         {
-            errors[nameof(GuestEditViewModel.PhoneNumber)] = "Phải nhập ít nhất Số điện thoại hoặc Email.";
-            errors[nameof(GuestEditViewModel.Email)] = "Phải nhập ít nhất Số điện thoại hoặc Email.";
+            // Booking đang ở: SĐT bắt buộc, Email không bắt buộc.
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                errors[nameof(GuestEditViewModel.PhoneNumber)] =
+                    "Số điện thoại là bắt buộc khi Booking đang ở trạng thái Đang ở.";
+            }
         }
-        else if (!string.IsNullOrWhiteSpace(phone) && phone.Length > 20)
+        else if (string.IsNullOrWhiteSpace(phone) && string.IsNullOrWhiteSpace(email))
         {
-            errors[nameof(GuestEditViewModel.PhoneNumber)] = "Số điện thoại không được vượt quá 20 ký tự.";
+            errors[nameof(GuestEditViewModel.PhoneNumber)] =
+                "Phải nhập ít nhất Số điện thoại hoặc Email.";
+            errors[nameof(GuestEditViewModel.Email)] =
+                "Phải nhập ít nhất Số điện thoại hoặc Email.";
         }
 
-        if (!string.IsNullOrWhiteSpace(email))
+        if (!string.IsNullOrWhiteSpace(phone))
         {
-            if (email.Length > 4000 || !new EmailAddressAttribute().IsValid(email))
-                errors[nameof(GuestEditViewModel.Email)] = "Email không hợp lệ.";
+            if (phone.Length > 30)
+            {
+                errors[nameof(GuestEditViewModel.PhoneNumber)] =
+                    "Số điện thoại nhập vào không được vượt quá 30 ký tự.";
+            }
+            else if (!TryNormalizePhoneNumber(phone, out _))
+            {
+                errors[nameof(GuestEditViewModel.PhoneNumber)] =
+                    "Số điện thoại không hợp lệ. Có thể nhập số quốc tế; sau khi chuẩn hóa phải có 7-15 chữ số.";
+            }
         }
 
-        var identityNumber = model.IdentityNumber?.Trim();
-        if (requireFullDetails && string.IsNullOrWhiteSpace(identityNumber))
-            errors[nameof(GuestEditViewModel.IdentityNumber)] = "Số giấy tờ là bắt buộc khi Booking đang ở trạng thái Đang ở.";
-        else if (!string.IsNullOrWhiteSpace(identityNumber) && identityNumber.Length > 50)
-            errors[nameof(GuestEditViewModel.IdentityNumber)] = "Số giấy tờ không được vượt quá 50 ký tự.";
+        if (!string.IsNullOrWhiteSpace(email)
+            && (email.Length > 254 || !new EmailAddressAttribute().IsValid(email)))
+        {
+            errors[nameof(GuestEditViewModel.Email)] =
+                "Email không đúng định dạng hoặc vượt quá 254 ký tự.";
+        }
 
-        if (requireFullDetails && !model.IdentityType.HasValue)
-            errors[nameof(GuestEditViewModel.IdentityType)] = "Loại giấy tờ là bắt buộc khi Booking đang ở trạng thái Đang ở.";
-        else if (model.IdentityType.HasValue && model.IdentityType is not 0 and not 1 and not 2)
-            errors[nameof(GuestEditViewModel.IdentityType)] = "Loại giấy tờ không hợp lệ.";
+        ValidateIdentityNumber(
+            model.IdentityNumber,
+            model.IdentityType,
+            isRequired: requireFullDetails,
+            errors);
 
         if (!string.IsNullOrWhiteSpace(model.Note) && model.Note.Trim().Length > 255)
-            errors[nameof(GuestEditViewModel.Note)] = "Ghi chú khách hàng không được vượt quá 255 ký tự.";
+            errors[nameof(GuestEditViewModel.Note)] =
+                "Ghi chú khách hàng không được vượt quá 255 ký tự.";
+    }
+
+    private static bool IsValidAlphanumericCode(string value)
+    {
+        return !string.IsNullOrWhiteSpace(value) &&
+               Regex.IsMatch(value, "^[A-Za-z0-9]+$");
+    }
+
+    private static bool TryNormalizePhoneNumber(string raw, out string normalized)
+    {
+        normalized = string.Empty;
+        var value = raw?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        value = Regex.Replace(value, @"[\s\-\.\(\)]", string.Empty);
+
+        if (value.StartsWith("00", StringComparison.Ordinal))
+            value = "+" + value[2..];
+
+        if (value.StartsWith("+", StringComparison.Ordinal))
+        {
+            var digits = value[1..];
+            if (!Regex.IsMatch(digits, @"^[0-9]+$")
+                || digits.Length < 7
+                || digits.Length > 15
+                || digits.StartsWith("0", StringComparison.Ordinal))
+                return false;
+
+            normalized = "+" + digits;
+            return true;
+        }
+
+        if (!Regex.IsMatch(value, @"^[0-9]+$") || value.Length < 7 || value.Length > 15)
+            return false;
+
+        normalized = value;
+        return true;
+    }
+
+    private static string? NormalizePhoneNumberForStorage(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+
+        return TryNormalizePhoneNumber(raw, out var normalized)
+            ? normalized
+            : raw.Trim();
+    }
+
+    private static void ValidateIdentityNumber(
+        string? rawNumber,
+        byte? identityType,
+        bool isRequired,
+        IDictionary<string, string> errors)
+    {
+        var number = rawNumber?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(number))
+        {
+            if (isRequired)
+                errors[nameof(GuestEditViewModel.IdentityNumber)] =
+                    "Số giấy tờ là bắt buộc khi Booking đang ở trạng thái Đang ở.";
+            return;
+        }
+
+        if (number.Length > 50)
+        {
+            errors[nameof(GuestEditViewModel.IdentityNumber)] =
+                "Số giấy tờ không được vượt quá 50 ký tự.";
+            return;
+        }
+
+        if (identityType is not 0 and not 1 and not 2)
+        {
+            errors[nameof(GuestEditViewModel.IdentityType)] =
+                "Vui lòng chọn loại giấy tờ khi nhập số giấy tờ.";
+            return;
+        }
+
+        switch (identityType)
+        {
+            case 0:
+                if (!Regex.IsMatch(number, @"^\d{12}$"))
+                    errors[nameof(GuestEditViewModel.IdentityNumber)] = "CCCD phải gồm đúng 12 chữ số.";
+                break;
+            case 1:
+                if (!Regex.IsMatch(number, @"^\d{12}$"))
+                    errors[nameof(GuestEditViewModel.IdentityNumber)] = "Giấy phép lái xe phải gồm đúng 12 chữ số.";
+                break;
+            case 2:
+                if (!Regex.IsMatch(number, @"^[A-Za-z0-9]{5,20}$"))
+                {
+                    errors[nameof(GuestEditViewModel.IdentityNumber)] =
+                        "Hộ chiếu phải gồm 5-20 ký tự chữ và số, không chứa dấu cách hoặc ký tự đặc biệt.";
+                }
+                break;
+        }
     }
 
     private static void ApplyFullGuestEdit(
@@ -545,7 +637,7 @@ public sealed class GuestService : IGuestService
         guest.DateOfBirth = model.DateOfBirth?.Date;
         guest.Sex = model.Sex;
         guest.Address = NormalizeOptional(model.Address);
-        guest.PhoneNumber = NormalizeOptional(model.PhoneNumber);
+        guest.PhoneNumber = NormalizePhoneNumberForStorage(model.PhoneNumber);
         guest.Email = NormalizeOptional(model.Email);
         guest.IdentityNumber = NormalizeOptional(model.IdentityNumber);
         guest.IdentityType = model.IdentityType;

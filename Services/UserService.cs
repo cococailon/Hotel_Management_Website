@@ -318,16 +318,16 @@ public sealed class UserService : IUserService
         if (role == 0 && currentUserRole != 4)
             return (false, "Chỉ Admin toàn quyền mới được tạo tài khoản Admin.", null);
 
-        var userCode = (model.UserCode ?? string.Empty).Trim().ToUpperInvariant();
+        var userCode = model.UserCode ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(userCode))
-            userCode = await GenerateNextUserCodeAsync(cancellationToken);
-
-        if (!IsValidUserCode(userCode))
-            return (false, "Mã tài khoản không được chứa dấu cách hoặc khoảng trắng.", null);
+            return (false, "Mã tài khoản không được để trống.", null);
 
         if (userCode.Length > 50)
             return (false, "Mã tài khoản không được vượt quá 50 ký tự.", null);
+
+        if (!IsValidUserCode(userCode))
+            return (false, "Mã tài khoản chỉ được chứa chữ cái và chữ số, không chứa dấu cách hoặc ký tự đặc biệt.", null);
 
         var duplicateCode = await _context.Users
             .AsNoTracking()
@@ -336,9 +336,18 @@ public sealed class UserService : IUserService
         if (duplicateCode)
             return (false, "Mã tài khoản đã tồn tại.", null);
 
-        var userName = (model.UserName ?? string.Empty).Trim();
+        var userName = model.UserName ?? string.Empty;
         if (string.IsNullOrWhiteSpace(userName))
             return (false, "Vui lòng nhập tên đăng nhập.", null);
+
+        if (userName.Length < 3)
+            return (false, "Tên đăng nhập phải có ít nhất 3 ký tự.", null);
+
+        if (userName.Length > 100)
+            return (false, "Tên đăng nhập không được vượt quá 100 ký tự.", null);
+
+        if (userName.Any(char.IsWhiteSpace))
+            return (false, "Tên đăng nhập không được chứa dấu cách hoặc khoảng trắng.", null);
 
         var duplicateName = await _context.Users
             .AsNoTracking()
@@ -465,15 +474,15 @@ public sealed class UserService : IUserService
         if (user.Role == 0 && currentUserRole != 4)
             return (false, "Chỉ Admin toàn quyền mới được sửa tài khoản Admin.");
 
-        var userCode = (model.UserCode ?? string.Empty).Trim();
+        var userCode = model.UserCode ?? string.Empty;
         if (string.IsNullOrWhiteSpace(userCode))
             return (false, "Mã tài khoản không được để trống.");
 
         if (userCode.Length > 50)
             return (false, "Mã tài khoản không được vượt quá 50 ký tự.");
 
-        if (userCode.Any(char.IsWhiteSpace))
-            return (false, "Mã tài khoản không được chứa dấu cách hoặc khoảng trắng.");
+        if (!IsValidUserCode(userCode))
+            return (false, "Mã tài khoản chỉ được chứa chữ cái và chữ số, không chứa dấu cách hoặc ký tự đặc biệt.");
 
         var duplicateCode = await _context.Users
             .AsNoTracking()
@@ -490,12 +499,18 @@ public sealed class UserService : IUserService
         if (model.Role == 0 && currentUserRole != 4)
             return (false, "Chỉ Admin toàn quyền mới được gán vai trò Admin.");
 
-        var userName = (model.UserName ?? string.Empty).Trim();
+        var userName = model.UserName ?? string.Empty;
         if (string.IsNullOrWhiteSpace(userName))
             return (false, "Vui lòng nhập tên đăng nhập.");
 
+        if (userName.Length < 3)
+            return (false, "Tên đăng nhập phải có ít nhất 3 ký tự.");
+
         if (userName.Length > 100)
             return (false, "Tên đăng nhập không được vượt quá 100 ký tự.");
+
+        if (userName.Any(char.IsWhiteSpace))
+            return (false, "Tên đăng nhập không được chứa dấu cách hoặc khoảng trắng.");
 
         var duplicateName = await _context.Users
             .AsNoTracking()
@@ -912,7 +927,7 @@ public sealed class UserService : IUserService
                 maxNumber = number;
         }
 
-        return $"U{maxNumber + 1}";
+        return $"TK{maxNumber + 1}";
     }
 
     private static bool TryParseUserNumber(string? code, out long number)
@@ -923,11 +938,17 @@ public sealed class UserService : IUserService
             return false;
 
         var text = code.Trim();
-        if (text.Length < 2 || text[0] != 'U')
+        var index = text.Length - 1;
+        while (index >= 0 && char.IsDigit(text[index]))
+            index--;
+
+        if (index == text.Length - 1)
             return false;
 
+        var numericPart = text[(index + 1)..];
+
         return long.TryParse(
-            text[1..],
+            numericPart,
             System.Globalization.NumberStyles.None,
             System.Globalization.CultureInfo.InvariantCulture,
             out number) && number >= 0;
@@ -945,7 +966,10 @@ public sealed class UserService : IUserService
         if (string.IsNullOrWhiteSpace(userCode))
             return false;
 
-        return !userCode.Any(char.IsWhiteSpace);
+        return userCode.All(c =>
+            (c >= 'A' && c <= 'Z') ||
+            (c >= 'a' && c <= 'z') ||
+            (c >= '0' && c <= '9'));
     }
 
     private static byte NormalizeRequestedRole(byte currentUserRole, byte requestedRole)

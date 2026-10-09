@@ -67,6 +67,10 @@ public sealed class BookingGuestDetailsViewModel
     public byte? Sex { get; init; }
 
     public string SexName { get; init; } = "Không xác định";
+
+    public string? PhoneNumber { get; init; }
+
+    public string? Email { get; init; }
 }
 
 public sealed class BookingRoomDetailsViewModel

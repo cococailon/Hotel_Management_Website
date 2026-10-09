@@ -88,22 +88,48 @@
                     <div class="booking-create-section-icon"><i class="bi bi-calendar-range" aria-hidden="true"></i></div>
                     <div>
                         <h2 class="h6 mb-0 fw-semibold">Thời gian lưu trú</h2>
-                        <div class="small text-body-secondary">Ngày check in bị khóa vào ngày hiện tại vì đây là khách trực tiếp tại quầy.</div>
                     </div>
                 </div>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-12 col-md-6">
-                        <label class="form-label fw-semibold">Check in dự kiến</label>
-                        <input type="text" class="form-control" value="@Model.CheckInDate.ToString("dd/MM/yyyy") @Model.DefaultCheckInTime.ToString("HH\\:mm")" readonly />
-                        <div class="form-text">Ngày luôn là hôm nay; giờ mặc định lấy từ HotelSettings. Check in thực tế vẫn ghi nhận thời điểm tạo thành công.</div>
-                    </div>
-                    <div class="col-12 col-md-6">
                         <label asp-for="CheckOutDate" class="form-label fw-semibold">Ngày check out dự kiến</label>
                         <input asp-for="CheckOutDate" id="directCheckOutDate" type="date" class="form-control" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
                         <div class="form-text">Giờ check out mặc định: <strong>@Model.DefaultCheckOutTime.ToString("HH\\:mm")</strong></div>
                         <span asp-validation-for="CheckOutDate" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-create-section-icon"><i class="bi bi-journal-text" aria-hidden="true"></i></div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thông tin đặt phòng</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="BookingCode" class="form-label fw-semibold">Mã đặt phòng <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input asp-for="BookingCode" id="directBookingCode" class="form-control font-monospace" maxlength="50" autocomplete="off" pattern="[A-Za-z0-9]+" required />
+                            <button type="button" class="btn btn-outline-primary" id="directGenerateBookingCodeButton">
+                                <i class="bi bi-magic me-1" aria-hidden="true"></i>
+                                Tự sinh mã
+                            </button>
+                        </div>
+                        <div class="form-text">MChỉ được gồm chữ và số, không được trùng.</div>
+                        <span asp-validation-for="BookingCode" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="BookingNote" class="form-label fw-semibold">Ghi chú Booking</label>
+                        <textarea asp-for="BookingNote" class="form-control" rows="2" maxlength="255"></textarea>
+                        <span asp-validation-for="BookingNote" class="text-danger"></span>
                     </div>
                 </div>
             </div>
@@ -195,19 +221,19 @@
                                         @{
                                             var roomFieldKey = $"RoomAssignments[{i}].RoomId";
                                         }
-                                        <span class="text-danger">@(ViewData.ModelState.TryGetValue(roomFieldKey, out var roomEntry) ? string.Join(" ", roomEntry.Errors.Select(x => x.ErrorMessage).Where(x => !string.IsNullOrWhiteSpace(x))) : "")</span>
+                                        <span class="text-danger" data-valmsg-for="@roomFieldKey">@(ViewData.ModelState.TryGetValue(roomFieldKey, out var roomEntry) ? string.Join(" ", roomEntry.Errors.Select(x => x.ErrorMessage).Where(x => !string.IsNullOrWhiteSpace(x))) : "")</span>
                                     </div>
                                     <div class="col-6 col-lg-3">
                                         <label class="form-label fw-semibold">Người lớn</label>
                                         <input class="form-control direct-room-adults" type="number" min="0" max="@assignment.MaxAdults" name="RoomAssignments[@i].Adults" value="@assignment.Adults" />
                                         @{ var adultsFieldKey = $"RoomAssignments[{i}].Adults"; }
-                                        <span class="text-danger">@(ViewData.ModelState.TryGetValue(adultsFieldKey, out var adultsEntry) ? string.Join(" ", adultsEntry.Errors.Select(x => x.ErrorMessage).Where(x => !string.IsNullOrWhiteSpace(x))) : "")</span>
+                                        <span class="text-danger" data-valmsg-for="@adultsFieldKey">@(ViewData.ModelState.TryGetValue(adultsFieldKey, out var adultsEntry) ? string.Join(" ", adultsEntry.Errors.Select(x => x.ErrorMessage).Where(x => !string.IsNullOrWhiteSpace(x))) : "")</span>
                                     </div>
                                     <div class="col-6 col-lg-3">
                                         <label class="form-label fw-semibold">Trẻ em</label>
                                         <input class="form-control direct-room-children" type="number" min="0" max="@assignment.MaxChildren" name="RoomAssignments[@i].Children" value="@assignment.Children" />
                                         @{ var childrenFieldKey = $"RoomAssignments[{i}].Children"; }
-                                        <span class="text-danger">@(ViewData.ModelState.TryGetValue(childrenFieldKey, out var childrenEntry) ? string.Join(" ", childrenEntry.Errors.Select(x => x.ErrorMessage).Where(x => !string.IsNullOrWhiteSpace(x))) : "")</span>
+                                        <span class="text-danger" data-valmsg-for="@childrenFieldKey">@(ViewData.ModelState.TryGetValue(childrenFieldKey, out var childrenEntry) ? string.Join(" ", childrenEntry.Errors.Select(x => x.ErrorMessage).Where(x => !string.IsNullOrWhiteSpace(x))) : "")</span>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label fw-semibold">Ghi chú BookingRoom</label>
@@ -228,37 +254,9 @@
         <section class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-body border-bottom py-3">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="booking-create-section-icon"><i class="bi bi-journal-text" aria-hidden="true"></i></div>
-                    <div>
-                        <h2 class="h6 mb-0 fw-semibold">Thông tin đặt phòng</h2>
-                        <div class="small text-body-secondary">Mã đặt phòng được tự sinh theo số lớn nhất hiện có và vẫn có thể chỉnh sửa.</div>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-12 col-lg-6">
-                        <label asp-for="BookingCode" class="form-label fw-semibold">Mã đặt phòng <span class="text-danger">*</span></label>
-                        <input asp-for="BookingCode" class="form-control font-monospace" maxlength="50" autocomplete="off" pattern="\S+" required />
-                        <div class="form-text">Mặc định tự sinh dạng <strong>DP + số lớn nhất + 1</strong>; không được chứa dấu cách và không được trùng.</div>
-                        <span asp-validation-for="BookingCode" class="text-danger"></span>
-                    </div>
-                    <div class="col-12">
-                        <label asp-for="BookingNote" class="form-label fw-semibold">Ghi chú Booking</label>
-                        <textarea asp-for="BookingNote" class="form-control" rows="2" maxlength="255"></textarea>
-                        <span asp-validation-for="BookingNote" class="text-danger"></span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-body border-bottom py-3">
-                <div class="d-flex align-items-center gap-2">
                     <div class="booking-create-section-icon"><i class="bi bi-person-vcard" aria-hidden="true"></i></div>
                     <div>
                         <h2 class="h6 mb-0 fw-semibold">Thông tin khách hàng</h2>
-                        <div class="small text-body-secondary">Mỗi Booking mới luôn tạo một khách hàng mới. Các trường định danh của khách trực tiếp tại quầy là bắt buộc.</div>
                     </div>
                 </div>
             </div>
@@ -266,8 +264,14 @@
                 <div class="row g-3">
                     <div class="col-12 col-lg-6">
                         <label asp-for="GuestCode" class="form-label fw-semibold">Mã khách hàng <span class="text-danger">*</span></label>
-                        <input asp-for="GuestCode" id="directGuestCode" class="form-control font-monospace" maxlength="50" autocomplete="off" pattern="\S+" required />
-                        <div class="form-text">Mặc định tự sinh dạng KH + số lớn nhất + 1; không được chứa dấu cách.</div>
+                        <div class="input-group">
+                            <input asp-for="GuestCode" id="directGuestCode" class="form-control font-monospace" maxlength="50" autocomplete="off" pattern="[A-Za-z0-9]+" required />
+                            <button type="button" class="btn btn-outline-primary" id="directGenerateGuestCodeButton">
+                                <i class="bi bi-magic me-1" aria-hidden="true"></i>
+                                Tự sinh mã
+                            </button>
+                        </div>
+                        <div class="form-text">Chỉ được gồm chữ và số, không được trùng.</div>
                         <span asp-validation-for="GuestCode" class="text-danger"></span>
                     </div>
                     <div class="col-12 col-lg-6">
@@ -290,8 +294,9 @@
                     </div>
                     <div class="col-12 col-md-4">
                         <label asp-for="GuestPhoneNumber" class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
-                        <input asp-for="GuestPhoneNumber" id="directGuestPhone" class="form-control" maxlength="20" autocomplete="tel" required />
+                        <input asp-for="GuestPhoneNumber" id="directGuestPhone" class="form-control" maxlength="30" inputmode="tel" autocomplete="tel" required title="Có thể nhập số quốc tế, ví dụ +84912345678 hoặc +1 (202) 555-0123." />
                         <span asp-validation-for="GuestPhoneNumber" class="text-danger"></span>
+                        <div class="form-text">Có thể nhập số quốc tế; hệ thống sẽ chuẩn hóa trước khi lưu vào cơ sở dữ liệu.</div>
                     </div>
                     <div class="col-12">
                         <label asp-for="GuestAddress" class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
@@ -300,13 +305,14 @@
                     </div>
                     <div class="col-12 col-md-6">
                         <label asp-for="GuestEmail" class="form-label fw-semibold">Email</label>
-                        <input asp-for="GuestEmail" id="directGuestEmail" type="email" class="form-control" maxlength="4000" autocomplete="email" />
+                        <input asp-for="GuestEmail" id="directGuestEmail" type="email" class="form-control" maxlength="254" autocomplete="email" />
                         <span asp-validation-for="GuestEmail" class="text-danger"></span>
                     </div>
                     <div class="col-12 col-md-6">
                         <label asp-for="GuestIdentityNumber" class="form-label fw-semibold">Số giấy tờ <span class="text-danger">*</span></label>
-                        <input asp-for="GuestIdentityNumber" id="directGuestIdentityNumber" class="form-control" maxlength="50" required />
+                        <input asp-for="GuestIdentityNumber" id="directGuestIdentityNumber" class="form-control" maxlength="50" autocomplete="off" required />
                         <span asp-validation-for="GuestIdentityNumber" class="text-danger"></span>
+                        <div class="form-text">CCCD/GPLX: đúng 12 chữ số. Hộ chiếu: 5-20 ký tự chữ và số.</div>
                     </div>
                     <div class="col-12 col-md-6">
                         <label asp-for="GuestIdentityType" class="form-label fw-semibold">Loại giấy tờ <span class="text-danger">*</span></label>
@@ -333,9 +339,6 @@
                     </div>
                     <div>
                         <h2 class="h6 mb-0 fw-semibold">Tiền cọc &amp; xác nhận thanh toán</h2>
-                        <div class="small text-body-secondary">
-                            Tiền cọc được tính lại từ giá phòng, số phòng, số đêm và DepositPercent của DB.
-                        </div>
                     </div>
                 </div>
             </div>
@@ -559,18 +562,22 @@
                         <div class="col-12 col-lg-6">
                             <label class="form-label fw-semibold">Phòng thực tế</label>
                             <select class="form-select direct-room-select" name="RoomAssignments[${index}].RoomId" required>${optionHtml}</select>
+                            <span class="text-danger" data-valmsg-for="RoomAssignments[${index}].RoomId"></span>
                         </div>
                         <div class="col-6 col-lg-3">
                             <label class="form-label fw-semibold">Người lớn</label>
                             <input class="form-control direct-room-adults" type="number" min="0" max="${Number(typeRow.dataset.maxAdults || 9999)}" name="RoomAssignments[${index}].Adults" value="${escapeAttr(old.adults || 0)}">
+                            <span class="text-danger" data-valmsg-for="RoomAssignments[${index}].Adults"></span>
                         </div>
                         <div class="col-6 col-lg-3">
                             <label class="form-label fw-semibold">Trẻ em</label>
                             <input class="form-control direct-room-children" type="number" min="0" max="${Number(typeRow.dataset.maxChildren || 9999)}" name="RoomAssignments[${index}].Children" value="${escapeAttr(old.children || 0)}">
+                            <span class="text-danger" data-valmsg-for="RoomAssignments[${index}].Children"></span>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Ghi chú BookingRoom</label>
                             <textarea class="form-control" rows="2" maxlength="255" name="RoomAssignments[${index}].Note">${escapeHtml(old.note || "")}</textarea>
+                            <span class="text-danger" data-valmsg-for="RoomAssignments[${index}].Note"></span>
                         </div>
                     </div>`;
                 assignmentContainer.appendChild(card);
@@ -636,8 +643,16 @@
     } else {
     }
 
-    const clearInlineError = id => { const el = document.getElementById(id); if (el) el.textContent = ""; };
-    const setInlineError = (id, message) => { const el = document.getElementById(id); if (el) el.textContent = message || ""; };
+    const clearInlineError = id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = "";
+    };
+
+    const setInlineError = (id, message) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = message || "";
+    };
+
     const setDirectTopError = message => {
         const box = document.getElementById("directClientTopError");
         const list = document.getElementById("directClientTopErrorList");
@@ -647,150 +662,690 @@
         li.textContent = message;
         list.appendChild(li);
         box.classList.remove("d-none");
-        box.scrollIntoView({ behavior: "smooth", block: "start" });
     };
-    const clearDirectTopError = () => document.getElementById("directClientTopError")?.classList.add("d-none");
+
+    const clearDirectTopError = () => {
+        document.getElementById("directClientTopError")?.classList.add("d-none");
+    };
+
+    const getMessageElement = input => {
+        const name = input?.name;
+        if (!name) return null;
+        return form.querySelector(`[data-valmsg-for="${CSS.escape(name)}"]`);
+    };
+
+    const getValue = input => {
+        if (!input) return "";
+        if (input.type === "checkbox" || input.type === "radio") {
+            return input.checked ? "true" : "false";
+        }
+        return String(input.value ?? "");
+    };
+
+    const setFieldError = (input, message) => {
+        if (!input) return;
+        input.classList.add("is-invalid");
+        input.setAttribute("aria-invalid", "true");
+        const messageElement = getMessageElement(input);
+        if (messageElement) {
+            messageElement.textContent = message || "";
+            messageElement.classList.remove("field-validation-valid");
+            messageElement.classList.add("field-validation-error");
+        }
+    };
+
+    const clearFieldError = input => {
+        if (!input) return;
+        input.classList.remove("is-invalid");
+        input.removeAttribute("aria-invalid");
+        const messageElement = getMessageElement(input);
+        if (messageElement) {
+            messageElement.textContent = "";
+            messageElement.classList.remove("field-validation-error");
+            messageElement.classList.add("field-validation-valid");
+        }
+    };
+
+    const serverErrorSnapshots = new Map();
+
+    const clearServerErrorIfChanged = input => {
+        if (!input) return;
+        const snapshot = serverErrorSnapshots.get(input);
+        if (snapshot === undefined) return;
+        if (getValue(input) !== snapshot) {
+            serverErrorSnapshots.delete(input);
+            clearFieldError(input);
+        }
+    };
+
+    const captureServerErrors = () => {
+        const messages = Array.from(form.querySelectorAll("[data-valmsg-for]"));
+        let firstErrorInput = null;
+        for (const message of messages) {
+            const text = message.textContent?.trim() || "";
+            if (!text) continue;
+            const fieldName = message.getAttribute("data-valmsg-for");
+            if (!fieldName) continue;
+            const input = form.querySelector(`[name="${CSS.escape(fieldName)}"]`);
+            if (!input || input.type === "hidden") continue;
+            serverErrorSnapshots.set(input, getValue(input));
+            input.classList.add("is-invalid");
+            input.setAttribute("aria-invalid", "true");
+            message.classList.remove("field-validation-valid");
+            message.classList.add("field-validation-error");
+            if (!firstErrorInput) firstErrorInput = input;
+        }
+        if (firstErrorInput) {
+            window.requestAnimationFrame(() => {
+                firstErrorInput.scrollIntoView({ behavior: "smooth", block: "center" });
+            });
+        }
+    };
+
+    const isValidCode = value => /^[A-Za-z0-9]+$/.test(value);
+
+    const validateCode = (input, label) => {
+        const value = input?.value.trim() ?? "";
+        if (!value) {
+            setFieldError(input, `${label} không được để trống.`);
+            return false;
+        }
+        if (!isValidCode(value)) {
+            setFieldError(input, `${label} chỉ được bao gồm chữ hoa, chữ thường và số, không chứa dấu cách và ký tự đặc biệt.`);
+            return false;
+        }
+        if (value.length > 50) {
+            setFieldError(input, `${label} không được vượt quá 50 ký tự.`);
+            return false;
+        }
+        clearFieldError(input);
+        return true;
+    };
+
+    const validateOptionalMax = (input, label, max) => {
+        const value = input?.value.trim() ?? "";
+        if (value.length > max) {
+            setFieldError(input, `${label} không được vượt quá ${max} ký tự.`);
+            return false;
+        }
+        clearFieldError(input);
+        return true;
+    };
+
+    const normalizeClientPhone = value => {
+        let normalized = String(value ?? "").trim().replace(/[\s().-]/g, "");
+        if (normalized.startsWith("00")) normalized = "+" + normalized.slice(2);
+        return normalized;
+    };
+
+    const validatePhone = input => {
+        const value = input?.value.trim() ?? "";
+        const normalized = normalizeClientPhone(value);
+        if (!value) {
+            setFieldError(input, "Số điện thoại là bắt buộc khi tạo trực tiếp tại quầy.");
+            return false;
+        }
+        const valid = normalized.startsWith("+")
+            ? /^\+[1-9][0-9]{6,14}$/.test(normalized)
+            : /^[0-9]{7,15}$/.test(normalized);
+        if (!valid) {
+            setFieldError(input, "Số điện thoại không hợp lệ. Có thể nhập số quốc tế; sau khi chuẩn hóa phải có 7-15 chữ số.");
+            return false;
+        }
+        if (value.length > 30) {
+            setFieldError(input, "Số điện thoại nhập vào không được vượt quá 30 ký tự.");
+            return false;
+        }
+        clearFieldError(input);
+        return true;
+    };
+
+    const validateEmail = input => {
+        const value = input?.value.trim() ?? "";
+        if (!value) {
+            clearFieldError(input);
+            return true;
+        }
+        if (value.length > 254 || !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(value)) {
+            setFieldError(input, "Email không đúng định dạng hoặc vượt quá 254 ký tự.");
+            return false;
+        }
+        clearFieldError(input);
+        return true;
+    };
+
+    const validateIdentity = (numberInput, typeInput) => {
+        const value = numberInput?.value.trim() ?? "";
+        const type = typeInput?.value ?? "";
+
+        if (!value) {
+            setFieldError(numberInput, "Số giấy tờ là bắt buộc khi tạo trực tiếp tại quầy.");
+            return false;
+        }
+        if (!['0', '1', '2'].includes(type)) {
+            setFieldError(typeInput, "Vui lòng chọn loại giấy tờ.");
+            return false;
+        }
+        if (value.length > 50) {
+            setFieldError(numberInput, "Số giấy tờ không được vượt quá 50 ký tự.");
+            return false;
+        }
+
+        if (type === "0" && !/^\d{12}$/.test(value)) {
+            setFieldError(numberInput, "CCCD phải gồm đúng 12 chữ số.");
+            return false;
+        }
+        if (type === "1" && !/^\d{12}$/.test(value)) {
+            setFieldError(numberInput, "Giấy phép lái xe phải gồm đúng 12 chữ số.");
+            return false;
+        }
+        if (type === "2" && !/^[A-Za-z0-9]{5,20}$/.test(value)) {
+            setFieldError(numberInput, "Hộ chiếu phải gồm 5-20 ký tự chữ và số, không chứa dấu cách hoặc ký tự đặc biệt.");
+            return false;
+        }
+
+        clearFieldError(numberInput);
+        clearFieldError(typeInput);
+        return true;
+    };
+
+    const validateDateOfBirth = input => {
+        const value = input?.value ?? "";
+        if (!value) {
+            setFieldError(input, "Ngày sinh là bắt buộc khi tạo trực tiếp tại quầy.");
+            return false;
+        }
+        const date = new Date(`${value}T00:00:00`);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (Number.isNaN(date.getTime()) || date > today) {
+            setFieldError(input, "Ngày sinh không được lớn hơn ngày hiện tại.");
+            return false;
+        }
+        clearFieldError(input);
+        return true;
+    };
+
+    const validateCheckoutDate = input => {
+        const value = input?.value ?? "";
+        const todayValue = new Date().toISOString().slice(0, 10);
+        if (!value) {
+            setFieldError(input, "Vui lòng chọn ngày check out dự kiến.");
+            return false;
+        }
+        if (value <= todayValue) {
+            setFieldError(input, "Ngày check out phải sau ngày hiện tại.");
+            return false;
+        }
+        clearFieldError(input);
+        return true;
+    };
+
+    const validateTotalPeople = () => {
+        const adults = document.getElementById("directTotalAdults");
+        const children = document.getElementById("directTotalChildren");
+        let ok = true;
+        if (!adults?.value || Number(adults.value) < 1) {
+            setFieldError(adults, "Tổng người lớn phải lớn hơn 0.");
+            ok = false;
+        } else if (Number(adults.value) > 9999) {
+            setFieldError(adults, "Tổng người lớn không được vượt quá 9999.");
+            ok = false;
+        } else {
+            clearFieldError(adults);
+        }
+        if (children?.value === "" || Number(children.value) < 0) {
+            setFieldError(children, "Tổng trẻ em phải lớn hơn hoặc bằng 0.");
+            ok = false;
+        } else if (Number(children.value) > 9999) {
+            setFieldError(children, "Tổng trẻ em không được vượt quá 9999.");
+            ok = false;
+        } else {
+            clearFieldError(children);
+        }
+        return ok;
+    };
+
+    const validateQuantityInput = input => {
+        if (!input) return true;
+        const raw = input.value.trim();
+        const max = Number(input.max || 0);
+        if (raw === "") {
+            setFieldError(input, "Số phòng không được để trống.");
+            return false;
+        }
+        const value = Number(raw);
+        if (!Number.isInteger(value) || value < 0) {
+            setFieldError(input, "Số phòng phải là số nguyên không âm.");
+            return false;
+        }
+        if (value > max) {
+            setFieldError(input, `Số phòng không được vượt quá ${max} phòng có thể dùng.`);
+            return false;
+        }
+        clearFieldError(input);
+        return true;
+    };
+
+    const validateRoomAssignments = () => {
+        clearDirectTopError();
+        const rows = [...assignmentContainer.querySelectorAll("[data-assignment-row]")];
+        if (rows.length === 0) {
+            setDirectTopError("Vui lòng chọn ít nhất một phòng.");
+            return false;
+        }
+
+        let valid = true;
+        const selectedRoomIds = new Set();
+        let assignedAdults = 0;
+        let assignedChildren = 0;
+
+        for (const row of rows) {
+            const room = row.querySelector(".direct-room-select");
+            const adults = row.querySelector(".direct-room-adults");
+            const children = row.querySelector(".direct-room-children");
+            const note = row.querySelector("textarea");
+            const maxAdults = Number(adults?.max || 999999);
+            const maxChildren = Number(children?.max || 999999);
+
+            if (!room?.value) {
+                setFieldError(room, "Vui lòng chọn phòng thực tế.");
+                valid = false;
+            } else {
+                clearFieldError(room);
+                if (selectedRoomIds.has(room.value)) {
+                    setFieldError(room, "Không thể chọn cùng một phòng cho nhiều BookingRoom.");
+                    valid = false;
+                } else {
+                    selectedRoomIds.add(room.value);
+                }
+            }
+
+            const adultValue = Number(adults?.value || 0);
+            const childValue = Number(children?.value || 0);
+            assignedAdults += adultValue;
+            assignedChildren += childValue;
+
+            if (!adults?.value || adultValue < 0 || adultValue > maxAdults) {
+                setFieldError(adults, `Số người lớn phải từ 0 đến ${maxAdults}.`);
+                valid = false;
+            } else {
+                clearFieldError(adults);
+            }
+
+            if (children?.value === "" || childValue < 0 || childValue > maxChildren) {
+                setFieldError(children, `Số trẻ em phải từ 0 đến ${maxChildren}.`);
+                valid = false;
+            } else {
+                clearFieldError(children);
+            }
+
+            if (note && note.value.trim().length > 255) {
+                setFieldError(note, "Ghi chú BookingRoom không được vượt quá 255 ký tự.");
+                valid = false;
+            } else {
+                clearFieldError(note);
+            }
+        }
+
+        const totalAdults = Number(document.getElementById("directTotalAdults")?.value || 0);
+        const totalChildren = Number(document.getElementById("directTotalChildren")?.value || 0);
+        if (assignedAdults !== totalAdults || assignedChildren !== totalChildren) {
+            setDirectTopError(`Phân bổ người chưa khớp: người lớn ${assignedAdults}/${totalAdults}; trẻ em ${assignedChildren}/${totalChildren}.`);
+            valid = false;
+        }
+
+        return valid;
+    };
 
     const syncReferenceVisibility = () => {
         const selectedMethod = document.querySelector('input[name="PaymentMethod"]:checked');
         const reference = document.getElementById("directReferenceCode");
         const group = document.getElementById("directReferenceGroup");
         const isTransfer = selectedMethod?.value === "1";
+
         if (group) group.classList.toggle("d-none", !isTransfer);
         if (reference) {
             reference.required = isTransfer;
-            if (!isTransfer) reference.value = "";
+            if (!isTransfer) {
+                serverErrorSnapshots.delete(reference);
+                clearFieldError(reference);
+                reference.setCustomValidity("");
+                reference.value = "";
+            }
         }
         if (!isTransfer) clearInlineError("directReferenceCodeClientError");
     };
-    document.querySelectorAll('input[name="PaymentMethod"]').forEach(input => input.addEventListener("change", () => {
-        syncReferenceVisibility();
-        clearInlineError("directPaymentMethodClientError");
-    }));
-    form.querySelectorAll(".direct-quantity").forEach(input => input.addEventListener("change", syncReferenceVisibility));
-    document.getElementById("directCheckOutDate")?.addEventListener("change", syncReferenceVisibility);
-    document.getElementById("directPaymentDate")?.addEventListener("input", () => clearInlineError("directPaymentDateClientError"));
-    document.getElementById("directReferenceCode")?.addEventListener("input", () => clearInlineError("directReferenceCodeClientError"));
-    document.getElementById("directDepositConfirmed")?.addEventListener("change", () => clearInlineError("directDepositConfirmedClientError"));
-    syncReferenceVisibility();
 
-    const directCreateConfirmModalEl = document.getElementById("directCreateConfirmModal");
-    const directCreateConfirmSubmit = document.getElementById("directCreateConfirmSubmit");
-
-    let directClientValidationRunning = false;
-
-    const openDirectConfirmModal = () => {
-        if (!directCreateConfirmModalEl || typeof bootstrap === "undefined" || !bootstrap.Modal) {
-            // Fallback cuối cùng: native confirm không phụ thuộc callback UI.
-            if (window.confirm("Bạn có chắc chắn muốn tạo Booking và check in ngay cho khách hàng không?")) {
-                const confirmationInput = document.getElementById("directFinalConfirmation");
-                if (confirmationInput) confirmationInput.value = "true";
-                form.dataset.directNativeConfirmed = "true";
-                form.requestSubmit();
-            }
-            return;
-        }
-
-        bootstrap.Modal.getOrCreateInstance(directCreateConfirmModalEl).show();
-    };
-
-    const runDirectSubmitValidation = () => {
-        if (directClientValidationRunning) return;
-        directClientValidationRunning = true;
-
-        try {
-            clearDirectTopError();
+    const validatePayment = () => {
+        const deposit = Number((depositEl?.textContent || "0").replace(/[^0-9]/g, ""));
+        if (deposit <= 0) {
             clearInlineError("directPaymentMethodClientError");
             clearInlineError("directPaymentDateClientError");
             clearInlineError("directReferenceCodeClientError");
             clearInlineError("directDepositConfirmedClientError");
+            return true;
+        }
 
-            // 1) Validate annotation / required / format / range trước.
-            const invalidField = form.querySelector(":invalid");
-            if (invalidField) {
-                invalidField.reportValidity();
-                invalidField.scrollIntoView({ behavior: "smooth", block: "center" });
-                invalidField.focus({ preventScroll: true });
-                return;
+        const method = document.querySelector('input[name="PaymentMethod"]:checked');
+        const paymentDate = document.getElementById("directPaymentDate");
+        const reference = document.getElementById("directReferenceCode");
+        const confirmed = document.getElementById("directDepositConfirmed");
+        let valid = true;
+
+        if (!method) {
+            setInlineError("directPaymentMethodClientError", "Vui lòng chọn phương thức thanh toán tiền cọc.");
+            valid = false;
+        } else {
+            clearInlineError("directPaymentMethodClientError");
+        }
+
+        if (!paymentDate?.value) {
+            setInlineError("directPaymentDateClientError", "Vui lòng chọn thời gian thanh toán tiền cọc.");
+            valid = false;
+        } else if (new Date(paymentDate.value) > new Date()) {
+            setInlineError("directPaymentDateClientError", "Thời gian thanh toán không được lớn hơn thời điểm hiện tại.");
+            valid = false;
+        } else {
+            clearInlineError("directPaymentDateClientError");
+        }
+
+        if (!confirmed?.checked) {
+            setInlineError("directDepositConfirmedClientError", "Vui lòng xác nhận đã nhận được tiền cọc.");
+            valid = false;
+        } else {
+            clearInlineError("directDepositConfirmedClientError");
+        }
+
+        if (method?.value === "1") {
+            const value = reference?.value.trim() ?? "";
+            if (!value) {
+                setFieldError(reference, "Mã giao dịch là bắt buộc khi thanh toán chuyển khoản.");
+                valid = false;
+            } else if (value.length > 100) {
+                setFieldError(reference, "Mã giao dịch không được vượt quá 100 ký tự.");
+                valid = false;
+            } else {
+                clearFieldError(reference);
             }
+        } else {
+            serverErrorSnapshots.delete(reference);
+            clearFieldError(reference);
+        }
 
-            // 2) Validate phân phòng / phân người.
-            const totalAdults = Number(document.getElementById("directTotalAdults")?.value || 0);
-            const totalChildren = Number(document.getElementById("directTotalChildren")?.value || 0);
-            const assignmentRows = [...assignmentContainer.querySelectorAll("[data-assignment-row]")];
-            const assignedAdults = assignmentRows.reduce((sum, row) => sum + Number(row.querySelector(".direct-room-adults")?.value || 0), 0);
-            const assignedChildren = assignmentRows.reduce((sum, row) => sum + Number(row.querySelector(".direct-room-children")?.value || 0), 0);
+        return valid;
+    };
 
-            if (assignmentRows.length === 0) {
-                setDirectTopError("Vui lòng chọn ít nhất một phòng.");
-                return;
+    const validateDirectFrontEnd = () => {
+        clearDirectTopError();
+
+        const bookingCode = document.getElementById("directBookingCode");
+        const bookingNote = document.getElementById("BookingNote");
+        const guestCode = document.getElementById("directGuestCode");
+        const guestName = document.getElementById("directGuestName");
+        const guestDob = document.getElementById("directGuestDob");
+        const guestSex = document.getElementById("directGuestSex");
+        const guestAddress = document.getElementById("directGuestAddress");
+        const guestPhone = document.getElementById("directGuestPhone");
+        const guestEmail = document.getElementById("directGuestEmail");
+        const identityNumber = document.getElementById("directGuestIdentityNumber");
+        const identityType = document.getElementById("directGuestIdentityType");
+        const guestNote = document.getElementById("directGuestNote");
+
+        const checks = [
+            () => validateCheckoutDate(document.getElementById("directCheckOutDate")),
+            () => validateTotalPeople(),
+            () => validateCode(bookingCode, "Mã đặt phòng"),
+            () => validateOptionalMax(bookingNote, "Ghi chú Booking", 255),
+            () => validateCode(guestCode, "Mã khách hàng"),
+            () => {
+                const value = guestName?.value.trim() ?? "";
+                if (!value) {
+                    setFieldError(guestName, "Tên khách hàng không được để trống.");
+                    return false;
+                }
+                if (value.length > 100) {
+                    setFieldError(guestName, "Tên khách hàng không được vượt quá 100 ký tự.");
+                    return false;
+                }
+                clearFieldError(guestName);
+                return true;
+            },
+            () => validateDateOfBirth(guestDob),
+            () => {
+                const value = guestSex?.value ?? "";
+                if (!['0', '1', '2'].includes(value)) {
+                    setFieldError(guestSex, "Giới tính là bắt buộc khi tạo trực tiếp tại quầy.");
+                    return false;
+                }
+                clearFieldError(guestSex);
+                return true;
+            },
+            () => {
+                const value = guestAddress?.value.trim() ?? "";
+                if (!value) {
+                    setFieldError(guestAddress, "Địa chỉ là bắt buộc khi tạo trực tiếp tại quầy.");
+                    return false;
+                }
+                if (value.length > 255) {
+                    setFieldError(guestAddress, "Địa chỉ không được vượt quá 255 ký tự.");
+                    return false;
+                }
+                clearFieldError(guestAddress);
+                return true;
+            },
+            () => validatePhone(guestPhone),
+            () => validateEmail(guestEmail),
+            () => validateIdentity(identityNumber, identityType),
+            () => validateOptionalMax(guestNote, "Ghi chú khách hàng", 255),
+            () => validateRoomAssignments(),
+            () => validatePayment()
+        ];
+
+        let firstInvalid = null;
+        for (const check of checks) {
+            const ok = check();
+            if (!ok && !firstInvalid) {
+                firstInvalid = form.querySelector(".is-invalid") || null;
             }
+        }
 
-            if (assignedAdults !== totalAdults || assignedChildren !== totalChildren) {
-                setDirectTopError(`Phân bổ người chưa khớp: người lớn ${assignedAdults}/${totalAdults}; trẻ em ${assignedChildren}/${totalChildren}.`);
-                return;
-            }
+        const invalids = Array.from(form.querySelectorAll(".is-invalid"));
+        if (invalids.length > 0) firstInvalid = invalids[0];
 
-            // 3) Validate tiền cọc sau khi các field cơ bản đã hợp lệ.
-            const deposit = Number((depositEl?.textContent || "0").replace(/[^0-9]/g, ""));
-            const selectedPaymentMethod = document.querySelector('input[name="PaymentMethod"]:checked');
-            const paymentDate = document.getElementById("directPaymentDate");
-            const referenceInput = document.getElementById("directReferenceCode");
-            const depositConfirmed = document.getElementById("directDepositConfirmed");
+        if (firstInvalid) {
+            window.requestAnimationFrame(() => {
+                firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+                window.setTimeout(() => {
+                    try { firstInvalid.focus({ preventScroll: true }); } catch { firstInvalid.focus(); }
+                }, 250);
+            });
+            return false;
+        }
 
-            if (deposit > 0) {
-                if (!selectedPaymentMethod) {
-                    setInlineError("directPaymentMethodClientError", "Vui lòng chọn phương thức thanh toán tiền cọc.");
-                    document.getElementById("directPaymentCash")?.focus();
-                    return;
-                }
-                if (!paymentDate?.value) {
-                    setInlineError("directPaymentDateClientError", "Vui lòng chọn thời gian thanh toán tiền cọc.");
-                    paymentDate?.focus();
-                    return;
-                }
-                const payment = new Date(paymentDate.value);
-                if (payment > new Date()) {
-                    setInlineError("directPaymentDateClientError", "Thời gian thanh toán không được lớn hơn thời điểm hiện tại.");
-                    paymentDate?.focus();
-                    return;
-                }
-                if (selectedPaymentMethod.value === "1" && !referenceInput?.value.trim()) {
-                    setInlineError("directReferenceCodeClientError", "Mã giao dịch là bắt buộc khi thanh toán chuyển khoản.");
-                    referenceInput?.focus();
-                    return;
-                }
-                if (!depositConfirmed?.checked) {
-                    setInlineError("directDepositConfirmedClientError", "Vui lòng xác nhận đã nhận tiền cọc.");
-                    depositConfirmed?.focus();
-                    return;
-                }
-            }
+        return true;
+    };
 
-            // Chỉ sau khi mọi validation cơ bản/nghiệp vụ đều hợp lệ mới mở modal.
-            openDirectConfirmModal();
-        } finally {
-            directClientValidationRunning = false;
+    const requestGeneratedCode = async (url, input, title) => {
+        if (!input) return;
+        try {
+            const response = await fetch(url, {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                credentials: "same-origin"
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (!data?.code) throw new Error("Mã trả về không hợp lệ.");
+            input.value = data.code;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+            serverErrorSnapshots.delete(input);
+            clearFieldError(input);
+        } catch (error) {
+            console.error(error);
+            window.HotelUI?.toast?.("danger", title, "Không thể tự sinh mã. Vui lòng thử lại.");
         }
     };
 
-    // Chỉ submit khi đã xác nhận ở modal. Nếu JS lỗi hoàn toàn, nút vẫn là submit button
-    // và server sẽ trả lỗi xác nhận thay vì im lặng không làm gì.
-    form.addEventListener("submit", event => {
-        if (form.dataset.directNativeConfirmed === "true") {
-            delete form.dataset.directNativeConfirmed;
+    document.getElementById("directGenerateBookingCodeButton")?.addEventListener("click", event => {
+        event.preventDefault();
+        requestGeneratedCode(
+            "@Url.Action("GetNextBookingCode", "Booking")",
+            document.getElementById("directBookingCode"),
+            "Tự sinh mã đặt phòng"
+        );
+    });
+
+    document.getElementById("directGenerateGuestCodeButton")?.addEventListener("click", event => {
+        event.preventDefault();
+        requestGeneratedCode(
+            "@Url.Action("GetNextGuestCode", "Booking")",
+            document.getElementById("directGuestCode"),
+            "Tự sinh mã khách hàng"
+        );
+    });
+
+    document.querySelectorAll('input[name="PaymentMethod"]').forEach(input => input.addEventListener("change", () => {
+        syncReferenceVisibility();
+        clearInlineError("directPaymentMethodClientError");
+    }));
+
+    form.addEventListener("input", event => {
+        const input = event.target;
+        if (!(input instanceof HTMLElement)) return;
+        clearServerErrorIfChanged(input);
+
+        if (input.matches(".direct-quantity")) {
+            validateQuantityInput(input);
+            updateMoney();
+            syncDepositFields();
             return;
         }
 
-        event.preventDefault();
-        runDirectSubmitValidation();
+        if (input.id === "directCheckOutDate") {
+            validateCheckoutDate(input);
+            updateMoney();
+            syncDepositFields();
+            return;
+        }
+
+        if (input.id === "directBookingCode") validateCode(input, "Mã đặt phòng");
+        else if (input.id === "directGuestCode") validateCode(input, "Mã khách hàng");
+        else if (input.id === "directGuestName") {
+            const value = input.value.trim();
+            value ? (value.length > 100 ? setFieldError(input, "Tên khách hàng không được vượt quá 100 ký tự.") : clearFieldError(input)) : setFieldError(input, "Tên khách hàng không được để trống.");
+        }
+        else if (input.id === "directGuestDob") validateDateOfBirth(input);
+        else if (input.id === "directGuestSex") {
+            input.value === "" ? setFieldError(input, "Giới tính là bắt buộc khi tạo trực tiếp tại quầy.") : clearFieldError(input);
+        }
+        else if (input.id === "directGuestAddress") {
+            const value = input.value.trim();
+            !value ? setFieldError(input, "Địa chỉ là bắt buộc khi tạo trực tiếp tại quầy.") : (value.length > 255 ? setFieldError(input, "Địa chỉ không được vượt quá 255 ký tự.") : clearFieldError(input));
+        }
+        else if (input.id === "directGuestPhone") validatePhone(input);
+        else if (input.id === "directGuestEmail") validateEmail(input);
+        else if (input.id === "directGuestIdentityNumber" || input.id === "directGuestIdentityType") validateIdentity(document.getElementById("directGuestIdentityNumber"), document.getElementById("directGuestIdentityType"));
+        else if (input.id === "BookingNote") validateOptionalMax(input, "Ghi chú Booking", 255);
+        else if (input.id === "directGuestNote") validateOptionalMax(input, "Ghi chú khách hàng", 255);
+        else if (input.matches(".direct-room-select, .direct-room-adults, .direct-room-children, [name$='.Note']")) validateRoomAssignments();
+        else if (input.id === "directPaymentDate" || input.id === "directReferenceCode") validatePayment();
     });
 
-    // Nếu người dùng Enter, form submit sẽ đi qua cùng handler ở trên.
+    form.addEventListener("change", event => {
+        const input = event.target;
+        if (!(input instanceof HTMLElement)) return;
+        clearServerErrorIfChanged(input);
+
+        if (input.matches(".direct-quantity")) {
+            validateQuantityInput(input);
+        }
+        if (input.matches(".direct-room-select, .direct-room-adults, .direct-room-children, [name$='.Note']")) {
+            validateRoomAssignments();
+        }
+        if (input.id === "directGuestIdentityType" || input.id === "directGuestIdentityNumber") {
+            validateIdentity(document.getElementById("directGuestIdentityNumber"), document.getElementById("directGuestIdentityType"));
+        }
+        if (input.id === "directDepositConfirmed" || input.id === "directPaymentDate" || input.id === "directReferenceCode" || input.name === "PaymentMethod") {
+            validatePayment();
+        }
+        if (input.id === "directCheckOutDate") {
+            validateCheckoutDate(input);
+        }
+    });
+
+    document.getElementById("directGuestPhone")?.addEventListener("change", () => validatePhone(document.getElementById("directGuestPhone")));
+    document.getElementById("directGuestEmail")?.addEventListener("change", () => validateEmail(document.getElementById("directGuestEmail")));
+
+    syncReferenceVisibility();
+    updateMoney();
+    syncDepositFields();
+
+    const directCreateConfirmSubmit = document.getElementById("directCreateConfirmSubmit");
+
+    let directClientValidationRunning = false;
+    let confirmed = false;
+
     directCreateConfirmSubmit?.addEventListener("click", () => {
+        confirmed = true;
         const confirmationInput = document.getElementById("directFinalConfirmation");
         if (confirmationInput) confirmationInput.value = "true";
-        form.dataset.directNativeConfirmed = "true";
+        if (window.HotelUI?.setButtonLoading) {
+            window.HotelUI.setButtonLoading(directCreateConfirmSubmit, true, "Đang tạo và check in...");
+        }
     });
+
+    const openDirectConfirmModal = () => {
+        const modal = document.getElementById("directCreateConfirmModal");
+        if (!modal || typeof bootstrap === "undefined" || !bootstrap.Modal) {
+            if (window.confirm("Bạn có chắc chắn muốn tạo Booking và check in ngay cho khách hàng không?")) {
+                confirmed = true;
+                const confirmationInput = document.getElementById("directFinalConfirmation");
+                if (confirmationInput) confirmationInput.value = "true";
+                form.submit();
+            }
+            return;
+        }
+
+        if (typeof window.HotelUI?.showConfirm === "function") {
+            window.HotelUI.showConfirm({
+                title: "Xác nhận tạo và check in",
+                message: "Bạn có chắc chắn muốn tạo Booking và check in ngay cho khách hàng không?",
+                note: "",
+                variant: "primary",
+                confirmText: "Tạo và check in",
+                onConfirm: () => {
+                    confirmed = true;
+                    const confirmationInput = document.getElementById("directFinalConfirmation");
+                    if (confirmationInput) confirmationInput.value = "true";
+                    if (window.HotelUI?.setButtonLoading) {
+                        window.HotelUI.setButtonLoading(document.getElementById("directCreateSubmit"), true, "Đang tạo và check in...");
+                    }
+                    form.submit();
+                }
+            });
+            return;
+        }
+
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+    };
+
+    form.addEventListener("submit", event => {
+        if (confirmed) return;
+        event.preventDefault();
+        if (directClientValidationRunning) return;
+        directClientValidationRunning = true;
+        try {
+            if (validateDirectFrontEnd()) {
+                openDirectConfirmModal();
+            }
+        } finally {
+            directClientValidationRunning = false;
+        }
+    });
+
+    captureServerErrors();
+
 })();
 </script>

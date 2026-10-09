@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Hotel_Management_Website.Models.ViewModels.Amenity;
 
@@ -9,7 +9,7 @@ public sealed class AmenityEditViewModel
     [Display(Name = "Mã tiện nghi")]
     [Required(ErrorMessage = "Vui lòng nhập mã tiện nghi.")]
     [StringLength(50, ErrorMessage = "Mã tiện nghi không được vượt quá {1} ký tự.")]
-    [RegularExpression(@"^\S+$", ErrorMessage = "Mã tiện nghi không được chứa dấu cách hoặc khoảng trắng.")]
+    [RegularExpression(@"^[A-Za-z0-9]+$", ErrorMessage = "Mã tiện nghi chỉ được chứa chữ hoa, chữ thường và số, không chứa dấu cách hoặc ký tự đặc biệt.")]
     public string AmenityCode { get; set; } = string.Empty;
 
     [Display(Name = "Tên tiện nghi")]

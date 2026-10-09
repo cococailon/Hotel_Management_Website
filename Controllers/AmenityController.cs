@@ -135,12 +135,6 @@ public sealed class AmenityController : Controller
         model ??= new AmenityCreateViewModel();
         model.AmenityCode = (model.AmenityCode ?? string.Empty).Trim();
 
-        if (string.IsNullOrWhiteSpace(model.AmenityCode))
-        {
-            model.AmenityCode = await _amenityService.GetNextAmenityCodeAsync(cancellationToken);
-            ModelState.Remove(nameof(AmenityCreateViewModel.AmenityCode));
-        }
-
         if (!ModelState.IsValid)
             return View(model);
 
@@ -180,6 +174,29 @@ public sealed class AmenityController : Controller
                 string.Empty,
                 "Không thể tạo tiện nghi. Vui lòng thử lại.");
             return View(model);
+        }
+    }
+
+    [AdminAccess]
+    [HttpGet]
+    public async Task<IActionResult> GetNextAmenityCode(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var code = await _amenityService.GetNextAmenityCodeAsync(cancellationToken);
+            return Json(new { code });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Không thể tự sinh mã tiện nghi.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                message = "Không thể tự sinh mã tiện nghi. Vui lòng thử lại."
+            });
         }
     }
 

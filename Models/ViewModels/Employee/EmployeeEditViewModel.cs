@@ -7,10 +7,11 @@ public sealed class EmployeeEditViewModel : IValidatableObject
     public Guid Id { get; set; }
 
     [Display(Name = "Mã nhân viên")]
+    [Required(ErrorMessage = "Vui lòng nhập mã nhân viên.")]
     [StringLength(50, ErrorMessage = "Mã nhân viên không được vượt quá {1} ký tự.")]
     [RegularExpression(
-        @"^\S+$",
-        ErrorMessage = "Mã nhân viên không được chứa dấu cách hoặc khoảng trắng.")]
+        @"^[A-Za-z0-9]+$",
+        ErrorMessage = "Mã nhân viên chỉ được chứa chữ cái và chữ số, không chứa dấu cách hoặc ký tự đặc biệt.")]
     public string EmployeeCode { get; set; } = string.Empty;
 
     [Display(Name = "Tên nhân viên")]
@@ -63,10 +64,10 @@ public sealed class EmployeeEditViewModel : IValidatableObject
                 new[] { nameof(EmployeeName) });
         }
 
-        if (DateOfBirth.HasValue && DateOfBirth.Value > today)
+        if (DateOfBirth.HasValue && DateOfBirth.Value >= today)
         {
             yield return new ValidationResult(
-                "Ngày sinh không được lớn hơn ngày hiện tại.",
+                "Ngày sinh phải bé hơn ngày hiện tại.",
                 new[] { nameof(DateOfBirth) });
         }
 

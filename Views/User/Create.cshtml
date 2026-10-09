@@ -73,20 +73,30 @@
                     <!-- UserCode -->
                     <div class="col-12 col-lg-6">
 
-                        <label asp-for="UserCode"
-                               class="form-label required">
-                            Mã tài khoản
-                        </label>
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                            <label asp-for="UserCode"
+                                   class="form-label required mb-0">
+                                Mã tài khoản
+                            </label>
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary flex-shrink-0"
+                                    id="userGenerateCodeButton"
+                                    data-generate-url="@Url.Action("GenerateUserCode", "User")">
+                                <i class="bi bi-magic me-1" aria-hidden="true"></i>
+                                Tự sinh mã
+                            </button>
+                        </div>
 
                         <input asp-for="UserCode"
                                class="form-control"
                                autocomplete="off"
                                maxlength="50"
                                spellcheck="false"
-                               placeholder="Ví dụ: U001" />
+                               placeholder="Ví dụ: TK1, TK2, TK100" />
 
                         <div class="form-text">
-                            Có thể để trống để hệ thống tự sinh mã. Nếu nhập tay, mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.
+                            Bắt buộc nhập. Chỉ được chứa chữ cái và chữ số, không có dấu cách hoặc ký tự đặc biệt, và không được trùng.
                         </div>
 
                         <span asp-validation-for="UserCode"
@@ -110,7 +120,7 @@
                                placeholder="Nhập tên đăng nhập" />
 
                         <div class="form-text">
-                            Tên đăng nhập phải là duy nhất trong hệ thống.
+                            Bắt buộc nhập, ít nhất 3 ký tự, không chứa dấu cách hoặc khoảng trắng và không được trùng.
                         </div>
 
                         <span asp-validation-for="UserName"
@@ -207,12 +217,14 @@
                     </div>
 
                     <div>
-                        <h2 class="h5 mb-1 fw-semibold">
-                            Phân quyền và nhân viên
+                        <h2 id="roleAssignmentTitle" class="h5 mb-1 fw-semibold">
+                            @(Model.Role == 0 ? "Thiết lập trạng thái hoạt động" : "Gán nhân viên và thiết lập trạng thái hoạt động")
                         </h2>
 
-                        <p class="text-body-secondary small mb-0">
-                            Gán tài khoản cho nhân viên phù hợp và xác định trạng thái hoạt động.
+                        <p id="roleAssignmentDescription" class="text-body-secondary small mb-0">
+                            @(Model.Role == 0
+                                ? "Thiết lập trạng thái hoạt động cho tài khoản Admin"
+                                : "Gán tài khoản cho nhân viên phù hợp và xác định trạng thái hoạt động.")
                         </p>
                     </div>
 
@@ -228,7 +240,7 @@
                     <div class="col-12">
 
                         <div id="employeeAssignmentBlock"
-                             class="user-employee-assignment">
+                             class="user-employee-assignment @(Model.Role == 0 ? "d-none" : "")">
 
                             <div class="d-flex align-items-center gap-2 mb-2">
 

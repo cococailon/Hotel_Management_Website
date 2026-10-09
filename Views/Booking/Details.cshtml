@@ -75,6 +75,61 @@
     </section>
 
     <div class="row g-4">
+        <div class="col-12">
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="booking-detail-section-icon" aria-hidden="true">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Thông tin lịch đặt phòng</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <div class="booking-detail-label">Mã đặt phòng</div>
+                            <div class="booking-detail-value font-monospace booking-detail-breakable">@Model.BookingCode</div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="booking-detail-label">Loại đặt phòng</div>
+                            <div class="booking-detail-value">@Model.BookingTypeName</div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="booking-detail-label">Ngày tạo</div>
+                            <div class="booking-detail-value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="booking-detail-label">Ngày chỉnh sửa gần nhất</div>
+                            <div class="booking-detail-value">@Model.LastModifiedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card border-0 shadow-sm">
+                <div class="card-header bg-body border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="booking-detail-section-icon" aria-hidden="true">
+                            <i class="bi bi-card-text"></i>
+                        </div>
+                        <div>
+                            <h2 class="h6 mb-0 fw-semibold">Ghi chú</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="booking-detail-note">
+                        @(string.IsNullOrWhiteSpace(Model.Note) ? "Không có ghi chú" : Model.Note)
+                    </div>
+                </div>
+            </section>
+        </div>
+
         <div class="col-12 col-xl-6">
             <section class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-body border-bottom py-3">
@@ -84,7 +139,6 @@
                         </div>
                         <div>
                             <h2 class="h6 mb-0 fw-semibold">Thông tin khách hàng</h2>
-                            <div class="small text-body-secondary">Thông tin được truy vấn từ GuestId của Booking</div>
                         </div>
                     </div>
                 </div>
@@ -112,6 +166,18 @@
                             <div class="booking-detail-label">Giới tính</div>
                             <div class="booking-detail-value">@Model.Guest.SexName</div>
                         </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="booking-detail-label">Số điện thoại</div>
+                            <div class="booking-detail-value booking-detail-breakable">
+                                @(string.IsNullOrWhiteSpace(Model.Guest.PhoneNumber) ? "Không có" : Model.Guest.PhoneNumber)
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="booking-detail-label">Email</div>
+                            <div class="booking-detail-value booking-detail-breakable">
+                                @(string.IsNullOrWhiteSpace(Model.Guest.Email) ? "Không có" : Model.Guest.Email)
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -126,7 +192,6 @@
                         </div>
                         <div>
                             <h2 class="h6 mb-0 fw-semibold">Thời gian lưu trú</h2>
-                            <div class="small text-body-secondary">Thời gian dự tính và thực tế</div>
                         </div>
                     </div>
                 </div>
@@ -166,7 +231,6 @@
                         </div>
                         <div>
                             <h2 class="h6 mb-0 fw-semibold">Số lượng khách</h2>
-                            <div class="small text-body-secondary">Tổng số người của Booking</div>
                         </div>
                     </div>
                 </div>
@@ -193,8 +257,7 @@
                             <i class="bi bi-wallet2"></i>
                         </div>
                         <div>
-                            <h2 class="h6 mb-0 fw-semibold">Tiền cọc</h2>
-                            <div class="small text-body-secondary">Thông tin thanh toán tiền cọc</div>
+                            <h2 class="h6 mb-0 fw-semibold">Thông tin thanh toán tiền cọc</h2>
                         </div>
                     </div>
                 </div>
@@ -228,32 +291,10 @@
                 <div class="card-header bg-body border-bottom py-3">
                     <div class="d-flex align-items-center gap-2">
                         <div class="booking-detail-section-icon" aria-hidden="true">
-                            <i class="bi bi-card-text"></i>
-                        </div>
-                        <div>
-                            <h2 class="h6 mb-0 fw-semibold">Ghi chú</h2>
-                            <div class="small text-body-secondary">Thông tin bổ sung của Booking</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="booking-detail-note">
-                        @(string.IsNullOrWhiteSpace(Model.Note) ? "Không có ghi chú" : Model.Note)
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="col-12">
-            <section class="card border-0 shadow-sm">
-                <div class="card-header bg-body border-bottom py-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="booking-detail-section-icon" aria-hidden="true">
                             <i class="bi bi-box-seam"></i>
                         </div>
                         <div>
                             <h2 class="h6 mb-0 fw-semibold">Phòng trong đặt phòng</h2>
-                            <div class="small text-body-secondary">BookingRooms cùng dịch vụ và phí phát sinh theo từng phòng</div>
                         </div>
                     </div>
                 </div>
@@ -412,7 +453,6 @@
                             </div>
                             <div>
                                 <h2 class="h6 mb-0 fw-semibold">Hóa đơn</h2>
-                                <div class="small text-body-secondary">Hóa đơn đang tồn tại của Booking</div>
                             </div>
                         </div>
                     </div>
@@ -447,41 +487,5 @@
                 </section>
             </div>
         }
-
-        <div class="col-12">
-            <section class="card border-0 shadow-sm">
-                <div class="card-header bg-body border-bottom py-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="booking-detail-section-icon" aria-hidden="true">
-                            <i class="bi bi-info-circle"></i>
-                        </div>
-                        <div>
-                            <h2 class="h6 mb-0 fw-semibold">Thông tin hệ thống</h2>
-                            <div class="small text-body-secondary">Thông tin audit và trạng thái Booking</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-12 col-md-4">
-                            <div class="booking-detail-label">Mã đặt phòng</div>
-                            <div class="booking-detail-value font-monospace booking-detail-breakable">@Model.BookingCode</div>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <div class="booking-detail-label">Loại đặt phòng</div>
-                            <div class="booking-detail-value">@Model.BookingTypeName</div>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <div class="booking-detail-label">Ngày tạo</div>
-                            <div class="booking-detail-value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <div class="booking-detail-label">Ngày chỉnh sửa gần nhất</div>
-                            <div class="booking-detail-value">@Model.LastModifiedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
     </div>
 </div>

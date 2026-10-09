@@ -345,7 +345,7 @@ public sealed class EmployeeService : IEmployeeService
     }
 
     private static readonly Regex AutoEmployeeCodeRegex = new(
-    @"^NV(?<number>[0-9]{3,})$",
+    @"^NV(?<number>[0-9]+)$",
     RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     public async Task<EmployeeCreateViewModel> GetCreateModelAsync(
@@ -374,7 +374,6 @@ public sealed class EmployeeService : IEmployeeService
             .ToListAsync(cancellationToken);
 
         var maxNumber = 0;
-        var width = 3;
 
         foreach (var rawCode in codes)
         {
@@ -402,15 +401,11 @@ public sealed class EmployeeService : IEmployeeService
                 maxNumber = number;
             }
 
-            width = Math.Max(
-                width,
-                match.Groups["number"].Value.Length);
         }
 
         var nextNumber = maxNumber + 1;
-        width = Math.Max(width, nextNumber.ToString().Length);
 
-        return $"NV{nextNumber.ToString($"D{width}")}";
+        return $"NV{nextNumber}";
     }
 
     public async Task<(bool Succeeded, string? ErrorMessage)> CreateAsync(
@@ -434,12 +429,12 @@ public sealed class EmployeeService : IEmployeeService
 
         if (string.IsNullOrWhiteSpace(employeeCode))
         {
-            employeeCode = await GetNextEmployeeCodeAsync(cancellationToken);
+            return (false, "Mã nhân viên không được để trống.");
         }
 
-        if (employeeCode.Any(char.IsWhiteSpace))
+        if (!Regex.IsMatch(employeeCode, @"^[A-Za-z0-9]+$"))
         {
-            return (false, "Mã nhân viên không được chứa dấu cách hoặc khoảng trắng.");
+            return (false, "Mã nhân viên chỉ được chứa chữ cái và chữ số, không chứa dấu cách hoặc ký tự đặc biệt.");
         }
 
         if (employeeCode.Length > 50)
@@ -467,15 +462,15 @@ public sealed class EmployeeService : IEmployeeService
             return (false, "Tên nhân viên không được để trống.");
         }
 
-        model.EmployeeCode = (model.EmployeeCode ?? string.Empty).Trim();
+        model.EmployeeCode = (model.EmployeeCode ?? string.Empty).Trim().ToUpperInvariant();
         if (string.IsNullOrWhiteSpace(model.EmployeeCode))
         {
             return (false, "Mã nhân viên không được để trống.");
         }
 
-        if (model.EmployeeCode.Any(char.IsWhiteSpace))
+        if (!Regex.IsMatch(model.EmployeeCode, @"^[A-Za-z0-9]+$"))
         {
-            return (false, "Mã nhân viên không được chứa dấu cách hoặc khoảng trắng.");
+            return (false, "Mã nhân viên chỉ được chứa chữ cái và chữ số, không chứa dấu cách hoặc ký tự đặc biệt.");
         }
 
         if (model.EmployeeCode.Length > 50)
@@ -600,6 +595,25 @@ public sealed class EmployeeService : IEmployeeService
             return (false, "Không xác định được người dùng đang đăng nhập.");
         }
 
+        var employeeCode = (model.EmployeeCode ?? string.Empty)
+            .Trim()
+            .ToUpperInvariant();
+
+        if (string.IsNullOrWhiteSpace(employeeCode))
+        {
+            return (false, "Mã nhân viên không được để trống.");
+        }
+
+        if (!Regex.IsMatch(employeeCode, @"^[A-Za-z0-9]+$"))
+        {
+            return (false, "Mã nhân viên chỉ được chứa chữ cái và chữ số, không chứa dấu cách hoặc ký tự đặc biệt.");
+        }
+
+        if (employeeCode.Length > 50)
+        {
+            return (false, "Mã nhân viên không được vượt quá 50 ký tự.");
+        }
+
         if (string.IsNullOrWhiteSpace(model.EmployeeName))
         {
             return (false, "Tên nhân viên không được để trống.");
@@ -627,9 +641,9 @@ public sealed class EmployeeService : IEmployeeService
 
         var today = DateOnly.FromDateTime(DateTime.Today);
 
-        if (model.DateOfBirth.Value > today)
+        if (model.DateOfBirth.Value >= today)
         {
-            return (false, "Ngày sinh không được lớn hơn ngày hiện tại.");
+            return (false, "Ngày sinh phải bé hơn ngày hiện tại.");
         }
 
         if (model.DateOfBirth.Value >= model.StartDate.Value)
@@ -657,7 +671,7 @@ public sealed class EmployeeService : IEmployeeService
             var duplicateCode = await _context.Employees
                 .AsNoTracking()
                 .AnyAsync(
-                    item => item.EmployeeCode == model.EmployeeCode &&
+                    item => item.EmployeeCode == employeeCode &&
                            item.Id != employee.Id,
                     cancellationToken);
 
@@ -695,7 +709,7 @@ public sealed class EmployeeService : IEmployeeService
             var oldPosition = employee.Position;
             var newPosition = model.Position.Value;
 
-            employee.EmployeeCode = model.EmployeeCode;
+            employee.EmployeeCode = employeeCode;
             employee.EmployeeName = model.EmployeeName.Trim();
             employee.DateOfBirth = model.DateOfBirth.Value;
             employee.Sex = model.Sex.Value;
@@ -821,27 +835,28 @@ public sealed class EmployeeService : IEmployeeService
             //    Employee này.
             //
             //    Không xóa tài khoản và không thay đổi Role.
-            //    Chỉ IsActive = 0.
+            //    Chỉ IsActive = false.
             // =========================================================
+
+            int deactivatedUserCount = 0;
 
             var linkedUser = await _context.Users
                 .SingleOrDefaultAsync(
-                    user => user.EmployeeId == employee.Id && !user.IsDeleted
-                    && user.IsActive,
+                    user => user.EmployeeId == employee.Id && !user.IsDeleted,
                     cancellationToken);
 
-
-            if (linkedUser is not null)
+            if (linkedUser is not null && linkedUser.IsActive)
             {
                 linkedUser.IsActive = false;
                 linkedUser.LastModifiedBy = currentUserId;
                 linkedUser.LastModifiedAt = now;
+                deactivatedUserCount = 1;
             }
 
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            return (true, null, linkedUser is not null ? 1 : 0);
+            return (true, null, deactivatedUserCount);
         }
         catch (OperationCanceledException)
         {
@@ -870,6 +885,7 @@ public sealed class EmployeeService : IEmployeeService
     public async Task<(bool Succeeded, string? ErrorMessage, int ActivatedUserCount)> ReturnToWorkAsync(
     Guid id,
     Guid currentUserId,
+    bool activateLinkedUser,
     CancellationToken cancellationToken = default)
     {
         if (id == Guid.Empty)
@@ -924,23 +940,28 @@ public sealed class EmployeeService : IEmployeeService
             // Chỉ IsActive = 1.
             // =========================================================
 
+            int activatedUserCount = 0;
+
+            // Luôn tìm User liên kết trước. Khi người dùng tích checkbox,
+            // chỉ tài khoản đang bị vô hiệu hóa mới được chuyển lại sang Active.
+            // Không tạo tài khoản mới và không thay đổi Role.
             var linkedUser = await _context.Users
                 .SingleOrDefaultAsync(
-                    user => user.EmployeeId == employee.Id && !user.IsDeleted
-                    && !user.IsActive,
+                    user => user.EmployeeId == employee.Id && !user.IsDeleted,
                     cancellationToken);
 
-            if (linkedUser is not null)
+            if (activateLinkedUser && linkedUser is not null && !linkedUser.IsActive)
             {
                 linkedUser.IsActive = true;
                 linkedUser.LastModifiedBy = currentUserId;
                 linkedUser.LastModifiedAt = now;
+                activatedUserCount = 1;
             }
 
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            return (true, null, linkedUser is not null ? 1 : 0);
+            return (true, null, activatedUserCount);
         }
         catch (OperationCanceledException)
         {

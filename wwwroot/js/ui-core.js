@@ -572,6 +572,18 @@
                 );
 
 
+            const returnToWorkOption =
+                document.getElementById(
+                    "uiConfirmReturnToWorkOption"
+                );
+
+
+            const activateLinkedUserCheckbox =
+                document.getElementById(
+                    "uiConfirmActivateLinkedUser"
+                );
+
+
             const confirmButton =
                 document.getElementById(
                     "uiConfirmOkBtn"
@@ -634,6 +646,15 @@
                 false;
 
 
+            if (returnToWorkOption) {
+                returnToWorkOption.classList.add("d-none");
+            }
+
+            if (activateLinkedUserCheckbox) {
+                activateLinkedUserCheckbox.checked = false;
+            }
+
+
             // =================================================
             // CONTENT
             // =================================================
@@ -667,6 +688,15 @@
                     "d-none"
                 );
 
+            }
+
+
+            if (returnToWorkOption) {
+                if (options.showActivateLinkedUser === true) {
+                    returnToWorkOption.classList.remove("d-none");
+                } else {
+                    returnToWorkOption.classList.add("d-none");
+                }
             }
 
 
@@ -800,6 +830,25 @@
 
             }
 
+
+            const returnToWorkOption =
+                document.getElementById(
+                    "uiConfirmReturnToWorkOption"
+                );
+
+            const activateLinkedUserCheckbox =
+                document.getElementById(
+                    "uiConfirmActivateLinkedUser"
+                );
+
+            if (returnToWorkOption) {
+                returnToWorkOption.classList.add("d-none");
+            }
+
+            // Không reset checkbox tại đây.
+            // ReturnToWork cần đọc giá trị checkbox trong callback onConfirm
+            // sau khi modal được đóng. Trạng thái checkbox sẽ được reset
+            // tại showConfirm() trước mỗi lần mở modal mới.
 
             HotelUI._confirmAction =
                 null;

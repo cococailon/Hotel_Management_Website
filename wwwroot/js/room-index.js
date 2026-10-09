@@ -153,12 +153,10 @@
         }
 
         if (!allowed) {
-            if (action === "activate") {
-                showActionError(
-                    "Chưa thể mở hoạt động",
-                    "Loại phòng đang dừng hoạt động. Hãy mở hoạt động loại phòng trước."
-                );
-            }
+            showActionError(
+                "Không thể thực hiện",
+                "Thao tác này hiện không khả dụng."
+            );
             return;
         }
 
@@ -168,7 +166,7 @@
                 input: "roomDeactivateId",
                 title: "Xác nhận dừng hoạt động phòng",
                 message: `Bạn có chắc muốn dừng hoạt động ${name} không?`,
-                note: "Phòng đang được sử dụng sẽ không thể thực hiện thao tác này. Bạn có thể đánh dấu đây là trường hợp bảo trì; hệ thống vẫn kiểm tra lại điều kiện ở máy chủ.",
+                note: "Phòng đang được sử dụng sẽ không thể thực hiện thao tác này. Bạn có thể đánh dấu đây là trường hợp bảo trì.",
                 confirmText: "Dừng hoạt động",
                 variant: "warning",
                 icon: "bi-pause-circle"
@@ -220,7 +218,7 @@
                 input: "housekeepingCleanId",
                 title: "Xác nhận dọn dẹp phòng",
                 message: `Bạn có chắc muốn dọn dẹp ${name} không?`,
-                note: "Nếu xác nhận, phòng sẽ chuyển từ Chờ dọn dẹp (Status = 2) sang Đang dọn dẹp (Status = 3).",
+                note: "",
                 confirmText: "Dọn dẹp phòng",
                 variant: "primary",
                 icon: "bi-stars"
@@ -230,7 +228,7 @@
                 input: "housekeepingCompleteId",
                 title: "Xác nhận đã dọn xong phòng",
                 message: `Bạn có chắc đã dọn dẹp xong ${name} không?`,
-                note: "Nếu xác nhận, phòng sẽ chuyển từ Đang dọn dẹp (Status = 3) về Trống (Status = 0).",
+                note: "",
                 confirmText: "Đã dọn xong",
                 variant: "success",
                 icon: "bi-check2-circle"
@@ -240,7 +238,7 @@
                 input: "roomDeleteId",
                 title: "Xác nhận xóa phòng",
                 message: `Bạn có chắc muốn xóa ${name} không?`,
-                note: "Phòng sẽ được soft-delete và không còn hiển thị trong danh sách quản lý.",
+                note: "",
                 confirmText: "Xóa phòng",
                 variant: "danger",
                 icon: "bi-trash3"

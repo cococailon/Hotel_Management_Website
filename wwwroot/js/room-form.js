@@ -1,4 +1,4 @@
-﻿(function (window, document) {
+(function (window, document) {
     "use strict";
 
     const alreadyBound = window.__roomFormBound === true;
@@ -41,6 +41,177 @@
         form.querySelectorAll("[data-valmsg-for]").forEach(x => x.textContent = "");
     }
 
+    function getMessageElement(form, name) {
+        return Array.from(form?.querySelectorAll("[data-valmsg-for]") || [])
+            .find(x => x.getAttribute("data-valmsg-for") === name) || null;
+    }
+
+    function captureServerError(form, name, relatedNames = []) {
+        const input = getField(name);
+        const messageElement = getMessageElement(form, name);
+        if (!input || !messageElement) return;
+
+        const message = messageElement.textContent?.trim() || "";
+        if (!message) return;
+
+        input.dataset.serverValidationValue = input.value;
+        input.dataset.serverValidationMessage = message;
+        input.dataset.serverValidationRelatedValues = JSON.stringify(
+            relatedNames.map(relatedName => ({
+                name: relatedName,
+                value: getField(relatedName)?.value ?? ""
+            }))
+        );
+
+        input.classList.add("is-invalid");
+        input.setAttribute("aria-invalid", "true");
+        messageElement.classList.remove("field-validation-valid");
+        messageElement.classList.add("field-validation-error");
+    }
+
+    function restoreServerError(form, name) {
+        const input = getField(name);
+        const messageElement = getMessageElement(form, name);
+        if (!input || !messageElement) return;
+
+        const originalValue = input.dataset.serverValidationValue;
+        const message = input.dataset.serverValidationMessage;
+        if (originalValue === undefined || !message) return;
+
+        let relatedValues = [];
+        try {
+            relatedValues = JSON.parse(input.dataset.serverValidationRelatedValues || "[]");
+        }
+        catch {
+            relatedValues = [];
+        }
+
+        if (input.value !== originalValue) return;
+        if (relatedValues.some(item => (getField(item.name)?.value ?? "") !== item.value)) return;
+
+        input.classList.add("is-invalid");
+        input.setAttribute("aria-invalid", "true");
+        messageElement.textContent = message;
+        messageElement.classList.remove("field-validation-valid");
+        messageElement.classList.add("field-validation-error");
+    }
+
+    function clearServerError(name, relatedNames = []) {
+        const input = getField(name);
+        if (!input) return;
+
+        delete input.dataset.serverValidationValue;
+        delete input.dataset.serverValidationMessage;
+        delete input.dataset.serverValidationRelatedValues;
+
+        const messageElement = getMessageElement(getForm(), name);
+        if (messageElement) {
+            messageElement.textContent = "";
+            messageElement.classList.remove("field-validation-error");
+            messageElement.classList.add("field-validation-valid");
+        }
+
+        for (const relatedName of relatedNames) {
+            const relatedInput = getField(relatedName);
+            if (!relatedInput) continue;
+            delete relatedInput.dataset.serverValidationValue;
+            delete relatedInput.dataset.serverValidationMessage;
+            delete relatedInput.dataset.serverValidationRelatedValues;
+        }
+    }
+
+    function bindServerErrorPersistence(form) {
+        if (!form || form.dataset.serverErrorPersistenceBound === "true") return;
+        form.dataset.serverErrorPersistenceBound = "true";
+
+        captureServerError(form, "RoomCode");
+        captureServerError(form, "LeftToRightOrder", ["Floor", "Row"]);
+
+        const codeInput = getField("RoomCode");
+        if (codeInput) {
+            codeInput.addEventListener("input", () => {
+                if (codeInput.dataset.serverValidationValue !== undefined && codeInput.value !== codeInput.dataset.serverValidationValue) {
+                    clearServerError("RoomCode");
+                }
+            });
+            // native-validation xử lý focusout ở document capture trước;
+            // listener capture tại field chạy ngay sau đó để khôi phục lỗi server.
+            codeInput.addEventListener("focusout", () => {
+                restoreServerError(form, "RoomCode");
+            }, true);
+        }
+
+        for (const name of ["Floor", "Row", "LeftToRightOrder"]) {
+            const input = getField(name);
+            if (!input) continue;
+            input.addEventListener("input", () => {
+                const tracked = getField("LeftToRightOrder");
+                if (tracked?.dataset.serverValidationValue !== undefined) {
+                    clearServerError("LeftToRightOrder", ["Floor", "Row"]);
+                }
+            });
+            input.addEventListener("focusout", () => {
+                restoreServerError(form, "LeftToRightOrder");
+            }, true);
+        }
+    }
+
+    async function generateRoomCode(form) {
+        const input = getField("RoomCode");
+        const button = document.getElementById("generateRoomCodeButton");
+        if (!input || !button || isEdit(form)) return;
+
+        const originalHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Đang sinh...';
+
+        try {
+            const endpoint = button.dataset.endpoint;
+            if (!endpoint) throw new Error("Thiếu endpoint tự sinh mã phòng.");
+
+            const response = await fetch(endpoint, {
+                method: "GET",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/json"
+                },
+                credentials: "same-origin"
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok || !payload?.code) {
+                throw new Error(payload?.message || "Không thể tự sinh mã phòng.");
+            }
+
+            input.value = payload.code;
+            clearServerError("RoomCode");
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+            window.NativeFormValidation?.validateElement(form, input);
+        }
+        catch (error) {
+            window.HotelUI?.toast("error", "Không thể tự sinh mã phòng", error?.message || "Vui lòng thử lại.");
+        }
+        finally {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        }
+    }
+
+
+    function getRoomIsActive(form) {
+        if (!form) return true;
+
+        if (isEdit(form)) {
+            return form.dataset.roomIsActive === "true";
+        }
+
+        const activeInput = getField("IsActive");
+        if (!activeInput) return true;
+
+        return activeInput.value === "true";
+    }
+
     function validateBasic(form) {
         const nativeValidation = window.NativeFormValidation;
         if (nativeValidation && !nativeValidation.validateForm(form, { focusFirst: true })) {
@@ -56,15 +227,14 @@
         const code = getField("RoomCode")?.value.trim() ?? "";
         const isEditForm = isEdit(form);
 
-        // RoomCode của Edit là bắt buộc; Create có thể để trống để tự sinh.
-        if (isEditForm && !code) {
+        if (!code) {
             setFieldError("RoomCode", "Vui lòng nhập mã phòng.");
             window.NativeFormValidation?.focusControl(getField("RoomCode"));
             return false;
         }
 
         const type = getField("RoomTypeId")?.value ?? "";
-        const active = !!getField("IsActive")?.checked;
+        const active = getRoomIsActive(form);
         const select = getField("RoomTypeId");
         const selected = select?.selectedOptions?.[0];
 
@@ -94,14 +264,13 @@
 
     function updateRoomTypeOptions() {
         const form = getForm();
-        const activeInput = document.getElementById("roomIsActive");
         const select = document.getElementById("roomTypeId");
 
-        if (!form || !activeInput || !select || activeInput.disabled) {
+        if (!form || !select) {
             return;
         }
 
-        const active = activeInput.checked;
+        const active = getRoomIsActive(form);
 
         Array.from(select.options).forEach(option => {
             if (!option.value) {
@@ -111,19 +280,16 @@
             }
 
             const isActiveType = option.dataset.active === "true";
+
             if (active) {
-                option.disabled = !isActiveType;
+                option.disabled = !isActiveType || option.dataset.selectable === "false";
                 option.hidden = !isActiveType;
             }
             else {
-                option.disabled = false;
+                option.disabled = option.dataset.selectable === "false";
                 option.hidden = false;
             }
         });
-
-        if (select.selectedOptions[0]?.disabled) {
-            select.value = "";
-        }
     }
 
     function renderPositionSuggestion(data, row) {
@@ -232,7 +398,7 @@
                     : `Bạn có chắc muốn tạo phòng ${roomName} không?`,
                 note: isInUse(form)
                     ? "Phòng đang sử dụng nên chỉ Mô tả và Ghi chú được phép thay đổi."
-                    : "Hệ thống sẽ kiểm tra lại mã phòng, vị trí và loại phòng trước khi lưu.",
+                    : "",
                 confirmText: editing ? "Lưu thay đổi" : "Tạo phòng",
                 variant: "primary",
                 icon: editing ? "bi-check-lg" : "bi-plus-lg",
@@ -248,6 +414,17 @@
         )) {
             confirm();
         }
+    }
+
+    const currentForm = getForm();
+    if (currentForm) {
+        bindServerErrorPersistence(currentForm);
+    }
+
+    const generateButton = document.getElementById("generateRoomCodeButton");
+    if (generateButton && !generateButton.dataset.bound) {
+        generateButton.dataset.bound = "true";
+        generateButton.addEventListener("click", () => generateRoomCode(getForm()));
     }
 
     if (!alreadyBound) {

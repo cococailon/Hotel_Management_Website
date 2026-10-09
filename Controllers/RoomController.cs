@@ -122,12 +122,6 @@ public sealed class RoomController : Controller
         model ??= new RoomCreateViewModel();
         model.RoomCode = (model.RoomCode ?? string.Empty).Trim();
 
-        if (string.IsNullOrWhiteSpace(model.RoomCode))
-        {
-            model.RoomCode = await _roomService.GetNextRoomCodeAsync(cancellationToken);
-            ModelState.Remove(nameof(RoomCreateViewModel.RoomCode));
-        }
-
         if (!ModelState.IsValid)
         {
             await PopulateCreateLookupsAsync(model, cancellationToken);
@@ -179,6 +173,29 @@ public sealed class RoomController : Controller
 
     [AdminAccess]
     [HttpGet]
+    public async Task<IActionResult> GetNextRoomCode(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var code = await _roomService.GetNextRoomCodeAsync(cancellationToken);
+            return Json(new { code });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Không thể tự sinh mã phòng.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                message = "Không thể tự sinh mã phòng. Vui lòng thử lại."
+            });
+        }
+    }
+
+    [AdminAccess]
+    [HttpGet]
     public async Task<IActionResult> Edit(
         Guid id,
         string? returnUrl,
@@ -217,6 +234,8 @@ public sealed class RoomController : Controller
             if (current is not null)
             {
                 model.Status = current.Status;
+                // Trạng thái hoạt động chỉ đọc tại màn hình Sửa phòng.
+                model.IsActive = current.IsActive;
 
                 // Khi phòng đang sử dụng, mã và mọi thuộc tính khác ngoài Mô tả/Ghi chú đều bị khóa.
                 if (current.Status == 1)
@@ -228,7 +247,6 @@ public sealed class RoomController : Controller
                     model.Row = current.Row;
                     model.LeftToRightOrder = current.LeftToRightOrder;
                     model.RoomTypeId = current.RoomTypeId;
-                    model.IsActive = current.IsActive;
 
                     foreach (var field in new[]
                     {
@@ -236,8 +254,7 @@ public sealed class RoomController : Controller
                         nameof(RoomEditViewModel.Floor),
                         nameof(RoomEditViewModel.Row),
                         nameof(RoomEditViewModel.LeftToRightOrder),
-                        nameof(RoomEditViewModel.RoomTypeId),
-                        nameof(RoomEditViewModel.IsActive)
+                        nameof(RoomEditViewModel.RoomTypeId)
                     })
                     {
                         ModelState.Remove(field);
@@ -437,9 +454,6 @@ public sealed class RoomController : Controller
     {
         var types = await _roomService.GetCreateModelAsync(cancellationToken);
         model.AvailableRoomTypes = types.AvailableRoomTypes;
-
-        if (string.IsNullOrWhiteSpace(model.RoomCode))
-            model.RoomCode = types.RoomCode;
     }
 
     private async Task PopulateEditLookupsAsync(

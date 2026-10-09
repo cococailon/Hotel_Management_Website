@@ -12,6 +12,15 @@
           asp-append-version="true" />
 }
 
+@await Html.PartialAsync(
+"~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Sửa tài khoản",
+        Description = "Cập nhật thông tin tài khoản.",
+        Icon = "bi bi-pencil-square"
+    })
+
 <div class="user-edit-page">
 
     <form asp-controller="User"
@@ -74,7 +83,7 @@
                                spellcheck="false" />
 
                         <div class="form-text">
-                            Mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.
+                            Bắt buộc nhập. Chỉ được chứa chữ cái và chữ số, không có dấu cách hoặc ký tự đặc biệt, và không được trùng.
                         </div>
 
                         <span asp-validation-for="UserCode" class="text-danger"></span>
@@ -96,7 +105,9 @@
                         <span asp-validation-for="UserName"
                               class="text-danger">
                         </span>
-
+                        <div class="form-text">
+                            Bắt buộc nhập, ít nhất 3 ký tự, không chứa dấu cách hoặc khoảng trắng và không được trùng.
+                        </div>
                     </div>
 
                     <div class="col-12 col-md-6">
@@ -169,7 +180,8 @@
         <!-- EMPLOYEE ASSIGNMENT -->
         <!-- ===================================================== -->
 
-        <section class="card border-0 shadow-sm mb-4">
+        <section id="userRoleAssignmentSection"
+                 class="card border-0 shadow-sm mb-4 @(Model.Role == 0 ? "d-none" : "")">
 
             <div class="card-header bg-body border-bottom">
 
@@ -180,12 +192,14 @@
                     </div>
 
                     <div>
-                        <h2 class="h5 mb-1 fw-semibold">
-                            Gán nhân viên
+                        <h2 id="userRoleAssignmentTitle" class="h5 mb-1 fw-semibold">
+                            @(Model.Role == 0 ? "Phân quyền Admin" : "Gán nhân viên")
                         </h2>
 
-                        <p class="text-body-secondary small mb-0">
-                            Tài khoản có thể được gán cho một nhân viên hoặc để trống.
+                        <p id="userRoleAssignmentDescription" class="text-body-secondary small mb-0">
+                            @(Model.Role == 0
+                                ? "Tài khoản Admin không cần gán nhân viên."
+                                : "Tài khoản có thể được gán cho một nhân viên hoặc để trống.")
                         </p>
                     </div>
 
@@ -195,7 +209,7 @@
 
             <div class="card-body">
 
-                <div id="userEditEmployeeAssignmentBlock">
+                <div id="userEditEmployeeAssignmentBlock" class="@(Model.Role == 0 ? "d-none" : "")">
 
                     <label asp-for="EmployeeId"
                            class="form-label">

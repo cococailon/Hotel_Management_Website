@@ -104,11 +104,6 @@ public sealed class ServicesController : Controller
     {
         model ??= new ServiceCreateViewModel();
         model.ServiceCode = (model.ServiceCode ?? string.Empty).Trim();
-        if (string.IsNullOrWhiteSpace(model.ServiceCode))
-        {
-            model.ServiceCode = await _service.GetNextServiceCodeAsync(cancellationToken);
-            ModelState.Remove(nameof(ServiceCreateViewModel.ServiceCode));
-        }
 
         if (!ModelState.IsValid) return View(model);
         if (!TryGetCurrentUserId(out var currentUserId)) return Challenge();
@@ -119,7 +114,10 @@ public sealed class ServicesController : Controller
             AddFieldErrors(result.FieldErrors);
             if (!result.Succeeded)
             {
-                ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Không thể tạo dịch vụ.");
+                if (string.IsNullOrWhiteSpace(result.ErrorMessage))
+                {
+                    return View(model);
+                }
                 return View(model);
             }
             TempData["SuccessMessage"] = $"Đã tạo dịch vụ {model.ServiceCode} thành công.";
@@ -128,9 +126,17 @@ public sealed class ServicesController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Lỗi khi tạo dịch vụ {ServiceCode}.", model.ServiceCode);
-            ModelState.AddModelError(string.Empty, "Không thể tạo dịch vụ. Vui lòng thử lại.");
+            ModelState.AddModelError(nameof(ServiceCreateViewModel.ServiceCode), "Mã dịch vụ đã tồn tại hoặc không thể lưu dữ liệu.");
             return View(model);
         }
+    }
+
+    [AdminAccess]
+    [HttpGet]
+    public async Task<IActionResult> GenerateCode(CancellationToken cancellationToken)
+    {
+        var code = await _service.GetNextServiceCodeAsync(cancellationToken);
+        return Json(new { code });
     }
 
     [AdminAccess]
@@ -186,7 +192,6 @@ public sealed class ServicesController : Controller
             AddFieldErrors(result.FieldErrors);
             if (!result.Succeeded)
             {
-                ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Không thể lưu thay đổi dịch vụ.");
                 return View(model);
             }
             TempData["SuccessMessage"] = $"Đã cập nhật dịch vụ {model.ServiceCode} thành công.";
@@ -195,7 +200,7 @@ public sealed class ServicesController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Lỗi khi sửa dịch vụ {ServiceId}.", model.Id);
-            ModelState.AddModelError(string.Empty, "Không thể lưu thay đổi dịch vụ. Vui lòng thử lại.");
+            ModelState.AddModelError(nameof(ServiceEditViewModel.ServiceCode), "Mã dịch vụ đã tồn tại hoặc không thể lưu dữ liệu.");
             return View(model);
         }
     }

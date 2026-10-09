@@ -92,33 +92,36 @@
             </section>
         </div>
 
-        <div class="col-12 col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-body border-bottom py-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="user-detail-section-icon" aria-hidden="true">
-                            <i class="bi bi-person-badge"></i>
-                        </div>
-                        <div>
-                            <h2 class="h6 mb-0 fw-semibold">Nhân viên được gán</h2>
-                            <div class="small text-body-secondary">Liên kết giữa tài khoản và hồ sơ nhân viên</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-12 col-sm-6">
-                            <div class="user-detail-label">Mã nhân viên</div>
-                            <div class="user-detail-value font-monospace">@(string.IsNullOrWhiteSpace(Model.EmployeeCode) ? "Chưa gán" : Model.EmployeeCode)</div>
-                        </div>
-                        <div class="col-12 col-sm-6">
-                            <div class="user-detail-label">Tên nhân viên</div>
-                            <div class="user-detail-value user-detail-breakable">@(string.IsNullOrWhiteSpace(Model.EmployeeName) ? "Chưa gán" : Model.EmployeeName)</div>
+        @if (Model.Role is not 0 and not 4)
+        {
+            <div class="col-12 col-xl-6">
+                <section class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-body border-bottom py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="user-detail-section-icon" aria-hidden="true">
+                                <i class="bi bi-person-badge"></i>
+                            </div>
+                            <div>
+                                <h2 class="h6 mb-0 fw-semibold">Nhân viên được gán</h2>
+                                <div class="small text-body-secondary">Liên kết giữa tài khoản và hồ sơ nhân viên</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
-        </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6">
+                                <div class="user-detail-label">Mã nhân viên</div>
+                                <div class="user-detail-value font-monospace">@(string.IsNullOrWhiteSpace(Model.EmployeeCode) ? "Chưa gán" : Model.EmployeeCode)</div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <div class="user-detail-label">Tên nhân viên</div>
+                                <div class="user-detail-value user-detail-breakable">@(string.IsNullOrWhiteSpace(Model.EmployeeName) ? "Chưa gán" : Model.EmployeeName)</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        }
 
         <div class="col-12">
             <section class="card border-0 shadow-sm">

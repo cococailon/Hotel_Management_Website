@@ -17,7 +17,7 @@
     new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
     {
         Title = "Quản lý đặt phòng",
-        Description = "Xem danh sách và chi tiết các đặt phòng của khách sạn.",
+        Description = "",
         Icon = "bi-calendar-check"
     })
 
@@ -43,9 +43,6 @@ else
                     <div class="min-width-0">
                         <div class="d-flex align-items-center flex-wrap gap-2">
                             <h2 class="h5 mb-0 fw-semibold">Danh sách đặt phòng</h2>
-                            <span class="badge text-bg-secondary booking-count-badge">
-                                @Model.TotalCount.ToString("N0") đặt phòng
-                            </span>
                         </div>
                         <p class="text-body-secondary small mb-0 mt-1">
                             Tìm kiếm theo mã đặt phòng hoặc mã khách hàng, sắp xếp và lọc theo trạng thái.
@@ -213,7 +210,7 @@ else
                                     </span>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge text-bg-light border text-body">
+                                    <span class="badge text-bg-gray-dark border text-body">
                                         @booking.TotalAdults
                                         <i class="bi bi-person-fill ms-1 me-1" aria-hidden="true"></i>
                                         /

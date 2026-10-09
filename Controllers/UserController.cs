@@ -118,6 +118,25 @@ public sealed class UserController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> GenerateUserCode(
+        CancellationToken cancellationToken = default)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (!currentUserId.HasValue)
+            return Unauthorized();
+
+        var currentRole = await _userService.GetUserRoleCodeAsync(
+            currentUserId.Value,
+            cancellationToken);
+
+        if (currentRole is not 0 and not 4)
+            return Forbid();
+
+        var userCode = await _userService.GenerateNextUserCodeAsync(cancellationToken);
+        return Json(new { userCode });
+    }
+
+    [HttpGet]
     public async Task<IActionResult> Details(
         Guid id,
         string? returnUrl,
@@ -191,8 +210,8 @@ public sealed class UserController : Controller
         if (currentRole is not 0 and not 4)
             return RedirectToRoleHome();
 
-        model.UserCode = (model.UserCode ?? string.Empty).Trim();
-        model.UserName = (model.UserName ?? string.Empty).Trim();
+        model.UserCode ??= string.Empty;
+        model.UserName ??= string.Empty;
         model.Note = string.IsNullOrWhiteSpace(model.Note)
             ? null
             : model.Note.Trim();
@@ -216,7 +235,7 @@ public sealed class UserController : Controller
 
         if (!result.Succeeded)
         {
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Không thể lưu thay đổi tài khoản.");
+            AddBusinessValidationError(result.ErrorMessage);
             model.Employees = await _userService.GetEmployeesForEditAsync(
                 model.Role,
                 model.EmployeeId,
@@ -254,21 +273,8 @@ public sealed class UserController : Controller
         if (currentRole is not 0 and not 4)
             return RedirectToRoleHome();
 
-        // Chuẩn hóa mã trước khi kiểm tra ModelState.
-        model.UserCode =
-            (model.UserCode ?? string.Empty)
-                .Trim()
-                .ToUpperInvariant();
-
-        // Giống Create Nhân viên: nếu người dùng để trống mã, hệ thống tự sinh lại.
-        if (string.IsNullOrWhiteSpace(model.UserCode))
-        {
-            model.UserCode = await _userService.GenerateNextUserCodeAsync(
-                cancellationToken);
-
-            ModelState.Remove(nameof(UserCreateViewModel.UserCode));
-        }
-
+        model.UserCode ??= string.Empty;
+        model.UserName ??= string.Empty;
         model.CanCreateAdmin = currentRole.Value == 4;
 
         if (!ModelState.IsValid)
@@ -285,11 +291,7 @@ public sealed class UserController : Controller
 
         if (!result.Succeeded)
         {
-            // Giống hệt Edit User: lỗi nghiệp vụ sau submit hiển thị
-            // tại validation-summary ở đầu form.
-            ModelState.AddModelError(
-                string.Empty,
-                result.ErrorMessage ?? "Không thể tạo tài khoản.");
+            AddBusinessValidationError(result.ErrorMessage);
 
             await ReloadEmployeeOptionsAsync(model, cancellationToken);
             return View(model);
@@ -499,6 +501,24 @@ public sealed class UserController : Controller
             model.Role,
             currentEmployeeId: null,
             cancellationToken);
+    }
+
+    private void AddBusinessValidationError(string? errorMessage)
+    {
+        var message = string.IsNullOrWhiteSpace(errorMessage)
+            ? "Không thể lưu tài khoản. Vui lòng kiểm tra lại dữ liệu."
+            : errorMessage;
+
+        var key = message.StartsWith("Mã tài khoản", StringComparison.OrdinalIgnoreCase)
+            ? nameof(UserCreateViewModel.UserCode)
+            : message.StartsWith("Tên đăng nhập", StringComparison.OrdinalIgnoreCase) ||
+              message.StartsWith("Vui lòng nhập tên đăng nhập", StringComparison.OrdinalIgnoreCase)
+                ? nameof(UserCreateViewModel.UserName)
+                : message.StartsWith("Nhân viên", StringComparison.OrdinalIgnoreCase)
+                    ? nameof(UserCreateViewModel.EmployeeId)
+                    : string.Empty;
+
+        ModelState.AddModelError(key, message);
     }
 
     private Guid? GetCurrentUserId()

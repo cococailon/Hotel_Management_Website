@@ -4,6 +4,7 @@ using Hotel_Management_Website.Filters;
 using Hotel_Management_Website.IServices;
 using Hotel_Management_Website.Models.ViewModels.Guest;
 using Hotel_Management_Website.Models.ViewModels.UI;
+using Hotel_Management_Website.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Hotel_Management_Website.Controllers;
@@ -186,6 +187,11 @@ public sealed class GuestController : Controller
         Guid id,
         CancellationToken cancellationToken)
     {
+        // Lớp bảo vệ thứ hai ngoài [AdminAccess]: kể cả khi endpoint/action
+        // bị thay đổi filter trong tương lai, non-admin vẫn không thể xóa.
+        if (!User.IsInRole(AppRoles.Admin))
+            return Forbid();
+
         if (!TryGetCurrentUserId(out var currentUserId))
             return Challenge();
 

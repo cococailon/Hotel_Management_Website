@@ -77,3 +77,10 @@
         width: 100%;
     }
 }
+
+
+/* Business validation messages for employee date fields. */
+.employee-date-validation-message {
+    display: block;
+    min-height: 1.25rem;
+}

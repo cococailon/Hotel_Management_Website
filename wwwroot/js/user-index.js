@@ -11,7 +11,7 @@
         lock: {
             title: "Xác nhận khóa tài khoản",
             message: 'Bạn có chắc muốn khóa tài khoản "{name}" không?',
-            note: "Tài khoản sẽ không thể đăng nhập và toàn bộ quyền truy cập của tài khoản sẽ bị vô hiệu hóa.",
+            note: "",
             confirmText: "Khóa tài khoản",
             variant: "warning",
             formId: "userLockForm",
@@ -21,7 +21,7 @@
         reopen: {
             title: "Xác nhận mở lại tài khoản",
             message: 'Bạn có chắc muốn mở lại tài khoản "{name}" không?',
-            note: "Tài khoản sẽ được mở lại và có thể đăng nhập bình thường.",
+            note: "",
             confirmText: "Mở lại tài khoản",
             variant: "success",
             formId: "userReopenForm",
@@ -31,7 +31,7 @@
         delete: {
             title: "Xác nhận xóa tài khoản",
             message: 'Bạn có chắc muốn xóa tài khoản "{name}" không?',
-            note: "Tài khoản sẽ bị xóa và không hiện ở trang danh sách.",
+            note: "",
             confirmText: "Xóa tài khoản",
             variant: "danger",
             formId: "userDeleteForm",

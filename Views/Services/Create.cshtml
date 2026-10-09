@@ -30,8 +30,6 @@
           data-service-form="create">
         @Html.AntiForgeryToken()
 
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger service-validation-summary" role="alert"></div>
-
         <section class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-body border-bottom">
                 <div class="d-flex align-items-center gap-3">
@@ -45,10 +43,16 @@
             <div class="card-body">
                 <div class="row g-4">
                     <div class="col-12 col-lg-6">
-                        <label asp-for="ServiceCode" class="form-label required">Mã dịch vụ</label>
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                            <label asp-for="ServiceCode" class="form-label required mb-0">Mã dịch vụ</label>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="generateServiceCodeButton">
+                                <i class="bi bi-magic me-1" aria-hidden="true"></i>
+                                Tự sinh mã
+                            </button>
+                        </div>
                         <input asp-for="ServiceCode" class="form-control" maxlength="50" autocomplete="off" spellcheck="false" />
                         <span asp-validation-for="ServiceCode" class="text-danger"></span>
-                        <div class="form-text">Mặc định tự sinh theo dạng <strong>DV + số</strong>. Có thể nhập thủ công nhưng không được chứa khoảng trắng.</div>
+                        <div class="form-text">Bắt buộc nhập. Chỉ được chứa chữ cái và chữ số, không có dấu cách hoặc ký tự đặc biệt, và không được trùng.</div>
                     </div>
 
                     <div class="col-12 col-lg-6">

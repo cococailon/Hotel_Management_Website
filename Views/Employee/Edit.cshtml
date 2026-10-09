@@ -99,7 +99,7 @@
                                spellcheck="false" />
 
                         <div class="form-text">
-                            Mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.
+                            Mã bắt buộc nhập, chỉ gồm chữ cái và chữ số, không chứa dấu cách/ký tự đặc biệt và không được trùng.
                         </div>
 
                         <span asp-validation-for="EmployeeCode" class="text-danger"></span>
@@ -140,8 +140,17 @@
                                max='@today.ToString("yyyy-MM-dd")'
                                id="employeeEditDateOfBirth" />
 
-                        <span asp-validation-for="DateOfBirth"
-                              class="text-danger">
+                        @{
+                            var dateOfBirthServerError = string.Join(
+                                " ",
+                                ViewData.ModelState[nameof(Model.DateOfBirth)]?.Errors
+                                    .Select(e => e.ErrorMessage)
+                                    .Where(e => !string.IsNullOrWhiteSpace(e))
+                                    ?? Enumerable.Empty<string>());
+                        }
+                        <span id="DateOfBirthBusinessValidationMessage"
+                              class="text-danger employee-date-validation-message">
+                            @dateOfBirthServerError
                         </span>
 
                     </div>
@@ -251,8 +260,17 @@
                                class="form-control"
                                id="employeeEditStartDate" />
 
-                        <span asp-validation-for="StartDate"
-                              class="text-danger">
+                        @{
+                            var startDateServerError = string.Join(
+                                " ",
+                                ViewData.ModelState[nameof(Model.StartDate)]?.Errors
+                                    .Select(e => e.ErrorMessage)
+                                    .Where(e => !string.IsNullOrWhiteSpace(e))
+                                    ?? Enumerable.Empty<string>());
+                        }
+                        <span id="StartDateBusinessValidationMessage"
+                              class="text-danger employee-date-validation-message">
+                            @startDateServerError
                         </span>
 
                     </div>
@@ -278,8 +296,17 @@
                                 : "Nhập ngày nghỉ việc của nhân viên.")
                         </div>
 
-                        <span asp-validation-for="EndDate"
-                              class="text-danger">
+                        @{
+                            var endDateServerError = string.Join(
+                                " ",
+                                ViewData.ModelState[nameof(Model.EndDate)]?.Errors
+                                    .Select(e => e.ErrorMessage)
+                                    .Where(e => !string.IsNullOrWhiteSpace(e))
+                                    ?? Enumerable.Empty<string>());
+                        }
+                        <span id="EndDateBusinessValidationMessage"
+                              class="text-danger employee-date-validation-message">
+                            @endDateServerError
                         </span>
 
                     </div>

@@ -66,10 +66,11 @@ public sealed class BookingDirectCreateViewModel
     public string GuestAddress { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Số điện thoại là bắt buộc khi tạo trực tiếp tại quầy.")]
-    [StringLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự.")]
+    [StringLength(30, ErrorMessage = "Số điện thoại nhập vào không được vượt quá 30 ký tự.")]
     public string GuestPhoneNumber { get; set; } = string.Empty;
 
     [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+    [StringLength(254, ErrorMessage = "Email không được vượt quá 254 ký tự.")]
     public string? GuestEmail { get; set; }
 
     [Required(ErrorMessage = "Số giấy tờ là bắt buộc khi tạo trực tiếp tại quầy.")]

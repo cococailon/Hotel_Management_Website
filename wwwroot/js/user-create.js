@@ -21,9 +21,22 @@
         const role = getRole();
         const canAssignEmployee = role === 1 || role === 2;
         const currentValue = select.value;
+        const title = document.getElementById("roleAssignmentTitle");
+        const description = document.getElementById("roleAssignmentDescription");
+        const adminNote = document.getElementById("adminEmployeeNote");
 
         block.classList.toggle("d-none", !canAssignEmployee);
         select.disabled = !canAssignEmployee;
+        adminNote?.classList.toggle("d-none", role !== 0);
+
+        if (title) {
+            title.textContent = role === 0 ? "Phân quyền Admin" : "Phân quyền và nhân viên";
+        }
+        if (description) {
+            description.textContent = role === 0
+                ? "Thiết lập trạng thái hoạt động cho tài khoản Admin. Tài khoản Admin không cần gán nhân viên."
+                : "Gán tài khoản cho nhân viên phù hợp và xác định trạng thái hoạt động.";
+        }
 
         Array.from(select.options).forEach(function (option) {
             if (!option.value) {
@@ -77,6 +90,55 @@
         });
     }
 
+    function bindGenerateCode() {
+        const button = document.getElementById("userGenerateCodeButton");
+        const input = document.getElementById("UserCode");
+
+        if (!button || !input || button.dataset.bound === "true") {
+            return;
+        }
+
+        button.dataset.bound = "true";
+        button.addEventListener("click", async function () {
+            const url = button.dataset.generateUrl;
+            if (!url) return;
+
+            button.disabled = true;
+            const originalHtml = button.innerHTML;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Đang sinh...';
+
+            try {
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                    credentials: "same-origin"
+                });
+
+                if (!response.ok) {
+                    throw new Error("Generate user code failed.");
+                }
+
+                const data = await response.json();
+                input.value = data.userCode || "";
+                input.classList.remove("input-validation-error", "is-invalid");
+
+                const validator = document.querySelector('[data-valmsg-for="UserCode"]');
+                if (validator) {
+                    validator.textContent = "";
+                }
+            } catch {
+                window.HotelUI?.toast(
+                    "error",
+                    "Không thể tự sinh mã tài khoản",
+                    "Vui lòng thử lại."
+                );
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+            }
+        });
+    }
+
     function bindControls() {
         const role = document.getElementById("userRole");
 
@@ -106,27 +168,18 @@
             return false;
         }
 
-        const userCode = document.getElementById("userCode");
+        const userCode = document.getElementById("UserCode") || form.querySelector('[name="UserCode"]');
         const userName = document.getElementById("UserName") || form.querySelector('[name="UserName"]');
         const password = document.getElementById("userPassword");
         const role = document.getElementById("userRole");
         const employeeSelect = document.getElementById("userEmployeeId");
 
-        // Mã tài khoản để trống vẫn hợp lệ vì server sẽ tự sinh như Create Nhân viên.
-        if (userCode && /\s/.test(userCode.value.trim())) {
-            const message = "Mã tài khoản không được chứa dấu cách hoặc khoảng trắng.";
-            const validator = document.querySelector('[data-valmsg-for="UserCode"]');
-            if (validator) {
-                validator.textContent = message;
-                validator.classList.remove("field-validation-valid");
-                validator.classList.add("field-validation-error");
-            }
-            userCode.classList.add("input-validation-error", "is-invalid");
-            userCode.focus();
+        if (!userCode || !/^[A-Za-z0-9]+$/.test(userCode.value)) {
+            userCode?.focus();
             return false;
         }
 
-        if (!userName || userName.value.trim() === "") {
+        if (!userName || userName.value.length < 3 || /\s/.test(userName.value)) {
             userName?.focus();
             return false;
         }
@@ -155,6 +208,47 @@
         }
 
         return true;
+    }
+
+    function scrollToEmployeeValidationError() {
+        const validationMessage = document.querySelector(
+            '[data-valmsg-for="EmployeeId"]'
+        );
+
+        if (!validationMessage) {
+            return false;
+        }
+
+        const message = (validationMessage.textContent || "").trim();
+        if (!message || !message.includes("Nhân viên này đã được gán cho một tài khoản khác.")) {
+            return false;
+        }
+
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                validationMessage.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                    inline: "nearest"
+                });
+            });
+        });
+
+        return true;
+    }
+
+    function bindEmployeeValidationScroll() {
+        if (window.__userCreateEmployeeValidationScrollBound) {
+            return;
+        }
+
+        window.__userCreateEmployeeValidationScrollBound = true;
+
+        document.addEventListener("hotel:ajax-loaded", function () {
+            scrollToEmployeeValidationError();
+        });
+
+        scrollToEmployeeValidationError();
     }
 
     function getConfirmationMessage() {
@@ -262,4 +356,6 @@
 
     bindSubmitHandler();
     bindControls();
+    bindGenerateCode();
+    bindEmployeeValidationScroll();
 })(window, document);

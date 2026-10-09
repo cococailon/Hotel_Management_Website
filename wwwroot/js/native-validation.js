@@ -1,4 +1,4 @@
-﻿(function (window, document) {
+(function (window, document) {
     "use strict";
 
     const state = window.__nativeFormValidationState || {
@@ -92,6 +92,16 @@
 
         const dataset = input.dataset;
         const value = getValue(input);
+
+        // Giữ nguyên lỗi nghiệp vụ do server trả về khi người dùng chỉ
+        // focus ra ngoài mà chưa thay đổi giá trị. Các form nghiệp vụ
+        // như Service dùng cờ này cho các lỗi không thể biểu diễn hoàn
+        // toàn bằng DataAnnotation/client validation (ví dụ mã bị trùng,
+        // đơn vị bắt buộc khi dịch vụ có thu phí).
+        if (dataset.serviceServerError === "true" &&
+            value === (dataset.serviceServerErrorValue ?? "")) {
+            return true;
+        }
 
         if (dataset.valRequired !== undefined && isEmpty(input, value)) {
             setError(form, input, dataset.valRequired);

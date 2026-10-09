@@ -9,7 +9,7 @@ public sealed class RoomEditViewModel
     [Display(Name = "Mã phòng")]
     [Required(ErrorMessage = "Vui lòng nhập mã phòng.")]
     [StringLength(50, ErrorMessage = "Mã phòng không được vượt quá {1} ký tự.")]
-    [RegularExpression(@"^\S+$", ErrorMessage = "Mã phòng không được chứa dấu cách hoặc khoảng trắng.")]
+    [RegularExpression(@"^[A-Za-z0-9]+$", ErrorMessage = "Mã phòng chỉ được bao gồm chữ hoa, chữ thường và số; không được chứa dấu cách hoặc ký tự đặc biệt.")]
     public string RoomCode { get; set; } = string.Empty;
 
     [Display(Name = "Tên phòng")]

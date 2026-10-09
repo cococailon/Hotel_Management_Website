@@ -11,11 +11,6 @@ public sealed class GuestListItemViewModel
     public string? Email { get; init; }
     public DateTime LastModifiedAt { get; init; }
 
-    public bool CanEditDetails { get; set; }
-    public bool RequireFullDetails { get; set; }
-    public bool CanEditNoteOnly { get; set; }
-    public bool CanDelete { get; set; }
-
     public string SexName => Sex switch
     {
         0 => "Nam",

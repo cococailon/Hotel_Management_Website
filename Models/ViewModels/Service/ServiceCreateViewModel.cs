@@ -5,8 +5,9 @@ namespace Hotel_Management_Website.Models.ViewModels.Service;
 public sealed class ServiceCreateViewModel
 {
     [Display(Name = "Mã dịch vụ")]
+    [Required(ErrorMessage = "Vui lòng nhập mã dịch vụ.")]
     [StringLength(50, ErrorMessage = "Mã dịch vụ không được vượt quá {1} ký tự.")]
-    [RegularExpression(@"^\S*$", ErrorMessage = "Mã dịch vụ không được chứa dấu cách hoặc khoảng trắng.")]
+    [RegularExpression(@"^[A-Za-z0-9]+$", ErrorMessage = "Mã dịch vụ chỉ được bao gồm chữ hoa, chữ thường và số; không chứa dấu cách hoặc ký tự đặc biệt.")]
     public string ServiceCode { get; set; } = string.Empty;
 
     [Display(Name = "Tên dịch vụ")]

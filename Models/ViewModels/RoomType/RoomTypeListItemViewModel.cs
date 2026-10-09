@@ -12,9 +12,5 @@ public sealed class RoomTypeListItemViewModel
     public decimal Area { get; init; }
     public bool IsActive { get; init; }
     public DateTime LastModifiedAt { get; init; }
-    public bool HasActiveBookings { get; init; }
-    public bool HasUndeletedRooms { get; init; }
-
-    public bool CanDelete => !IsActive && !HasActiveBookings && !HasUndeletedRooms;
-    public bool CanDeactivate => IsActive && !HasActiveBookings;
+    public bool CanDeactivate => IsActive;
 }

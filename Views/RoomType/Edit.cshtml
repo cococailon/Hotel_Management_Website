@@ -33,8 +33,6 @@
         <input asp-for="ReturnUrl" type="hidden" />
         <input asp-for="IsActive" type="hidden" />
 
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
-
         @if (Model.HasActiveBookings)
         {
             <div class="alert alert-warning d-flex gap-2 align-items-start" role="alert">
@@ -69,7 +67,7 @@
                         else
                         {
                             <input asp-for="RoomTypeCode" class="form-control" maxlength="50" autocomplete="off" spellcheck="false" />
-                            <div class="form-text">Mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.</div>
+                            <div class="form-text">Bắt buộc nhập. Chỉ được gồm chữ cái và chữ số, không chứa dấu cách hoặc ký tự đặc biệt, và không được trùng mã loại phòng khác.</div>
                             <span asp-validation-for="RoomTypeCode" class="text-danger"></span>
                         }
                     </div>

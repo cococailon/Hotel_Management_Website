@@ -59,6 +59,17 @@
 .booking-table th {
     white-space: nowrap;
     font-size: .82rem;
+    background-color: #fff !important;
+    color: #212529 !important;
+}
+
+.booking-table thead th {
+    background-color: #fff !important;
+    color: #212529 !important;
+}
+
+.booking-table thead tr {
+    background-color: #fff !important;
 }
 
 .booking-table td {

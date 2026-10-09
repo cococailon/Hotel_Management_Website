@@ -27,10 +27,6 @@
             <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
             Quay lại danh sách
         </a>
-        <a asp-controller="Booking" asp-action="Details" asp-route-id="@Model.BookingId" class="btn btn-outline-primary">
-            <i class="bi bi-eye me-1" aria-hidden="true"></i>
-            Xem chi tiết Booking
-        </a>
     </div>
 
     <section class="card border-0 shadow-sm mb-4">
@@ -249,6 +245,17 @@
                             <a asp-controller="Booking" asp-action="CheckOut" asp-route-id="@Model.BookingId" class="btn btn-primary w-100">
                                 <i class="bi bi-box-arrow-right me-1"></i>
                                 Check out
+                            </a>
+                        </div>
+                    }
+                    else if (Model.Status == 6)
+                    {
+                        <div class="booking-flow-next-step p-3 rounded-3 mb-3">
+                            <div class="fw-semibold mb-1">Khách quay lại thanh toán</div>
+                            <div class="small text-body-secondary mb-3">Bill hiện đang ở trạng thái Thanh toán thất bại. Cho phép cập nhật lại thông tin khách hàng, các ghi chú liên quan và ghi nhận khoản thanh toán còn thiếu.</div>
+                            <a asp-controller="Booking" asp-action="PaymentRecovery" asp-route-id="@Model.BookingId" class="btn btn-primary w-100">
+                                <i class="bi bi-credit-card-2-front me-1"></i>
+                                Tiếp nhận thanh toán lại
                             </a>
                         </div>
                     }

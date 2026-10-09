@@ -85,8 +85,7 @@ public sealed class RoomService : IRoomService
                 Row = x.Row,
                 LeftToRightOrder = x.LeftToRightOrder,
                 Status = x.Status,
-                IsActive = x.IsActive,
-                RoomTypeIsActive = x.RoomType.IsActive
+                IsActive = x.IsActive
             })
             .ToListAsync(cancellationToken);
 
@@ -291,8 +290,7 @@ public sealed class RoomService : IRoomService
                 Row = x.Row,
                 LeftToRightOrder = x.LeftToRightOrder,
                 Status = x.Status,
-                IsActive = x.IsActive,
-                RoomTypeIsActive = x.RoomType.IsActive
+                IsActive = x.IsActive
             })
             .ToListAsync(cancellationToken);
 
@@ -644,8 +642,7 @@ public sealed class RoomService : IRoomService
                     room.Floor != model.Floor ||
                     room.Row != model.Row ||
                     room.LeftToRightOrder != model.LeftToRightOrder ||
-                    room.RoomTypeId != model.RoomTypeId!.Value ||
-                    room.IsActive != model.IsActive)
+                    room.RoomTypeId != model.RoomTypeId!.Value)
                 {
                     errors[string.Empty] =
                         "Phòng đang sử dụng, chỉ được phép sửa Mô tả và Ghi chú.";
@@ -675,6 +672,10 @@ public sealed class RoomService : IRoomService
             {
                 errors[nameof(model.RoomCode)] = "Mã phòng không được vượt quá 50 ký tự.";
             }
+            else if (!Regex.IsMatch(model.RoomCode, @"^[A-Za-z0-9]+$"))
+            {
+                errors[nameof(model.RoomCode)] = "Mã phòng chỉ được bao gồm chữ hoa, chữ thường và số; không được chứa dấu cách hoặc ký tự đặc biệt.";
+            }
             else if (await _context.Rooms.AnyAsync(
                          x => x.RoomCode == model.RoomCode && x.Id != room.Id,
                          cancellationToken))
@@ -703,7 +704,7 @@ public sealed class RoomService : IRoomService
             {
                 errors[nameof(model.RoomTypeId)] = "Loại phòng không tồn tại hoặc đã bị xóa.";
             }
-            else if (model.IsActive && !roomType.IsActive)
+            else if (room.IsActive && !roomType.IsActive)
             {
                 errors[nameof(model.RoomTypeId)] =
                     "Phòng đang hoạt động chỉ được gán với loại phòng đang hoạt động.";
@@ -721,7 +722,7 @@ public sealed class RoomService : IRoomService
             room.Row = model.Row;
             room.LeftToRightOrder = model.LeftToRightOrder;
             room.RoomTypeId = model.RoomTypeId!.Value;
-            room.IsActive = model.IsActive;
+            // IsActive không được thay đổi tại chức năng Sửa phòng.
             room.Description = NormalizeOptional(model.Description);
             room.Note = NormalizeOptional(model.Note);
             room.LastModifiedBy = currentUserId;
@@ -1066,7 +1067,8 @@ public sealed class RoomService : IRoomService
 
         if (string.IsNullOrWhiteSpace(code))
         {
-            return; // Create sẽ tự sinh nếu để trống.
+            errors[nameof(RoomCreateViewModel.RoomCode)] = "Vui lòng nhập mã phòng.";
+            return;
         }
 
         if (code.Length > 50)
@@ -1075,8 +1077,8 @@ public sealed class RoomService : IRoomService
             return;
         }
 
-        if (code.Any(char.IsWhiteSpace))
-            errors[nameof(RoomCreateViewModel.RoomCode)] = "Mã phòng không được chứa dấu cách hoặc khoảng trắng.";
+        if (!Regex.IsMatch(code, @"^[A-Za-z0-9]+$"))
+            errors[nameof(RoomCreateViewModel.RoomCode)] = "Mã phòng chỉ được bao gồm chữ hoa, chữ thường và số; không được chứa dấu cách hoặc ký tự đặc biệt.";
     }
 
     private static void ValidateRoomName(

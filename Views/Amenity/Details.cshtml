@@ -28,29 +28,7 @@
             <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
             Quay lại danh sách
         </a>
-
-        @if (!isReception)
-        {
-        <a asp-controller="Amenity"
-           asp-action="Edit"
-           asp-route-id="@Model.Id"
-           class="btn btn-primary">
-            <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>
-            Sửa tiện nghi
-        </a>
-        }
     </div>
-
-    @if (Model.HasActiveBookings)
-    {
-        <div class="alert alert-warning d-flex gap-2 align-items-start mb-4">
-            <i class="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true"></i>
-            <div>
-                <div class="fw-semibold">Tiện nghi đang được dùng bởi loại phòng có Booking hoạt động.</div>
-                <div class="small">Các thay đổi nghiệp vụ của mã, tên và trạng thái sẽ bị giới hạn theo quy định hệ thống.</div>
-            </div>
-        </div>
-    }
 
     <section class="card border-0 shadow-sm amenity-detail-summary mb-4">
         <div class="card-body p-4">

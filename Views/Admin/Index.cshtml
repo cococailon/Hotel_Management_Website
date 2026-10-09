@@ -26,7 +26,7 @@
 
 <div class="admin-dashboard-statistics mb-4">
 
-    <div class="row g-3 g-xl-4">
+    <div>
 
         @if (!string.IsNullOrWhiteSpace(Model.LoadError))
         {
@@ -42,138 +42,102 @@
         }
         else
         {
-            <!-- Doanh thu hôm nay -->
-            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
-                <div class="card h-100 border-0 shadow-sm admin-stat-card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between gap-3">
-                            <div class="min-w-0">
-                                <div class="small text-body-secondary fw-semibold">
-                                    Doanh thu hôm nay
-                                </div>
-                                <div class="admin-stat-value mt-2">
-                                    @Model.RevenueToday.ToString("N0")
-                                    <span class="admin-stat-unit">₫</span>
-                                </div>
-                            </div>
+            <div class="row g-3 g-xl-4">
 
-                            <div class="admin-stat-icon text-success bg-success-subtle">
-                                <i class="bi bi-cash-stack" aria-hidden="true"></i>
+                <!-- Doanh thu hôm nay -->
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="small text-body-secondary fw-semibold">Doanh thu hôm nay</div>
+                                    <div class="admin-stat-value mt-2">@Model.RevenueToday.ToString("N0") <span class="admin-stat-unit">₫</span></div>
+                                </div>
+                                <div class="admin-stat-icon text-success bg-success-subtle"><i class="bi bi-cash-stack" aria-hidden="true"></i></div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Doanh thu tháng -->
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="small text-body-secondary fw-semibold">Doanh thu tháng</div>
+                                    <div class="admin-stat-value mt-2">@Model.RevenueThisMonth.ToString("N0") <span class="admin-stat-unit">₫</span></div>
+                                </div>
+                                <div class="admin-stat-icon text-primary bg-primary-subtle"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tổng lượt đặt -->
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="small text-body-secondary fw-semibold">Tổng lượt đặt</div>
+                                    <div class="admin-stat-value mt-2">@Model.TotalBookings</div>
+                                </div>
+                                <div class="admin-stat-icon text-info bg-info-subtle"><i class="bi bi-calendar-check" aria-hidden="true"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Doanh thu tháng -->
-            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
-                <div class="card h-100 border-0 shadow-sm admin-stat-card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between gap-3">
-                            <div class="min-w-0">
-                                <div class="small text-body-secondary fw-semibold">
-                                    Doanh thu tháng
-                                </div>
-                                <div class="admin-stat-value mt-2">
-                                    @Model.RevenueThisMonth.ToString("N0")
-                                    <span class="admin-stat-unit">₫</span>
-                                </div>
-                            </div>
+            <div class="row g-3 g-xl-4 mt-0">
 
-                            <div class="admin-stat-icon text-primary bg-primary-subtle">
-                                <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                <!-- Phòng đang sử dụng -->
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="small text-body-secondary fw-semibold">Phòng đang sử dụng</div>
+                                    <div class="admin-stat-value mt-2">@Model.OccupiedRooms</div>
+                                </div>
+                                <div class="admin-stat-icon text-danger bg-danger-subtle"><i class="bi bi-door-open" aria-hidden="true"></i></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Phòng đang sử dụng -->
-            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
-                <div class="card h-100 border-0 shadow-sm admin-stat-card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between gap-3">
-                            <div class="min-w-0">
-                                <div class="small text-body-secondary fw-semibold">
-                                    Phòng đang sử dụng
+                <!-- Phòng trống -->
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="small text-body-secondary fw-semibold">Phòng trống</div>
+                                    <div class="admin-stat-value mt-2">@Model.AvailableRooms</div>
                                 </div>
-                                <div class="admin-stat-value mt-2">
-                                    @Model.OccupiedRooms
-                                </div>
-                            </div>
-
-                            <div class="admin-stat-icon text-danger bg-danger-subtle">
-                                <i class="bi bi-door-open" aria-hidden="true"></i>
+                                <div class="admin-stat-icon text-success bg-success-subtle"><i class="bi bi-door-closed" aria-hidden="true"></i></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Phòng trống -->
-            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
-                <div class="card h-100 border-0 shadow-sm admin-stat-card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between gap-3">
-                            <div class="min-w-0">
-                                <div class="small text-body-secondary fw-semibold">
-                                    Phòng trống
+                <!-- Phòng cần dọn -->
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 border-0 shadow-sm admin-stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="small text-body-secondary fw-semibold">Phòng cần dọn</div>
+                                    <div class="admin-stat-value mt-2">@Model.RoomsNeedCleaning</div>
                                 </div>
-                                <div class="admin-stat-value mt-2">
-                                    @Model.AvailableRooms
-                                </div>
-                            </div>
-
-                            <div class="admin-stat-icon text-success bg-success-subtle">
-                                <i class="bi bi-door-closed" aria-hidden="true"></i>
+                                <div class="admin-stat-icon text-warning bg-warning-subtle"><i class="bi bi-door-closed" aria-hidden="true"></i></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Cần dọn -->
-            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
-                <div class="card h-100 border-0 shadow-sm admin-stat-card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between gap-3">
-                            <div class="min-w-0">
-                                <div class="small text-body-secondary fw-semibold">
-                                    Phòng cần dọn
-                                </div>
-                                <div class="admin-stat-value mt-2">
-                                    @Model.RoomsNeedCleaning
-                                </div>
-                            </div>
-
-                            <div class="admin-stat-icon text-warning bg-warning-subtle">
-                                <i class="bi bi-door-closed" aria-hidden="true"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tổng lượt đặt -->
-            <div class="col-12 col-sm-6 col-xl-4 col-xxl-2">
-                <div class="card h-100 border-0 shadow-sm admin-stat-card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between gap-3">
-                            <div class="min-w-0">
-                                <div class="small text-body-secondary fw-semibold">
-                                    Tổng lượt đặt
-                                </div>
-                                <div class="admin-stat-value mt-2">
-                                    @Model.TotalBookings
-                                </div>
-                            </div>
-
-                            <div class="admin-stat-icon text-info bg-info-subtle">
-                                <i class="bi bi-calendar-check" aria-hidden="true"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         }
 
@@ -366,6 +330,33 @@
         </a>
     </div>
 
+    <!-- Quy định khách sạn -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="HotelPolicy"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-journal-text" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Quy định khách sạn</h2>
+                        <p class="text-body-secondary mb-0">
+                            Xem và quản lý giờ nhận/trả phòng cùng các quy định chung của khách sạn.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
     <!-- Đặt phòng -->
     <div class="col-12 col-sm-6 col-xl-4">
         <a asp-controller="Booking"
@@ -380,6 +371,33 @@
                         <h2 class="h5 mb-1 text-body">Quản lý đặt phòng</h2>
                         <p class="text-body-secondary mb-0">
                             Theo dõi và xử lý các đặt phòng, phòng đặt và trạng thái booking.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <span class="small fw-semibold text-primary">
+                    Mở chức năng
+                    <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Khách hàng -->
+    <div class="col-12 col-sm-6 col-xl-4">
+        <a asp-controller="Guest"
+           asp-action="Index"
+           class="card h-100 text-decoration-none hm-admin-menu-card">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="hm-admin-menu-icon">
+                        <i class="bi bi-person-vcard" aria-hidden="true"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="h5 mb-1 text-body">Quản lý khách hàng</h2>
+                        <p class="text-body-secondary mb-0">
+                            Quản lý thông tin khách hàng và dữ liệu khách lưu trú theo Booking.
                         </p>
                     </div>
                 </div>

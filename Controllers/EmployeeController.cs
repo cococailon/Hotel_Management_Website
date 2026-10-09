@@ -221,6 +221,30 @@ public sealed class EmployeeController : Controller
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GenerateCode(
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var code = await _employeeService.GetNextEmployeeCodeAsync(cancellationToken);
+            return Json(new { success = true, code });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi tự sinh mã nhân viên.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                success = false,
+                message = "Không thể tự sinh mã nhân viên. Vui lòng thử lại."
+            });
+        }
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
@@ -231,19 +255,7 @@ public sealed class EmployeeController : Controller
 
         // Chuẩn hóa mã trước khi kiểm tra ModelState.
         model.EmployeeCode =
-            (model.EmployeeCode ?? string.Empty)
-                .Trim()
-                .ToUpperInvariant();
-
-        // Nếu người dùng xóa mã tự sinh, hệ thống tự sinh lại.
-        if (string.IsNullOrWhiteSpace(model.EmployeeCode))
-        {
-            model.EmployeeCode = await _employeeService.GetNextEmployeeCodeAsync(
-                cancellationToken);
-
-            // Bỏ lỗi Required cũ do model binder tạo ra cho EmployeeCode.
-            ModelState.Remove(nameof(EmployeeCreateViewModel.EmployeeCode));
-        }
+            (model.EmployeeCode ?? string.Empty).Trim();
 
         if (!ModelState.IsValid)
         {
@@ -338,6 +350,10 @@ public sealed class EmployeeController : Controller
     {
         model ??= new EmployeeEditViewModel();
 
+        model.EmployeeCode = (model.EmployeeCode ?? string.Empty)
+            .Trim()
+            .ToUpperInvariant();
+
         if (!ModelState.IsValid)
         {
             return View(model);
@@ -355,10 +371,27 @@ public sealed class EmployeeController : Controller
 
         if (!result.Succeeded)
         {
-            ModelState.AddModelError(
-                string.Empty,
-                result.ErrorMessage ?? "Không thể lưu thay đổi nhân viên.");
+            var errorMessage = result.ErrorMessage ?? "Không thể lưu thay đổi nhân viên.";
+            var errorKey = string.Empty;
 
+            if (errorMessage.Contains("Mã nhân viên", StringComparison.OrdinalIgnoreCase))
+            {
+                errorKey = nameof(EmployeeEditViewModel.EmployeeCode);
+            }
+            else if (errorMessage.Contains("Ngày sinh", StringComparison.OrdinalIgnoreCase))
+            {
+                errorKey = nameof(EmployeeEditViewModel.DateOfBirth);
+            }
+            else if (errorMessage.Contains("Ngày vào làm", StringComparison.OrdinalIgnoreCase))
+            {
+                errorKey = nameof(EmployeeEditViewModel.StartDate);
+            }
+            else if (errorMessage.Contains("Ngày nghỉ việc", StringComparison.OrdinalIgnoreCase))
+            {
+                errorKey = nameof(EmployeeEditViewModel.EndDate);
+            }
+
+            ModelState.AddModelError(errorKey, errorMessage);
             return View(model);
         }
 
@@ -423,6 +456,7 @@ public sealed class EmployeeController : Controller
     public async Task<IActionResult> ReturnToWork(
     Guid id,
     string? returnUrl,
+    bool activateLinkedUser,
     CancellationToken cancellationToken)
     {
         if (id == Guid.Empty)
@@ -439,6 +473,7 @@ public sealed class EmployeeController : Controller
         var result = await _employeeService.ReturnToWorkAsync(
             id,
             currentUserId,
+            activateLinkedUser,
             cancellationToken);
 
         if (!result.Succeeded)
@@ -448,7 +483,7 @@ public sealed class EmployeeController : Controller
         }
         else
         {
-            TempData["SuccessMessage"] = result.ActivatedUserCount > 0
+            TempData["SuccessMessage"] = activateLinkedUser && result.ActivatedUserCount > 0
                 ? $"Đã cho nhân viên trở lại làm việc và kích hoạt {result.ActivatedUserCount} tài khoản liên kết."
                 : "Đã cho nhân viên trở lại làm việc.";
         }

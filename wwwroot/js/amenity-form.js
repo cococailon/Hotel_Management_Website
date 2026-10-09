@@ -7,8 +7,66 @@
 
     window.__amenityFormBound = true;
 
-    function getForm(button) {
-        return button?.closest("form[data-amenity-form]");
+    function getForm(element) {
+        return element?.closest("form[data-amenity-form]")
+            || document.querySelector('form[data-amenity-form]');
+    }
+
+    function getField(form, name) {
+        if (!form) return null;
+        return form.querySelector(`[name="${name}"]:not([type="hidden"])`)
+            || form.querySelector(`[name="${name}"]`);
+    }
+
+    function getMessageElement(form, name) {
+        return Array.from(form?.querySelectorAll("[data-valmsg-for]") || [])
+            .find(x => x.getAttribute("data-valmsg-for") === name) || null;
+    }
+
+    function captureServerError(form, name) {
+        const input = getField(form, name);
+        const messageElement = getMessageElement(form, name);
+        if (!input || !messageElement) return;
+
+        const message = messageElement.textContent?.trim() || "";
+        if (!message) return;
+
+        input.dataset.serverValidationValue = input.value;
+        input.dataset.serverValidationMessage = message;
+        input.classList.add("is-invalid");
+        input.setAttribute("aria-invalid", "true");
+        messageElement.classList.remove("field-validation-valid");
+        messageElement.classList.add("field-validation-error");
+    }
+
+    function restoreServerError(form, name) {
+        const input = getField(form, name);
+        const messageElement = getMessageElement(form, name);
+        if (!input || !messageElement) return;
+
+        const originalValue = input.dataset.serverValidationValue;
+        const message = input.dataset.serverValidationMessage;
+        if (originalValue === undefined || !message) return;
+
+        if (input.value !== originalValue) return;
+
+        input.classList.add("is-invalid");
+        input.setAttribute("aria-invalid", "true");
+        messageElement.textContent = message;
+        messageElement.classList.remove("field-validation-valid");
+        messageElement.classList.add("field-validation-error");
+    }
+
+    function clearServerError(form, name) {
+        const input = getField(form, name);
+        if (!input) return;
+
+        delete input.dataset.serverValidationValue;
+        delete input.dataset.serverValidationMessage;
+    }
+
+    function getCurrentFormMode() {
+        return document.querySelector('form[data-amenity-form]');
     }
 
     function validate(form) {
@@ -65,6 +123,86 @@
         }
     }
 
+    async function generateAmenityCode(form) {
+        const input = getField(form, "AmenityCode");
+        const button = document.getElementById("generateAmenityCodeButton");
+        if (!input || !button || form.dataset.amenityForm !== "create") return;
+
+        const originalHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Đang sinh...';
+
+        try {
+            const endpoint = button.dataset.endpoint;
+            if (!endpoint) throw new Error("Thiếu endpoint tự sinh mã tiện nghi.");
+
+            const response = await fetch(endpoint, {
+                method: "GET",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/json"
+                },
+                credentials: "same-origin"
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok || !payload?.code) {
+                throw new Error(payload?.message || "Không thể tự sinh mã tiện nghi.");
+            }
+
+            input.value = payload.code;
+            clearServerError(form, "AmenityCode");
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+            window.NativeFormValidation?.validateElement(form, input);
+        }
+        catch (error) {
+            window.HotelUI?.toast(
+                "error",
+                "Không thể tự sinh mã tiện nghi",
+                error?.message || "Vui lòng thử lại."
+            );
+        }
+        finally {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        }
+    }
+
+    function bindServerErrorPersistence(form) {
+        if (!form || form.dataset.serverErrorPersistenceBound === "true") return;
+        form.dataset.serverErrorPersistenceBound = "true";
+
+        captureServerError(form, "AmenityCode");
+
+        const codeInput = getField(form, "AmenityCode");
+        if (codeInput) {
+            codeInput.addEventListener("input", () => {
+                if (codeInput.dataset.serverValidationValue !== undefined &&
+                    codeInput.value !== codeInput.dataset.serverValidationValue) {
+                    clearServerError(form, "AmenityCode");
+                }
+            });
+
+            // NativeValidation chạy focusout ở document capture; listener capture ở field
+            // khôi phục lỗi server sau lượt validation chung.
+            codeInput.addEventListener("focusout", () => {
+                restoreServerError(form, "AmenityCode");
+            }, true);
+        }
+    }
+
+    function initializeForm(form) {
+        bindServerErrorPersistence(form);
+
+        const generateButton = document.getElementById("generateAmenityCodeButton");
+        if (generateButton) {
+            generateButton.addEventListener("click", () => {
+                generateAmenityCode(form);
+            });
+        }
+    }
+
     document.addEventListener("submit", event => {
         const form = event.target instanceof HTMLFormElement
             ? event.target.closest("form[data-amenity-form]")
@@ -114,4 +252,9 @@
             }
         });
     }, true);
+
+    const initialForm = getCurrentFormMode();
+    if (initialForm) {
+        initializeForm(initialForm);
+    }
 })();

@@ -6,14 +6,13 @@
     const roleSelect = document.getElementById("userEditRole");
     const employeeBlock = document.getElementById("userEditEmployeeAssignmentBlock");
     const employeeSelect = document.getElementById("userEditEmployeeId");
-    const adminEmployeeNote = document.getElementById("userEditAdminEmployeeNote");
     const passwordInput = document.getElementById("userEditPassword");
     const passwordToggle = document.querySelector("[data-user-edit-password-toggle]");
     const passwordError = document.getElementById("userEditPasswordError");
     const userCodeInput = document.getElementById("UserCode");
     const confirmModal = document.getElementById("uiConfirmModal");
 
-    if (!form || !submitButton || !roleSelect || !employeeBlock || !employeeSelect || !confirmModal) {
+    if (!form || !submitButton || !roleSelect || !confirmModal) {
         return;
     }
 
@@ -27,9 +26,17 @@
     function updateEmployeeOptions() {
         const role = getRole();
         const isAdmin = role === 0;
+        const assignmentSection = document.getElementById("userRoleAssignmentSection");
+
+        // Với Role Admin, ẩn hoàn toàn phần "Gán nhân viên/Phân quyền Admin".
+        // Khi đổi sang Reception/Housekeeping thì hiện lại để có thể chọn nhân viên.
+        assignmentSection?.classList.toggle("d-none", isAdmin);
+
+        if (!employeeBlock || !employeeSelect) {
+            return;
+        }
 
         employeeBlock.classList.toggle("d-none", isAdmin);
-        adminEmployeeNote.classList.toggle("d-none", !isAdmin);
 
         Array.from(employeeSelect.options).forEach(function (option) {
             if (!option.value) {
@@ -72,14 +79,23 @@
             passwordError.textContent = "";
         }
 
-        const userCode = userCodeInput?.value?.trim() || "";
-        if (!userCode || /\s/.test(userCode)) {
+        const userCode = userCodeInput?.value || "";
+        if (!userCode || !/^[A-Za-z0-9]+$/.test(userCode)) {
             const message = document.querySelector('[data-valmsg-for="UserCode"]');
-            if (message) message.textContent = !userCode
-                ? "Mã tài khoản không được để trống."
-                : "Mã tài khoản không được chứa dấu cách hoặc khoảng trắng.";
+            if (message) {
+                message.textContent = !userCode
+                    ? "Mã tài khoản không được để trống."
+                    : "Mã tài khoản chỉ được chứa chữ cái và chữ số, không chứa dấu cách hoặc ký tự đặc biệt.";
+            }
             userCodeInput?.classList.add("is-invalid");
             userCodeInput?.focus();
+            return false;
+        }
+
+        const userNameInput = document.getElementById("UserName");
+        const userNameValue = userNameInput?.value || "";
+        if (userNameValue.length < 3 || /\s/.test(userNameValue)) {
+            userNameInput?.focus();
             return false;
         }
 
@@ -107,6 +123,47 @@
         }
 
         return true;
+    }
+
+    function scrollToEmployeeValidationError() {
+        const validationMessage = document.querySelector(
+            '[data-valmsg-for="EmployeeId"]'
+        );
+
+        if (!validationMessage) {
+            return false;
+        }
+
+        const message = (validationMessage.textContent || "").trim();
+        if (!message || !message.includes("Nhân viên này đã được gán cho một tài khoản khác.")) {
+            return false;
+        }
+
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                validationMessage.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                    inline: "nearest"
+                });
+            });
+        });
+
+        return true;
+    }
+
+    function bindEmployeeValidationScroll() {
+        if (window.__userEditEmployeeValidationScrollBound) {
+            return;
+        }
+
+        window.__userEditEmployeeValidationScrollBound = true;
+
+        document.addEventListener("hotel:ajax-loaded", function () {
+            scrollToEmployeeValidationError();
+        });
+
+        scrollToEmployeeValidationError();
     }
 
     function getConfirmationMessage() {
@@ -141,6 +198,7 @@
 
     roleSelect.addEventListener("change", updateEmployeeOptions);
     updateEmployeeOptions();
+    bindEmployeeValidationScroll();
 
     form.addEventListener("submit", function (event) {
         if (confirmedSubmit) {
@@ -161,7 +219,7 @@
         window.HotelUI?.showConfirm({
             title: "Xác nhận sửa tài khoản",
             message: getConfirmationMessage(),
-            note: "Mã tài khoản và trạng thái không thay đổi. Mật khẩu chỉ được cập nhật khi bạn nhập mật khẩu mới.",
+            note: "",
             confirmText: "Lưu thay đổi",
             variant: "primary",
             icon: "bi-check-lg",

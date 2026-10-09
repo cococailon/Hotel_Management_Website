@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Data;
+using System.Text.RegularExpressions;
 using Hotel_Management_Website.IServices;
 using Hotel_Management_Website.Models.ViewModels.Booking;
 using Hotel_Management_Website.Models.ViewModels.UI;
@@ -263,7 +264,7 @@ public sealed class BookingService : IBookingService
                 DateOfBirth = normalized.GuestDateOfBirth!.Value.Date,
                 Sex = normalized.GuestSex,
                 Address = normalized.GuestAddress.Trim(),
-                PhoneNumber = normalized.GuestPhoneNumber.Trim(),
+                PhoneNumber = NormalizePhoneNumberForStorage(normalized.GuestPhoneNumber),
                 Email = NormalizeOptional(normalized.GuestEmail),
                 IdentityNumber = normalized.GuestIdentityNumber.Trim(),
                 IdentityType = normalized.GuestIdentityType,
@@ -1728,7 +1729,7 @@ public sealed class BookingService : IBookingService
             guest.DateOfBirth = model.GuestDateOfBirth!.Value.Date;
             guest.Sex = model.GuestSex;
             guest.Address = model.GuestAddress.Trim();
-            guest.PhoneNumber = model.GuestPhoneNumber.Trim();
+            guest.PhoneNumber = NormalizePhoneNumberForStorage(model.GuestPhoneNumber);
             guest.Email = NormalizeOptional(model.GuestEmail);
             guest.IdentityNumber = model.GuestIdentityNumber.Trim();
             guest.IdentityType = model.GuestIdentityType;
@@ -2028,6 +2029,449 @@ public sealed class BookingService : IBookingService
             Rooms = rooms,
             Services = services
         };
+    }
+
+    public async Task<BookingPaymentRecoveryViewModel?> GetPaymentRecoveryModelAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var booking = await _context.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
+
+        if (booking is null || booking.Status != 6)
+            return null;
+
+        var bill = await _context.Bills
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.BookingId == booking.Id && !x.IsDeleted && x.Status == 1,
+                cancellationToken);
+
+        if (bill is null)
+            return null;
+
+        var guest = booking.GuestId.HasValue
+            ? await _context.Guests
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == booking.GuestId.Value && !x.IsDeleted, cancellationToken)
+            : null;
+
+        if (guest is null)
+            return null;
+
+        var bookingRooms = await _context.BookingRooms
+            .AsNoTracking()
+            .Where(x => x.BookingId == booking.Id && !x.IsDeleted)
+            .Include(x => x.RoomType)
+            .Include(x => x.Room)
+            .OrderBy(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        if (bookingRooms.Count == 0)
+            return null;
+
+        var roomIds = bookingRooms.Select(x => x.Id).ToArray();
+        var services = await _context.BookingRoomServices
+            .AsNoTracking()
+            .Where(x => roomIds.Contains(x.BookingRoomId) && !x.IsDeleted)
+            .Include(x => x.Service)
+            .OrderBy(x => x.UsedAt)
+            .ThenBy(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        var fees = await _context.AdditionalFeeRooms
+            .AsNoTracking()
+            .Where(x => roomIds.Contains(x.BookingRoomId) && !x.IsDeleted)
+            .OrderBy(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return new BookingPaymentRecoveryViewModel
+        {
+            BookingId = booking.Id,
+            BookingCode = booking.BookingCode,
+            GuestCode = guest.GuestCode,
+            GuestName = guest.Name,
+            GuestDateOfBirth = guest.DateOfBirth,
+            GuestSex = guest.Sex,
+            GuestAddress = guest.Address ?? string.Empty,
+            GuestPhoneNumber = guest.PhoneNumber ?? string.Empty,
+            GuestEmail = guest.Email,
+            GuestIdentityNumber = guest.IdentityNumber ?? string.Empty,
+            GuestIdentityType = guest.IdentityType,
+            GuestNote = guest.Note,
+            BookingNote = booking.Note,
+            BillId = bill.Id,
+            BillCode = bill.BillCode,
+            TotalAmount = bill.TotalAmount ?? 0m,
+            DepositAmount = bill.DepositAmount,
+            FinalAmount = bill.FinalAmount,
+            BillNote = bill.Note,
+            PaymentReceived = false,
+            PaymentMethod = null,
+            ReferenceCode = null,
+            Rooms = bookingRooms.Select(room => new BookingPaymentRecoveryRoomViewModel
+            {
+                BookingRoomId = room.Id,
+                RoomTypeCode = room.RoomType?.RoomTypeCode ?? string.Empty,
+                RoomTypeName = room.RoomType?.RoomTypeName ?? string.Empty,
+                RoomCode = room.Room?.RoomCode ?? string.Empty,
+                RoomName = room.Room?.RoomName ?? string.Empty,
+                Note = room.Note,
+                Services = services
+                    .Where(x => x.BookingRoomId == room.Id)
+                    .Select(x => new BookingPaymentRecoveryServiceViewModel
+                    {
+                        Id = x.Id,
+                        ServiceCode = x.Service?.ServiceCode ?? string.Empty,
+                        ServiceName = x.Service?.ServiceName ?? string.Empty,
+                        UsedAt = x.UsedAt,
+                        TotalPrice = x.TotalPrice,
+                        Note = x.Note
+                    })
+                    .ToList(),
+                Fees = fees
+                    .Where(x => x.BookingRoomId == room.Id)
+                    .Select(x => new BookingPaymentRecoveryFeeViewModel
+                    {
+                        Id = x.Id,
+                        FeeName = x.FeeName,
+                        FeeType = x.FeeType,
+                        TotalFee = x.TotalFee,
+                        Description = x.Decription
+                    })
+                    .ToList()
+            }).ToList()
+        };
+    }
+
+    public async Task<BookingActionResult> CompletePaymentRecoveryAsync(
+        BookingPaymentRecoveryViewModel model,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (currentUserId == Guid.Empty)
+            return FailAction("Không xác định được người dùng đang đăng nhập.");
+
+        await using var transaction = await _context.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            cancellationToken);
+
+        try
+        {
+            var booking = await _context.Bookings
+                .FirstOrDefaultAsync(x => x.Id == model.BookingId && !x.IsDeleted, cancellationToken);
+
+            if (booking is null)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return FailAction("Lịch đặt phòng không tồn tại hoặc đã bị xóa.");
+            }
+
+            if (booking.Status != 6)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return FailAction("Chỉ có lịch đặt phòng ở trạng thái Check out thất bại mới được tiếp nhận thanh toán lại.");
+            }
+
+            var bill = await _context.Bills
+                .FirstOrDefaultAsync(x => x.BookingId == booking.Id && !x.IsDeleted, cancellationToken);
+
+            if (bill is null)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return FailAction("Không tìm thấy hóa đơn của Booking.");
+            }
+
+            if (bill.Status != 1)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return FailAction("Hóa đơn này không còn ở trạng thái Thanh toán thất bại.");
+            }
+
+            var errors = ValidatePaymentRecoveryModel(model);
+
+            var guest = booking.GuestId.HasValue
+                ? await _context.Guests.FirstOrDefaultAsync(
+                    x => x.Id == booking.GuestId.Value && !x.IsDeleted,
+                    cancellationToken)
+                : null;
+
+            if (guest is null)
+            {
+                errors[nameof(BookingPaymentRecoveryViewModel.GuestCode)] = "Booking không có khách hàng hợp lệ để cập nhật.";
+            }
+            else if (errors.Count == 0)
+            {
+                var guestCode = model.GuestCode.Trim();
+                if (await _context.Guests.AnyAsync(
+                        x => x.Id != guest.Id && !x.IsDeleted && x.GuestCode == guestCode,
+                        cancellationToken))
+                {
+                    errors[nameof(BookingPaymentRecoveryViewModel.GuestCode)] = "Mã khách hàng đã tồn tại.";
+                }
+            }
+
+            var bookingRooms = await _context.BookingRooms
+                .Where(x => x.BookingId == booking.Id && !x.IsDeleted)
+                .ToListAsync(cancellationToken);
+
+            var roomMap = bookingRooms.ToDictionary(x => x.Id);
+            var postedRooms = model.Rooms ?? new List<BookingPaymentRecoveryRoomViewModel>();
+            var postedRoomIds = postedRooms.Select(x => x?.BookingRoomId ?? Guid.Empty).ToArray();
+            var expectedRoomIds = roomMap.Keys.ToHashSet();
+
+            if (postedRoomIds.Length != expectedRoomIds.Count ||
+                postedRoomIds.Distinct().Count() != postedRoomIds.Length ||
+                !expectedRoomIds.SetEquals(postedRoomIds))
+            {
+                errors[string.Empty] = "Danh sách BookingRoom gửi lên không còn đồng bộ với dữ liệu hiện tại. Vui lòng tải lại trang.";
+            }
+
+            var serviceIds = postedRooms
+                .Where(x => x is not null)
+                .SelectMany(x => x!.Services ?? new List<BookingPaymentRecoveryServiceViewModel>())
+                .Select(x => x.Id)
+                .Where(x => x != Guid.Empty)
+                .ToArray();
+
+            var feeIds = postedRooms
+                .Where(x => x is not null)
+                .SelectMany(x => x!.Fees ?? new List<BookingPaymentRecoveryFeeViewModel>())
+                .Select(x => x.Id)
+                .Where(x => x != Guid.Empty)
+                .ToArray();
+
+            var serviceEntities = serviceIds.Length == 0
+                ? new List<Models.BookingRoomService>()
+                : await _context.BookingRoomServices
+                    .Where(x => serviceIds.Contains(x.Id) && !x.IsDeleted)
+                    .ToListAsync(cancellationToken);
+
+            var feeEntities = feeIds.Length == 0
+                ? new List<Models.AdditionalFeeRoom>()
+                : await _context.AdditionalFeeRooms
+                    .Where(x => feeIds.Contains(x.Id) && !x.IsDeleted)
+                    .ToListAsync(cancellationToken);
+
+            var serviceMap = serviceEntities.ToDictionary(x => x.Id);
+            var feeMap = feeEntities.ToDictionary(x => x.Id);
+
+            for (var roomIndex = 0; roomIndex < postedRooms.Count; roomIndex++)
+            {
+                var room = postedRooms[roomIndex];
+                var roomPrefix = $"Rooms[{roomIndex}]";
+
+                if (room is null)
+                {
+                    errors[$"{roomPrefix}.BookingRoomId"] = "BookingRoom không hợp lệ.";
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(room.Note) && room.Note.Trim().Length > 255)
+                    errors[$"{roomPrefix}.Note"] = "Ghi chú phòng không được vượt quá 255 ký tự.";
+
+                var serviceInputs = room.Services ?? new List<BookingPaymentRecoveryServiceViewModel>();
+                var feeInputs = room.Fees ?? new List<BookingPaymentRecoveryFeeViewModel>();
+                var serviceIdsForRoom = new HashSet<Guid>();
+
+                for (var serviceIndex = 0; serviceIndex < serviceInputs.Count; serviceIndex++)
+                {
+                    var service = serviceInputs[serviceIndex];
+                    var prefix = $"{roomPrefix}.Services[{serviceIndex}].Note";
+
+                    if (!serviceIdsForRoom.Add(service.Id))
+                    {
+                        errors[prefix] = "Dịch vụ bị gửi trùng.";
+                        continue;
+                    }
+
+                    if (!serviceMap.TryGetValue(service.Id, out var entity) || entity.BookingRoomId != room.BookingRoomId)
+                    {
+                        errors[prefix] = "Dịch vụ không thuộc BookingRoom tương ứng.";
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(service.Note) && service.Note.Trim().Length > 255)
+                        errors[prefix] = "Ghi chú dịch vụ không được vượt quá 255 ký tự.";
+                }
+
+                var feeIdsForRoom = new HashSet<Guid>();
+                for (var feeIndex = 0; feeIndex < feeInputs.Count; feeIndex++)
+                {
+                    var fee = feeInputs[feeIndex];
+                    var prefix = $"{roomPrefix}.Fees[{feeIndex}].Description";
+
+                    if (!feeIdsForRoom.Add(fee.Id))
+                    {
+                        errors[prefix] = "Phí phát sinh bị gửi trùng.";
+                        continue;
+                    }
+
+                    if (!feeMap.TryGetValue(fee.Id, out var entity) || entity.BookingRoomId != room.BookingRoomId)
+                    {
+                        errors[prefix] = "Phí phát sinh không thuộc BookingRoom tương ứng.";
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(fee.Description) && fee.Description.Trim().Length > 255)
+                        errors[prefix] = "Ghi chú phí phát sinh không được vượt quá 255 ký tự.";
+                }
+            }
+
+            if (errors.Count > 0)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return new BookingActionResult
+                {
+                    Succeeded = false,
+                    ErrorMessage = "Vui lòng kiểm tra lại thông tin thanh toán lại.",
+                    FieldErrors = errors
+                };
+            }
+
+            var now = DateTime.Now;
+            guest!.GuestCode = model.GuestCode.Trim();
+            guest.Name = model.GuestName.Trim();
+            guest.DateOfBirth = model.GuestDateOfBirth!.Value.Date;
+            guest.Sex = model.GuestSex;
+            guest.Address = model.GuestAddress.Trim();
+            guest.PhoneNumber = NormalizePhoneNumberForStorage(model.GuestPhoneNumber);
+            guest.Email = NormalizeOptional(model.GuestEmail);
+            guest.IdentityNumber = model.GuestIdentityNumber.Trim();
+            guest.IdentityType = model.GuestIdentityType;
+            guest.Note = NormalizeOptional(model.GuestNote);
+            guest.LastModifiedBy = currentUserId;
+            guest.LastModifiedAt = now;
+
+            booking.Note = NormalizeOptional(model.BookingNote);
+            booking.Status = 3;
+            booking.LastModifiedBy = currentUserId;
+            booking.LastModifiedAt = now;
+
+            foreach (var room in postedRooms)
+            {
+                var roomEntity = roomMap[room!.BookingRoomId];
+                roomEntity.Note = NormalizeOptional(room.Note);
+                roomEntity.LastModifiedBy = currentUserId;
+                roomEntity.LastModifiedAt = now;
+
+                foreach (var service in room.Services ?? new List<BookingPaymentRecoveryServiceViewModel>())
+                {
+                    var serviceEntity = serviceMap[service.Id];
+                    serviceEntity.Note = NormalizeOptional(service.Note);
+                    serviceEntity.LastModifiedBy = currentUserId;
+                    serviceEntity.LastModifiedAt = now;
+                }
+
+                foreach (var fee in room.Fees ?? new List<BookingPaymentRecoveryFeeViewModel>())
+                {
+                    var feeEntity = feeMap[fee.Id];
+                    feeEntity.Decription = NormalizeOptional(fee.Description);
+                    feeEntity.LastModifiedBy = currentUserId;
+                    feeEntity.LastModifiedAt = now;
+                }
+            }
+
+            var paymentMethod = model.PaymentMethod!.Value;
+            bill.PaymentMethod = paymentMethod;
+            bill.PaymentDate = now;
+            bill.ReferenceCode = paymentMethod == 1 ? NormalizeOptional(model.ReferenceCode) : null;
+            bill.Status = 0;
+            bill.Note = NormalizeOptional(model.BillNote);
+            bill.LastModifiedBy = currentUserId;
+            bill.LastModifiedAt = now;
+
+            await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return SuccessAction();
+        }
+        catch (DbUpdateException)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return FailAction("Không thể ghi nhận thanh toán lại. Dữ liệu có thể đã thay đổi, vui lòng thử lại.");
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return FailAction("Không thể ghi nhận thanh toán lại. Vui lòng thử lại.");
+        }
+    }
+
+    private static Dictionary<string, string> ValidatePaymentRecoveryModel(
+        BookingPaymentRecoveryViewModel model)
+    {
+        var errors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        var code = model.GuestCode?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(code))
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestCode)] = "Mã khách hàng không được để trống.";
+        else if (!IsValidAlphanumericCode(code))
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestCode)] = "Mã khách hàng chỉ được bao gồm chữ và số, không chứa dấu cách và ký tự đặc biệt.";
+        else if (code.Length > 50)
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestCode)] = "Mã khách hàng không được vượt quá 50 ký tự.";
+
+        var name = model.GuestName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(name))
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestName)] = "Tên khách hàng là bắt buộc.";
+        else if (name.Length > 100)
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestName)] = "Tên khách hàng không được vượt quá 100 ký tự.";
+
+        if (!model.GuestDateOfBirth.HasValue)
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestDateOfBirth)] = "Ngày sinh là bắt buộc.";
+        else if (model.GuestDateOfBirth.Value.Date > DateTime.Today)
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestDateOfBirth)] = "Ngày sinh không được lớn hơn ngày hiện tại.";
+
+        if (model.GuestSex is not 0 and not 1 and not 2)
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestSex)] = "Giới tính là bắt buộc.";
+
+        var address = model.GuestAddress?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(address))
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestAddress)] = "Địa chỉ là bắt buộc.";
+        else if (address.Length > 255)
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestAddress)] = "Địa chỉ không được vượt quá 255 ký tự.";
+
+        var phone = model.GuestPhoneNumber?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(phone))
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestPhoneNumber)] = "Số điện thoại là bắt buộc.";
+        else if (phone.Length > 30 || !TryNormalizePhoneNumber(phone, out _))
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestPhoneNumber)] = "Số điện thoại không hợp lệ. Có thể nhập số quốc tế; sau khi chuẩn hóa phải có 7-15 chữ số.";
+
+        var email = model.GuestEmail?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(email) &&
+            (email.Length > 254 || !new EmailAddressAttribute().IsValid(email)))
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestEmail)] = "Email không đúng định dạng hoặc vượt quá 254 ký tự.";
+
+        ValidateIdentityNumber(
+            model.GuestIdentityNumber,
+            model.GuestIdentityType,
+            isRequired: true,
+            identityFieldName: nameof(BookingPaymentRecoveryViewModel.GuestIdentityNumber),
+            identityTypeFieldName: nameof(BookingPaymentRecoveryViewModel.GuestIdentityType),
+            errors);
+
+        if (!string.IsNullOrWhiteSpace(model.GuestNote) && model.GuestNote.Trim().Length > 255)
+            errors[nameof(BookingPaymentRecoveryViewModel.GuestNote)] = "Ghi chú khách hàng không được vượt quá 255 ký tự.";
+
+        if (!string.IsNullOrWhiteSpace(model.BookingNote) && model.BookingNote.Trim().Length > 255)
+            errors[nameof(BookingPaymentRecoveryViewModel.BookingNote)] = "Ghi chú Booking không được vượt quá 255 ký tự.";
+
+        if (!model.PaymentReceived)
+            errors[nameof(BookingPaymentRecoveryViewModel.PaymentReceived)] = "Bạn phải xác nhận đã nhận được tiền thanh toán.";
+
+        if (model.PaymentMethod is not 0 and not 1)
+            errors[nameof(BookingPaymentRecoveryViewModel.PaymentMethod)] = "Vui lòng chọn phương thức thanh toán.";
+
+        var reference = model.ReferenceCode?.Trim() ?? string.Empty;
+        if (reference.Length > 100)
+            errors[nameof(BookingPaymentRecoveryViewModel.ReferenceCode)] = "Mã giao dịch không được vượt quá 100 ký tự.";
+        else if (model.PaymentMethod == 1 && string.IsNullOrWhiteSpace(reference))
+            errors[nameof(BookingPaymentRecoveryViewModel.ReferenceCode)] = "Mã giao dịch là bắt buộc khi thanh toán chuyển khoản.";
+
+        if (!string.IsNullOrWhiteSpace(model.BillNote) && model.BillNote.Trim().Length > 255)
+            errors[nameof(BookingPaymentRecoveryViewModel.BillNote)] = "Ghi chú hóa đơn không được vượt quá 255 ký tự.";
+
+        return errors;
     }
 
     public async Task<BookingActionResult> CheckOutAsync(
@@ -2936,14 +3380,16 @@ public sealed class BookingService : IBookingService
         }
 
         var prefix = "Guest.";
+
         var code = guestModel.GuestCode?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(code))
         {
             errors[$"{prefix}GuestCode"] = "Mã khách hàng không được để trống.";
         }
-        else if (guestModel.GuestCode!.Any(char.IsWhiteSpace))
+        else if (!IsValidAlphanumericCode(code))
         {
-            errors[$"{prefix}GuestCode"] = "Mã khách hàng không được chứa dấu cách hoặc khoảng trắng.";
+            errors[$"{prefix}GuestCode"] =
+                "Mã khách hàng chỉ được bao gồm chữ hoa, chữ thường và số, không chứa dấu cách và ký tự đặc biệt.";
         }
         else if (code.Length > 50)
         {
@@ -2953,7 +3399,7 @@ public sealed class BookingService : IBookingService
         var name = guestModel.Name?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(name))
         {
-            errors[$"{prefix}Name"] = "Tên khách hàng là bắt buộc.";
+            errors[$"{prefix}Name"] = "Tên khách hàng không được để trống.";
         }
         else if (name.Length > 100)
         {
@@ -2969,25 +3415,28 @@ public sealed class BookingService : IBookingService
         }
         else if (requireFullDetails)
         {
-            errors[$"{prefix}DateOfBirth"] = "Ngày sinh là bắt buộc khi Booking đang ở trạng thái Đang ở.";
+            errors[$"{prefix}DateOfBirth"] =
+                "Ngày sinh là bắt buộc khi Booking đang ở trạng thái Đang ở.";
         }
 
         if (guestModel.Sex.HasValue)
         {
             if (guestModel.Sex is not 0 and not 1 and not 2)
             {
-                errors[$"{prefix}Sex"] = "Giới tính không hợp lệ.";
+                errors[$"{prefix}Sex"] = "Giới tính khách hàng không hợp lệ.";
             }
         }
         else if (requireFullDetails)
         {
-            errors[$"{prefix}Sex"] = "Giới tính là bắt buộc khi Booking đang ở trạng thái Đang ở.";
+            errors[$"{prefix}Sex"] =
+                "Giới tính là bắt buộc khi Booking đang ở trạng thái Đang ở.";
         }
 
         var address = guestModel.Address?.Trim();
         if (requireFullDetails && string.IsNullOrWhiteSpace(address))
         {
-            errors[$"{prefix}Address"] = "Địa chỉ là bắt buộc khi Booking đang ở trạng thái Đang ở.";
+            errors[$"{prefix}Address"] =
+                "Địa chỉ là bắt buộc khi Booking đang ở trạng thái Đang ở.";
         }
         else if (!string.IsNullOrWhiteSpace(address) && address.Length > 255)
         {
@@ -2996,43 +3445,63 @@ public sealed class BookingService : IBookingService
 
         var phone = guestModel.PhoneNumber?.Trim();
         var email = guestModel.Email?.Trim();
-        if (string.IsNullOrWhiteSpace(phone) && string.IsNullOrWhiteSpace(email))
-        {
-            errors[$"{prefix}PhoneNumber"] = "Phải nhập ít nhất Số điện thoại hoặc Email.";
-            errors[$"{prefix}Email"] = "Phải nhập ít nhất Số điện thoại hoặc Email.";
-        }
-        else if (!string.IsNullOrWhiteSpace(phone) && phone.Length > 20)
-        {
-            errors[$"{prefix}PhoneNumber"] = "Số điện thoại không được vượt quá 20 ký tự.";
-        }
 
-        if (!string.IsNullOrWhiteSpace(email))
+        if (requireFullDetails)
         {
-            if (email.Length > 4000 || !new EmailAddressAttribute().IsValid(email))
+            // Booking đang ở trạng thái Đang ở:
+            // Số điện thoại bắt buộc, Email không bắt buộc.
+            if (string.IsNullOrWhiteSpace(phone))
             {
-                errors[$"{prefix}Email"] = "Email không hợp lệ.";
+                errors[$"{prefix}PhoneNumber"] =
+                    "Số điện thoại là bắt buộc khi Booking đang ở trạng thái Đang ở.";
+            }
+        }
+        else
+        {
+            // Chờ xác nhận / Chờ check in:
+            // Phải có ít nhất Số điện thoại hoặc Email.
+            if (string.IsNullOrWhiteSpace(phone) &&
+                string.IsNullOrWhiteSpace(email))
+            {
+                errors[$"{prefix}PhoneNumber"] =
+                    "Khách hàng phải có ít nhất số điện thoại hoặc email.";
+
+                errors[$"{prefix}Email"] =
+                    "Khách hàng phải có ít nhất số điện thoại hoặc email.";
             }
         }
 
-        var identityNumber = guestModel.IdentityNumber?.Trim();
-        var hasIdentityType = guestModel.IdentityType.HasValue;
-        if (requireFullDetails && string.IsNullOrWhiteSpace(identityNumber))
+        // Nếu có số điện thoại thì luôn validate định dạng.
+        if (!string.IsNullOrWhiteSpace(phone))
         {
-            errors[$"{prefix}IdentityNumber"] = "Số giấy tờ là bắt buộc khi Booking đang ở trạng thái Đang ở.";
-        }
-        else if (!string.IsNullOrWhiteSpace(identityNumber) && identityNumber.Length > 50)
-        {
-            errors[$"{prefix}IdentityNumber"] = "Số giấy tờ không được vượt quá 50 ký tự.";
+            if (phone.Length > 30)
+            {
+                errors[$"{prefix}PhoneNumber"] =
+                    "Số điện thoại nhập vào không được vượt quá 30 ký tự.";
+            }
+            else if (!TryNormalizePhoneNumber(phone, out _))
+            {
+                errors[$"{prefix}PhoneNumber"] =
+                    "Số điện thoại không hợp lệ. Có thể nhập số quốc tế; sau khi chuẩn hóa phải có 7-15 chữ số.";
+            }
         }
 
-        if (requireFullDetails && !hasIdentityType)
+        // Email luôn là trường tùy chọn.
+        // Nếu có nhập thì bắt buộc đúng định dạng.
+        if (!string.IsNullOrWhiteSpace(email)
+            && (email.Length > 254 || !new EmailAddressAttribute().IsValid(email)))
         {
-            errors[$"{prefix}IdentityType"] = "Loại giấy tờ là bắt buộc khi Booking đang ở trạng thái Đang ở.";
+            errors[$"{prefix}Email"] =
+                "Email không đúng định dạng hoặc vượt quá 254 ký tự.";
         }
-        else if (hasIdentityType && guestModel.IdentityType is not 0 and not 1 and not 2)
-        {
-            errors[$"{prefix}IdentityType"] = "Loại giấy tờ không hợp lệ.";
-        }
+
+        ValidateIdentityNumber(
+            guestModel.IdentityNumber,
+            guestModel.IdentityType,
+            isRequired: requireFullDetails,
+            identityFieldName: $"{prefix}IdentityNumber",
+            identityTypeFieldName: $"{prefix}IdentityType",
+            errors);
 
         var note = guestModel.Note?.Trim();
         if (!string.IsNullOrWhiteSpace(note) && note.Length > 255)
@@ -3052,7 +3521,7 @@ public sealed class BookingService : IBookingService
         guest.DateOfBirth = guestModel.DateOfBirth?.Date;
         guest.Sex = guestModel.Sex;
         guest.Address = NormalizeOptional(guestModel.Address);
-        guest.PhoneNumber = NormalizeOptional(guestModel.PhoneNumber);
+        guest.PhoneNumber = NormalizePhoneNumberForStorage(guestModel.PhoneNumber);
         guest.Email = NormalizeOptional(guestModel.Email);
         guest.IdentityNumber = NormalizeOptional(guestModel.IdentityNumber);
         guest.IdentityType = guestModel.IdentityType;
@@ -3083,7 +3552,7 @@ public sealed class BookingService : IBookingService
             errors[nameof(BookingCheckInViewModel.GuestPhoneNumber)] = "Số điện thoại bắt buộc và tối đa 20 ký tự.";
 
         if (!string.IsNullOrWhiteSpace(model.GuestEmail) &&
-            (model.GuestEmail.Trim().Length > 4000 || !new EmailAddressAttribute().IsValid(model.GuestEmail.Trim())))
+            (model.GuestEmail.Trim().Length > 254 || !new EmailAddressAttribute().IsValid(model.GuestEmail.Trim())))
             errors[nameof(BookingCheckInViewModel.GuestEmail)] = "Email không hợp lệ.";
 
         if (string.IsNullOrWhiteSpace(model.GuestIdentityNumber) || model.GuestIdentityNumber.Trim().Length > 50)
@@ -3253,6 +3722,137 @@ public sealed class BookingService : IBookingService
     }
 
     private static BookingActionResult SuccessAction() => new() { Succeeded = true };
+    private static bool IsValidAlphanumericCode(string value)
+    {
+        return !string.IsNullOrWhiteSpace(value) &&
+               Regex.IsMatch(value, "^[A-Za-z0-9]+$");
+    }
+
+    private static void ValidateCodeValue(
+        string? raw,
+        string label,
+        string fieldName,
+        Dictionary<string, string> errors)
+    {
+        var value = raw?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            errors[fieldName] = $"{label} không được để trống.";
+        }
+        else if (!IsValidAlphanumericCode(value))
+        {
+            errors[fieldName] =
+                $"{label} chỉ được bao gồm chữ hoa, chữ thường và số, không chứa dấu cách và ký tự đặc biệt.";
+        }
+    }
+
+    private static bool TryNormalizePhoneNumber(string raw, out string normalized)
+    {
+        normalized = string.Empty;
+        var value = raw?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        value = Regex.Replace(value, @"[\s\-\.\(\)]", string.Empty);
+
+        if (value.StartsWith("00", StringComparison.Ordinal))
+        {
+            value = "+" + value[2..];
+        }
+
+        if (value.StartsWith("+", StringComparison.Ordinal))
+        {
+            var digits = value[1..];
+            if (!Regex.IsMatch(digits, @"^[0-9]+$") ||
+                digits.Length < 7 ||
+                digits.Length > 15 ||
+                digits.StartsWith("0", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            normalized = "+" + digits;
+            return true;
+        }
+
+        if (!Regex.IsMatch(value, @"^[0-9]+$") || value.Length < 7 || value.Length > 15)
+        {
+            return false;
+        }
+
+        normalized = value;
+        return true;
+    }
+
+    private static string? NormalizePhoneNumberForStorage(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        return TryNormalizePhoneNumber(raw, out var normalized)
+            ? normalized
+            : raw.Trim();
+    }
+
+    private static void ValidateIdentityNumber(
+        string? rawNumber,
+        byte? identityType,
+        bool isRequired,
+        string identityFieldName,
+        string identityTypeFieldName,
+        Dictionary<string, string> errors)
+    {
+        var number = rawNumber?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(number))
+        {
+            if (isRequired)
+            {
+                errors[identityFieldName] = "Số giấy tờ là bắt buộc.";
+            }
+            return;
+        }
+
+        if (number.Length > 50)
+        {
+            errors[identityFieldName] = "Số giấy tờ không được vượt quá 50 ký tự.";
+            return;
+        }
+
+        if (identityType is not 0 and not 1 and not 2)
+        {
+            errors[identityTypeFieldName] = "Vui lòng chọn loại giấy tờ khi nhập số giấy tờ.";
+            return;
+        }
+
+        switch (identityType)
+        {
+            case 0:
+                if (!Regex.IsMatch(number, @"^\d{12}$"))
+                {
+                    errors[identityFieldName] = "CCCD phải gồm đúng 12 chữ số.";
+                }
+                break;
+            case 1:
+                if (!Regex.IsMatch(number, @"^\d{12}$"))
+                {
+                    errors[identityFieldName] = "Giấy phép lái xe phải gồm đúng 12 chữ số.";
+                }
+                break;
+            case 2:
+                if (!Regex.IsMatch(number, @"^[A-Za-z0-9]{5,20}$"))
+                {
+                    errors[identityFieldName] =
+                        "Hộ chiếu phải gồm 5-20 ký tự chữ và số, không chứa dấu cách hoặc ký tự đặc biệt.";
+                }
+                break;
+        }
+    }
+
 
     private static BookingActionResult FailAction(string message, string? field = null)
     {
@@ -3824,17 +4424,34 @@ public sealed class BookingService : IBookingService
         var errors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         if (model.CheckOutDate.Date <= DateTime.Today)
-            errors[nameof(BookingDirectCreateViewModel.CheckOutDate)] = "Ngày check out phải sau ngày hiện tại.";
+        {
+            errors[nameof(BookingDirectCreateViewModel.CheckOutDate)] =
+                "Ngày check out phải sau ngày hiện tại.";
+        }
 
-        if (string.IsNullOrWhiteSpace(model.BookingCode))
-            errors[nameof(BookingDirectCreateViewModel.BookingCode)] = "Mã đặt phòng không được để trống.";
-        else if (model.BookingCode.Any(char.IsWhiteSpace))
-            errors[nameof(BookingDirectCreateViewModel.BookingCode)] = "Mã đặt phòng không được chứa dấu cách hoặc khoảng trắng.";
+        ValidateCodeValue(
+            model.BookingCode,
+            "Mã đặt phòng",
+            nameof(BookingDirectCreateViewModel.BookingCode),
+            errors);
+
+        if (model.BookingCode.Trim().Length > 50)
+        {
+            errors[nameof(BookingDirectCreateViewModel.BookingCode)] =
+                "Mã đặt phòng không được vượt quá 50 ký tự.";
+        }
 
         if (model.TotalAdults < 1)
-            errors[nameof(BookingDirectCreateViewModel.TotalAdults)] = "Tổng người lớn phải lớn hơn 0.";
+        {
+            errors[nameof(BookingDirectCreateViewModel.TotalAdults)] =
+                "Tổng người lớn phải lớn hơn 0.";
+        }
+
         if (model.TotalChildren < 0)
-            errors[nameof(BookingDirectCreateViewModel.TotalChildren)] = "Tổng trẻ em phải lớn hơn hoặc bằng 0.";
+        {
+            errors[nameof(BookingDirectCreateViewModel.TotalChildren)] =
+                "Tổng trẻ em phải lớn hơn hoặc bằng 0.";
+        }
 
         ValidateDirectGuest(model, errors);
 
@@ -3848,7 +4465,8 @@ public sealed class BookingService : IBookingService
         {
             if (type.Quantity > type.AvailableRoomCount)
             {
-                errors[string.Empty] = $"Loại phòng {type.RoomTypeCode}-{type.RoomTypeName} chỉ còn {type.AvailableRoomCount} phòng có thể sử dụng để check in trực tiếp hôm nay.";
+                errors[string.Empty] =
+                    $"Loại phòng {type.RoomTypeCode}-{type.RoomTypeName} chỉ còn {type.AvailableRoomCount} phòng có thể sử dụng để check in trực tiếp hôm nay.";
                 break;
             }
         }
@@ -3862,47 +4480,92 @@ public sealed class BookingService : IBookingService
             assignmentsByType.TryGetValue(type.RoomTypeId, out var list);
             if (list is null || list.Count != type.Quantity)
             {
-                errors[string.Empty] = $"Loại phòng {type.RoomTypeCode}-{type.RoomTypeName} chưa được phân đủ {type.Quantity} BookingRoom.";
+                errors[string.Empty] =
+                    $"Loại phòng {type.RoomTypeCode}-{type.RoomTypeName} chưa được phân đủ {type.Quantity} BookingRoom.";
                 continue;
             }
 
-            var assignedAdults = list.Sum(x => x.Adults);
-            var assignedChildren = list.Sum(x => x.Children);
             foreach (var row in list.Select((value, index) => new { value, index }))
             {
-                if (row.value.Adults > type.MaxAdults)
-                    errors[$"RoomAssignments[{model.RoomAssignments.IndexOf(row.value)}].Adults"] = $"Số người lớn vượt sức chứa của phòng loại {type.RoomTypeCode}.";
-                if (row.value.Children > type.MaxChildren)
-                    errors[$"RoomAssignments[{model.RoomAssignments.IndexOf(row.value)}].Children"] = $"Số trẻ em vượt sức chứa của phòng loại {type.RoomTypeCode}.";
-                if (!row.value.RoomId.HasValue)
-                    errors[$"RoomAssignments[{model.RoomAssignments.IndexOf(row.value)}].RoomId"] = "Vui lòng chọn phòng thực tế.";
+                var modelIndex = model.RoomAssignments.IndexOf(row.value);
+                if (row.value.Adults < 0 || row.value.Adults > type.MaxAdults)
+                {
+                    errors[$"RoomAssignments[{modelIndex}].Adults"] =
+                        $"Số người lớn trong phòng loại {type.RoomTypeCode} phải từ 0 đến {type.MaxAdults}.";
+                }
+
+                if (row.value.Children < 0 || row.value.Children > type.MaxChildren)
+                {
+                    errors[$"RoomAssignments[{modelIndex}].Children"] =
+                        $"Số trẻ em trong phòng loại {type.RoomTypeCode} phải từ 0 đến {type.MaxChildren}.";
+                }
+
+                if (!row.value.RoomId.HasValue || row.value.RoomId.Value == Guid.Empty)
+                {
+                    errors[$"RoomAssignments[{modelIndex}].RoomId"] =
+                        "Vui lòng chọn phòng thực tế.";
+                }
+
+                if (!string.IsNullOrWhiteSpace(row.value.Note) && row.value.Note.Trim().Length > 255)
+                {
+                    errors[$"RoomAssignments[{modelIndex}].Note"] =
+                        "Ghi chú BookingRoom không được vượt quá 255 ký tự.";
+                }
             }
         }
 
         if (model.RoomAssignments.Count > 0)
         {
-            if (model.RoomAssignments.GroupBy(x => x.RoomId).Any(g => g.Key.HasValue && g.Count() > 1))
-                errors[string.Empty] = "Không thể chọn cùng một phòng cho nhiều BookingRoom.";
-
-            if (model.RoomAssignments.Sum(x => x.Adults) != model.TotalAdults ||
-                model.RoomAssignments.Sum(x => x.Children) != model.TotalChildren)
+            if (model.RoomAssignments.GroupBy(x => x.RoomId)
+                .Any(g => g.Key.HasValue && g.Key.Value != Guid.Empty && g.Count() > 1))
             {
-                errors[string.Empty] = $"Phân bổ người chưa khớp: tổng người lớn đã phân bổ {model.RoomAssignments.Sum(x => x.Adults)}/{model.TotalAdults}, tổng trẻ em đã phân bổ {model.RoomAssignments.Sum(x => x.Children)}/{model.TotalChildren}.";
+                errors[string.Empty] = "Không thể chọn cùng một phòng cho nhiều BookingRoom.";
+            }
+
+            var assignedAdults = model.RoomAssignments.Sum(x => x.Adults);
+            var assignedChildren = model.RoomAssignments.Sum(x => x.Children);
+            if (assignedAdults != model.TotalAdults || assignedChildren != model.TotalChildren)
+            {
+                errors[string.Empty] =
+                    $"Phân bổ người chưa khớp: tổng người lớn đã phân bổ {assignedAdults}/{model.TotalAdults}, tổng trẻ em đã phân bổ {assignedChildren}/{model.TotalChildren}.";
             }
         }
 
         if (model.DepositAmount > 0)
         {
             if (model.PaymentMethod is not 0 and not 1)
-                errors[nameof(BookingDirectCreateViewModel.PaymentMethod)] = "Vui lòng chọn phương thức thanh toán tiền cọc.";
+            {
+                errors[nameof(BookingDirectCreateViewModel.PaymentMethod)] =
+                    "Vui lòng chọn phương thức thanh toán tiền cọc.";
+            }
+
             if (!model.PaymentDate.HasValue)
-                errors[nameof(BookingDirectCreateViewModel.PaymentDate)] = "Vui lòng chọn thời gian thanh toán tiền cọc.";
+            {
+                errors[nameof(BookingDirectCreateViewModel.PaymentDate)] =
+                    "Vui lòng chọn thời gian thanh toán tiền cọc.";
+            }
             else if (model.PaymentDate.Value > now)
-                errors[nameof(BookingDirectCreateViewModel.PaymentDate)] = "Thời gian thanh toán tiền cọc không được lớn hơn thời điểm hiện tại.";
+            {
+                errors[nameof(BookingDirectCreateViewModel.PaymentDate)] =
+                    "Thời gian thanh toán tiền cọc không được lớn hơn thời điểm hiện tại.";
+            }
+
             if (!model.DepositConfirmed)
-                errors[nameof(BookingDirectCreateViewModel.DepositConfirmed)] = "Vui lòng xác nhận đã nhận được tiền cọc.";
+            {
+                errors[nameof(BookingDirectCreateViewModel.DepositConfirmed)] =
+                    "Vui lòng xác nhận đã nhận được tiền cọc.";
+            }
+
             if (model.PaymentMethod == 1 && string.IsNullOrWhiteSpace(model.ReferenceCode))
-                errors[nameof(BookingDirectCreateViewModel.ReferenceCode)] = "Mã giao dịch là bắt buộc khi thanh toán chuyển khoản.";
+            {
+                errors[nameof(BookingDirectCreateViewModel.ReferenceCode)] =
+                    "Mã giao dịch là bắt buộc khi thanh toán chuyển khoản.";
+            }
+            else if (!string.IsNullOrWhiteSpace(model.ReferenceCode) && model.ReferenceCode.Trim().Length > 100)
+            {
+                errors[nameof(BookingDirectCreateViewModel.ReferenceCode)] =
+                    "Mã giao dịch không được vượt quá 100 ký tự.";
+            }
         }
 
         return errors;
@@ -3912,28 +4575,102 @@ public sealed class BookingService : IBookingService
         BookingDirectCreateViewModel model,
         Dictionary<string, string> errors)
     {
-        if (string.IsNullOrWhiteSpace(model.GuestCode))
-            errors[nameof(BookingDirectCreateViewModel.GuestCode)] = "Mã khách hàng không được để trống.";
-        else if (model.GuestCode.Any(char.IsWhiteSpace))
-            errors[nameof(BookingDirectCreateViewModel.GuestCode)] = "Mã khách hàng không được chứa dấu cách hoặc khoảng trắng.";
-        else if (model.GuestCode.Trim().Length > 50)
-            errors[nameof(BookingDirectCreateViewModel.GuestCode)] = "Mã khách hàng không được vượt quá 50 ký tự.";
-        if (string.IsNullOrWhiteSpace(model.GuestName))
-            errors[nameof(BookingDirectCreateViewModel.GuestName)] = "Tên khách hàng là bắt buộc khi tạo trực tiếp tại quầy.";
+        ValidateCodeValue(
+            model.GuestCode,
+            "Mã khách hàng",
+            nameof(BookingDirectCreateViewModel.GuestCode),
+            errors);
+
+        if (model.GuestCode.Trim().Length > 50)
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestCode)] =
+                "Mã khách hàng không được vượt quá 50 ký tự.";
+        }
+
+        var name = model.GuestName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestName)] =
+                "Tên khách hàng là bắt buộc khi tạo trực tiếp tại quầy.";
+        }
+        else if (name.Length > 100)
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestName)] =
+                "Tên khách hàng không được vượt quá 100 ký tự.";
+        }
+
         if (!model.GuestDateOfBirth.HasValue)
-            errors[nameof(BookingDirectCreateViewModel.GuestDateOfBirth)] = "Ngày sinh là bắt buộc khi tạo trực tiếp tại quầy.";
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestDateOfBirth)] =
+                "Ngày sinh là bắt buộc khi tạo trực tiếp tại quầy.";
+        }
         else if (model.GuestDateOfBirth.Value.Date > DateTime.Today)
-            errors[nameof(BookingDirectCreateViewModel.GuestDateOfBirth)] = "Ngày sinh không được lớn hơn ngày hiện tại.";
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestDateOfBirth)] =
+                "Ngày sinh không được lớn hơn ngày hiện tại.";
+        }
+
         if (!model.GuestSex.HasValue)
-            errors[nameof(BookingDirectCreateViewModel.GuestSex)] = "Giới tính là bắt buộc khi tạo trực tiếp tại quầy.";
-        if (string.IsNullOrWhiteSpace(model.GuestAddress))
-            errors[nameof(BookingDirectCreateViewModel.GuestAddress)] = "Địa chỉ là bắt buộc khi tạo trực tiếp tại quầy.";
-        if (string.IsNullOrWhiteSpace(model.GuestPhoneNumber))
-            errors[nameof(BookingDirectCreateViewModel.GuestPhoneNumber)] = "Số điện thoại là bắt buộc khi tạo trực tiếp tại quầy.";
-        if (string.IsNullOrWhiteSpace(model.GuestIdentityNumber))
-            errors[nameof(BookingDirectCreateViewModel.GuestIdentityNumber)] = "Số giấy tờ là bắt buộc khi tạo trực tiếp tại quầy.";
-        if (!model.GuestIdentityType.HasValue)
-            errors[nameof(BookingDirectCreateViewModel.GuestIdentityType)] = "Loại giấy tờ là bắt buộc khi tạo trực tiếp tại quầy.";
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestSex)] =
+                "Giới tính là bắt buộc khi tạo trực tiếp tại quầy.";
+        }
+        else if (model.GuestSex is not 0 and not 1 and not 2)
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestSex)] =
+                "Giới tính khách hàng không hợp lệ.";
+        }
+
+        var address = model.GuestAddress?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestAddress)] =
+                "Địa chỉ là bắt buộc khi tạo trực tiếp tại quầy.";
+        }
+        else if (address.Length > 255)
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestAddress)] =
+                "Địa chỉ không được vượt quá 255 ký tự.";
+        }
+
+        var phone = model.GuestPhoneNumber?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestPhoneNumber)] =
+                "Số điện thoại là bắt buộc khi tạo trực tiếp tại quầy.";
+        }
+        else if (!TryNormalizePhoneNumber(phone, out _))
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestPhoneNumber)] =
+                "Số điện thoại không hợp lệ. Có thể nhập số quốc tế dạng +mã quốc gia + số thuê bao, tối đa 15 chữ số sau khi chuẩn hóa.";
+        }
+        else if (phone.Length > 30)
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestPhoneNumber)] =
+                "Số điện thoại nhập vào không được vượt quá 30 ký tự.";
+        }
+
+        var email = model.GuestEmail?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(email) &&
+            (email.Length > 254 || !new EmailAddressAttribute().IsValid(email)))
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestEmail)] =
+                "Email không đúng định dạng hoặc vượt quá 254 ký tự.";
+        }
+
+        ValidateIdentityNumber(
+            model.GuestIdentityNumber,
+            model.GuestIdentityType,
+            isRequired: true,
+            identityFieldName: nameof(BookingDirectCreateViewModel.GuestIdentityNumber),
+            identityTypeFieldName: nameof(BookingDirectCreateViewModel.GuestIdentityType),
+            errors);
+
+        if (!string.IsNullOrWhiteSpace(model.GuestNote) && model.GuestNote.Trim().Length > 255)
+        {
+            errors[nameof(BookingDirectCreateViewModel.GuestNote)] =
+                "Ghi chú khách hàng không được vượt quá 255 ký tự.";
+        }
     }
 
     private async Task ValidateDirectRoomAssignmentsLiveAsync(
@@ -4032,7 +4769,7 @@ public sealed class BookingService : IBookingService
         guest.DateOfBirth = model.GuestDateOfBirth?.Date;
         guest.Sex = model.GuestSex;
         guest.Address = model.GuestAddress.Trim();
-        guest.PhoneNumber = model.GuestPhoneNumber.Trim();
+        guest.PhoneNumber = NormalizePhoneNumberForStorage(model.GuestPhoneNumber);
         guest.Email = NormalizeOptional(model.GuestEmail);
         guest.IdentityNumber = model.GuestIdentityNumber.Trim();
         guest.IdentityType = model.GuestIdentityType;
@@ -4213,15 +4950,13 @@ public sealed class BookingService : IBookingService
             errors[nameof(BookingCreateViewModel.BookingType)] = "Vui lòng chọn loại đặt phòng hợp lệ.";
         }
 
-        if (string.IsNullOrWhiteSpace(model.BookingCode))
-        {
-            errors[nameof(BookingCreateViewModel.BookingCode)] = "Mã đặt phòng không được để trống.";
-        }
-        else if (model.BookingCode.Any(char.IsWhiteSpace))
-        {
-            errors[nameof(BookingCreateViewModel.BookingCode)] = "Mã đặt phòng không được chứa dấu cách hoặc khoảng trắng.";
-        }
-        else if (model.BookingCode.Trim().Length > 50)
+        ValidateCodeValue(
+            model.BookingCode,
+            "Mã đặt phòng",
+            nameof(BookingCreateViewModel.BookingCode),
+            errors);
+
+        if (model.BookingCode.Trim().Length > 50)
         {
             errors[nameof(BookingCreateViewModel.BookingCode)] = "Mã đặt phòng không được vượt quá 50 ký tự.";
         }
@@ -4283,15 +5018,13 @@ public sealed class BookingService : IBookingService
     {
         var direct = model.BookingType == 1;
 
-        if (string.IsNullOrWhiteSpace(model.GuestCode))
-        {
-            errors[nameof(BookingCreateViewModel.GuestCode)] = "Mã khách hàng không được để trống.";
-        }
-        else if (model.GuestCode.Any(char.IsWhiteSpace))
-        {
-            errors[nameof(BookingCreateViewModel.GuestCode)] = "Mã khách hàng không được chứa dấu cách hoặc khoảng trắng.";
-        }
-        else if (model.GuestCode.Trim().Length > 50)
+        ValidateCodeValue(
+            model.GuestCode,
+            "Mã khách hàng",
+            nameof(BookingCreateViewModel.GuestCode),
+            errors);
+
+        if (model.GuestCode.Trim().Length > 50)
         {
             errors[nameof(BookingCreateViewModel.GuestCode)] = "Mã khách hàng không được vượt quá 50 ký tự.";
         }
@@ -4334,43 +5067,37 @@ public sealed class BookingService : IBookingService
 
         var phone = model.GuestPhoneNumber?.Trim();
         var email = model.GuestEmail?.Trim();
-        if (string.IsNullOrWhiteSpace(phone) && direct)
+        if (string.IsNullOrWhiteSpace(phone))
         {
-            errors[nameof(BookingCreateViewModel.GuestPhoneNumber)] = "Số điện thoại là bắt buộc khi tạo lịch trực tiếp tại quầy.";
+            if (direct)
+            {
+                errors[nameof(BookingCreateViewModel.GuestPhoneNumber)] =
+                    "Số điện thoại là bắt buộc khi tạo lịch trực tiếp tại quầy.";
+            }
         }
-        else if (!string.IsNullOrWhiteSpace(phone) && phone.Length > 20)
+        else if (!TryNormalizePhoneNumber(phone, out _))
         {
-            errors[nameof(BookingCreateViewModel.GuestPhoneNumber)] = "Số điện thoại không được vượt quá 20 ký tự.";
+            errors[nameof(BookingCreateViewModel.GuestPhoneNumber)] =
+                "Số điện thoại không hợp lệ. Có thể nhập số quốc tế dạng +mã quốc gia + số thuê bao, tối đa 15 chữ số sau khi chuẩn hóa.";
+        }
+        else if (phone.Length > 30)
+        {
+            errors[nameof(BookingCreateViewModel.GuestPhoneNumber)] = "Số điện thoại nhập vào không được vượt quá 30 ký tự.";
         }
 
         if (!string.IsNullOrWhiteSpace(email) &&
-            (email.Length > 4000 || !new EmailAddressAttribute().IsValid(email)))
+            (email.Length > 254 || !new EmailAddressAttribute().IsValid(email)))
         {
             errors[nameof(BookingCreateViewModel.GuestEmail)] = "Email không hợp lệ.";
         }
 
-        if (string.IsNullOrWhiteSpace(model.GuestIdentityNumber) && direct)
-        {
-            errors[nameof(BookingCreateViewModel.GuestIdentityNumber)] = "Số giấy tờ là bắt buộc khi tạo lịch trực tiếp tại quầy.";
-        }
-        else if (!string.IsNullOrWhiteSpace(model.GuestIdentityNumber))
-        {
-            if (model.GuestIdentityNumber.Trim().Length > 50)
-            {
-                errors[nameof(BookingCreateViewModel.GuestIdentityNumber)] = "Số giấy tờ không được vượt quá 50 ký tự.";
-            }
-
-            if (model.GuestIdentityType is not 0 and not 1 and not 2)
-            {
-                errors[nameof(BookingCreateViewModel.GuestIdentityType)] =
-                    "Vui lòng chọn loại giấy tờ khi nhập số giấy tờ.";
-            }
-        }
-
-        if (direct && model.GuestIdentityType is null)
-        {
-            errors[nameof(BookingCreateViewModel.GuestIdentityType)] = "Loại giấy tờ là bắt buộc khi tạo lịch trực tiếp tại quầy.";
-        }
+        ValidateIdentityNumber(
+            model.GuestIdentityNumber,
+            model.GuestIdentityType,
+            isRequired: direct,
+            identityFieldName: nameof(BookingCreateViewModel.GuestIdentityNumber),
+            identityTypeFieldName: nameof(BookingCreateViewModel.GuestIdentityType),
+            errors);
 
         if (!string.IsNullOrWhiteSpace(model.GuestNote) && model.GuestNote.Trim().Length > 255)
         {
@@ -4383,15 +5110,13 @@ public sealed class BookingService : IBookingService
         Dictionary<string, string> errors)
     {
         var direct = model.BookingType == 1;
-        if (string.IsNullOrWhiteSpace(model.GuestCode))
-        {
-            errors[nameof(BookingCreateViewModel.GuestCode)] = "Mã khách hàng không được để trống.";
-        }
-        else if (model.GuestCode.Any(char.IsWhiteSpace))
-        {
-            errors[nameof(BookingCreateViewModel.GuestCode)] = "Mã khách hàng không được chứa dấu cách hoặc khoảng trắng.";
-        }
-        else if (model.GuestCode.Trim().Length > 50)
+        ValidateCodeValue(
+            model.GuestCode,
+            "Mã khách hàng",
+            nameof(BookingCreateViewModel.GuestCode),
+            errors);
+
+        if (model.GuestCode.Trim().Length > 50)
         {
             errors[nameof(BookingCreateViewModel.GuestCode)] = "Mã khách hàng không được vượt quá 50 ký tự.";
         }
@@ -4442,18 +5167,27 @@ public sealed class BookingService : IBookingService
                 "Khách hàng phải có ít nhất số điện thoại hoặc email.";
         }
 
-        if (string.IsNullOrWhiteSpace(phone) && direct)
+        if (string.IsNullOrWhiteSpace(phone))
         {
-            errors[nameof(BookingCreateViewModel.GuestPhoneNumber)] = "Số điện thoại là bắt buộc khi tạo lịch trực tiếp tại quầy.";
+            if (direct)
+            {
+                errors[nameof(BookingCreateViewModel.GuestPhoneNumber)] =
+                    "Số điện thoại là bắt buộc khi tạo lịch trực tiếp tại quầy.";
+            }
         }
-        else if (!string.IsNullOrWhiteSpace(phone) && phone.Length > 20)
+        else if (!TryNormalizePhoneNumber(phone, out _))
         {
-            errors[nameof(BookingCreateViewModel.GuestPhoneNumber)] = "Số điện thoại không được vượt quá 20 ký tự.";
+            errors[nameof(BookingCreateViewModel.GuestPhoneNumber)] =
+                "Số điện thoại không hợp lệ. Có thể nhập số quốc tế dạng +mã quốc gia + số thuê bao, tối đa 15 chữ số sau khi chuẩn hóa.";
+        }
+        else if (phone.Length > 30)
+        {
+            errors[nameof(BookingCreateViewModel.GuestPhoneNumber)] = "Số điện thoại nhập vào không được vượt quá 30 ký tự.";
         }
 
         if (!string.IsNullOrWhiteSpace(email))
         {
-            if (email.Length > 4000 || !new EmailAddressAttribute().IsValid(email))
+            if (email.Length > 254 || !new EmailAddressAttribute().IsValid(email))
             {
                 errors[nameof(BookingCreateViewModel.GuestEmail)] = "Email không hợp lệ.";
             }
@@ -4464,28 +5198,13 @@ public sealed class BookingService : IBookingService
             errors[nameof(BookingCreateViewModel.GuestNote)] = "Ghi chú khách hàng không được vượt quá 255 ký tự.";
         }
 
-        if (string.IsNullOrWhiteSpace(model.GuestIdentityNumber) && direct)
-        {
-            errors[nameof(BookingCreateViewModel.GuestIdentityNumber)] = "Số giấy tờ là bắt buộc khi tạo lịch trực tiếp tại quầy.";
-        }
-        else if (!string.IsNullOrWhiteSpace(model.GuestIdentityNumber))
-        {
-            if (model.GuestIdentityNumber.Trim().Length > 50)
-            {
-                errors[nameof(BookingCreateViewModel.GuestIdentityNumber)] = "Số giấy tờ không được vượt quá 50 ký tự.";
-            }
-
-            if (model.GuestIdentityType is not 0 and not 1 and not 2)
-            {
-                errors[nameof(BookingCreateViewModel.GuestIdentityType)] =
-                    "Vui lòng chọn loại giấy tờ khi nhập số giấy tờ.";
-            }
-        }
-
-        if (direct && model.GuestIdentityType is null)
-        {
-            errors[nameof(BookingCreateViewModel.GuestIdentityType)] = "Loại giấy tờ là bắt buộc khi tạo lịch trực tiếp tại quầy.";
-        }
+        ValidateIdentityNumber(
+            model.GuestIdentityNumber,
+            model.GuestIdentityType,
+            isRequired: direct,
+            identityFieldName: nameof(BookingCreateViewModel.GuestIdentityNumber),
+            identityTypeFieldName: nameof(BookingCreateViewModel.GuestIdentityType),
+            errors);
     }
 
     private void ValidateAvailabilityOnly(
@@ -4598,7 +5317,7 @@ public sealed class BookingService : IBookingService
             };
     }
 
-    private async Task<string> GetNextBookingCodeAsync(
+    public async Task<string> GetNextBookingCodeAsync(
         CancellationToken cancellationToken)
     {
         var codes = await _context.Bookings
@@ -4611,7 +5330,7 @@ public sealed class BookingService : IBookingService
         return $"DP{max + 1}";
     }
 
-    private async Task<string> GetNextGuestCodeAsync(
+    public async Task<string> GetNextGuestCodeAsync(
         CancellationToken cancellationToken)
     {
         var codes = await _context.Guests
@@ -4684,7 +5403,7 @@ public sealed class BookingService : IBookingService
             DateOfBirth = model.GuestDateOfBirth?.Date,
             Sex = model.GuestSex,
             Address = NormalizeOptional(model.GuestAddress),
-            PhoneNumber = NormalizeOptional(model.GuestPhoneNumber),
+            PhoneNumber = NormalizePhoneNumberForStorage(model.GuestPhoneNumber),
             Email = NormalizeOptional(model.GuestEmail),
             IdentityNumber = NormalizeOptional(model.GuestIdentityNumber),
             IdentityType = model.GuestIdentityType,

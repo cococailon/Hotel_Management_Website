@@ -1,7 +1,8 @@
-﻿@model Hotel_Management_Website.Models.ViewModels.Guest.GuestIndexViewModel
+@model Hotel_Management_Website.Models.ViewModels.Guest.GuestIndexViewModel
 
 @{
     var isReception = User.IsInRole("Reception");
+    var isAdmin = User.IsInRole(Hotel_Management_Website.Security.AppRoles.Admin);
     ViewData["Title"] = "Quản lý khách hàng đặt phòng";
     Layout = isReception ? "~/Views/Shared/_ReceptionLayout.cshtml" : "~/Views/Shared/_AdminLayout.cshtml";
     var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
@@ -19,7 +20,7 @@
         Title = "Quản lý khách hàng đặt phòng",
         Description = isReception
             ? "Xem danh sách, tìm kiếm, sắp xếp và lọc khách hàng đặt phòng."
-            : "Xem, tìm kiếm, sắp xếp, lọc, chỉnh sửa và xóa khách hàng đặt phòng theo quyền Admin.",
+            : "",
         Icon = "bi-person-vcard"
     })
 
@@ -232,7 +233,7 @@ else
                                         <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                     </a>
 
-                                    @if (!isReception && item.CanDelete)
+                                    @if (isAdmin)
                                     {
                                         <form asp-controller="Guest"
                                               asp-action="Delete"

@@ -47,7 +47,7 @@
         Title = "Quản lý phòng",
         Description = isReception
             ? "Xem sơ đồ phòng theo tầng và hàng, tìm kiếm, sắp xếp, lọc; chuyển phòng sang Bảo trì hoặc đưa phòng từ Bảo trì về Trống."
-            : "Xem sơ đồ phòng theo tầng và hàng, tìm kiếm, sắp xếp, lọc và quản lý trạng thái phòng.",
+            : "",
         Icon = "bi-door-closed"
     })
 
@@ -335,12 +335,11 @@ else
                                                                 <button type="button"
                                                                         class="btn btn-outline-success btn-sm room-action-btn"
                                                                         data-room-action="activate"
-                                                                        data-allowed="@room.CanActivate.ToString().ToLowerInvariant()"
+                                                                        data-allowed="true"
                                                                         data-status="@room.Status"
                                                                         data-id="@room.Id"
                                                                         data-name="@room.RoomCode - @room.RoomName"
-                                                                        title="@(room.ActivationBlockedByRoomType ? "Loại phòng đang dừng hoạt động" : "Mở hoạt động phòng")"
-                                                                        disabled="@(room.ActivationBlockedByRoomType ? "disabled" : null)">
+                                                                        title="Mở hoạt động phòng">
                                                                     <i class="bi bi-play-circle" aria-hidden="true"></i>
                                                                     <span>Mở</span>
                                                                 </button>

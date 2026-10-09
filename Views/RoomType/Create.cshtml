@@ -1,4 +1,4 @@
-﻿@model Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeCreateViewModel
+@model Hotel_Management_Website.Models.ViewModels.RoomType.RoomTypeCreateViewModel
 
 @{
     ViewData["Title"] = "Tạo loại phòng";
@@ -28,8 +28,6 @@
           data-native-validation="true">
         @Html.AntiForgeryToken()
 
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
-
         <section class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-body border-bottom">
                 <div class="d-flex align-items-center gap-3">
@@ -43,10 +41,15 @@
             <div class="card-body">
                 <div class="row g-4">
                     <div class="col-12 col-lg-4">
-                        <label asp-for="RoomTypeCode" class="form-label required">Mã loại phòng</label>
-                        <input asp-for="RoomTypeCode" class="form-control" id="roomTypeCode" maxlength="50" autocomplete="off" />
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <label asp-for="RoomTypeCode" class="form-label required mb-0">Mã loại phòng</label>
+                            <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" id="generateRoomTypeCodeButton" data-endpoint="@Url.Action("GetNextCode", "RoomType")">
+                                <i class="bi bi-magic me-1" aria-hidden="true"></i>Tự sinh mã
+                            </button>
+                        </div>
+                        <input asp-for="RoomTypeCode" class="form-control mt-2" id="roomTypeCode" maxlength="50" autocomplete="off" />
                         <span asp-validation-for="RoomTypeCode" class="text-danger"></span>
-                        <div class="form-text">Có thể để trống để hệ thống tự sinh mã. Nếu nhập tay, mã chỉ cần không chứa dấu cách hoặc khoảng trắng và không được trùng.</div>
+                        <div class="form-text">Bắt buộc nhập. Chỉ được gồm chữ cái và chữ số, không chứa dấu cách hoặc ký tự đặc biệt, và không được trùng mã loại phòng khác.</div>
                     </div>
                     <div class="col-12 col-lg-8">
                         <label asp-for="RoomTypeName" class="form-label required">Tên loại phòng</label>
@@ -55,12 +58,12 @@
                     </div>
                     <div class="col-12 col-md-6 col-lg-3">
                         <label asp-for="MaxAdults" class="form-label required">Tổng người lớn</label>
-                        <input asp-for="MaxAdults" type="number" min="1" max="100" class="form-control" />
+                        <input asp-for="MaxAdults" type="number" min="1" max="999999999" step="1" class="form-control" />
                         <span asp-validation-for="MaxAdults" class="text-danger"></span>
                     </div>
                     <div class="col-12 col-md-6 col-lg-3">
                         <label asp-for="MaxChildren" class="form-label required">Tổng trẻ em</label>
-                        <input asp-for="MaxChildren" type="number" min="0" max="100" class="form-control" />
+                        <input asp-for="MaxChildren" type="number" min="0" max="999999999" step="1" class="form-control" />
                         <span asp-validation-for="MaxChildren" class="text-danger"></span>
                     </div>
                     <div class="col-12 col-md-6 col-lg-3">

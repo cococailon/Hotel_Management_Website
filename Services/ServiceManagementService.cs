@@ -121,7 +121,6 @@ public sealed class ServiceManagementService : IServiceManagementService
             .ToListAsync(cancellationToken);
 
         var maxNumber = 0;
-        var width = 2;
 
         foreach (var raw in codes)
         {
@@ -131,12 +130,9 @@ public sealed class ServiceManagementService : IServiceManagementService
                 continue;
 
             maxNumber = Math.Max(maxNumber, number);
-            width = Math.Max(width, match.Groups["number"].Value.Length);
         }
 
-        var next = maxNumber + 1;
-        width = Math.Max(width, next.ToString().Length);
-        return $"DV{next.ToString($"D{width}")}";
+        return $"DV{maxNumber + 1}";
     }
 
     public async Task<ServiceDetailsViewModel?> GetDetailsAsync(Guid id, CancellationToken cancellationToken = default)
@@ -189,23 +185,27 @@ public sealed class ServiceManagementService : IServiceManagementService
         var code = (model.ServiceCode ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(code))
         {
-            code = await GetNextServiceCodeAsync(cancellationToken);
+            errors[nameof(model.ServiceCode)] = "Vui lòng nhập mã dịch vụ.";
         }
-        else if (code.Any(char.IsWhiteSpace))
+        else if (!Regex.IsMatch(code, @"^[A-Za-z0-9]+$"))
         {
-            errors[nameof(model.ServiceCode)] = "Mã dịch vụ không được chứa dấu cách hoặc khoảng trắng.";
+            errors[nameof(model.ServiceCode)] = "Mã dịch vụ chỉ được bao gồm chữ hoa, chữ thường và số; không chứa dấu cách hoặc ký tự đặc biệt.";
+        }
+        else if (code.Length > 50)
+        {
+            errors[nameof(model.ServiceCode)] = "Mã dịch vụ không được vượt quá 50 ký tự.";
         }
 
-        if (code.Length > 50)
-            errors[nameof(model.ServiceCode)] = "Mã dịch vụ không được vượt quá 50 ký tự.";
-
-        if (await _context.Services.AnyAsync(x => x.ServiceCode == code, cancellationToken))
-            errors[nameof(model.ServiceCode)] = $"Mã dịch vụ '{code}' đã tồn tại.";
+        if (!errors.ContainsKey(nameof(model.ServiceCode)) &&
+            await _context.Services.AnyAsync(x => x.ServiceCode == code, cancellationToken))
+        {
+            errors[nameof(model.ServiceCode)] = "Mã dịch vụ đã tồn tại.";
+        }
 
         ValidateCommonFields(model.ServiceName, model.UnitPrice, model.PriceUnitType, model.Description, model.Note, errors);
 
         if (errors.Count > 0)
-            return (false, "Dữ liệu dịch vụ chưa hợp lệ.", errors);
+            return (false, null, errors);
 
         var now = DateTime.Now;
         var entity = new Service
@@ -234,9 +234,9 @@ public sealed class ServiceManagementService : IServiceManagementService
         }
         catch (DbUpdateException)
         {
-            return (false, "Không thể tạo dịch vụ. Mã dịch vụ có thể đã tồn tại.", new Dictionary<string, string>
+            return (false, null, new Dictionary<string, string>
             {
-                [nameof(model.ServiceCode)] = "Mã dịch vụ đã tồn tại hoặc không hợp lệ."
+                [nameof(model.ServiceCode)] = "Mã dịch vụ đã tồn tại."
             });
         }
     }
@@ -299,14 +299,16 @@ public sealed class ServiceManagementService : IServiceManagementService
         {
             if (string.IsNullOrWhiteSpace(requestedCode))
                 errors[nameof(model.ServiceCode)] = "Vui lòng nhập mã dịch vụ.";
-            else if (requestedCode.Any(char.IsWhiteSpace))
-                errors[nameof(model.ServiceCode)] = "Mã dịch vụ không được chứa dấu cách hoặc khoảng trắng.";
-
-            if (requestedCode.Length > 50)
+            else if (!Regex.IsMatch(requestedCode, @"^[A-Za-z0-9]+$"))
+                errors[nameof(model.ServiceCode)] = "Mã dịch vụ chỉ được bao gồm chữ hoa, chữ thường và số; không chứa dấu cách hoặc ký tự đặc biệt.";
+            else if (requestedCode.Length > 50)
                 errors[nameof(model.ServiceCode)] = "Mã dịch vụ không được vượt quá 50 ký tự.";
 
-            if (await _context.Services.AnyAsync(x => x.Id != model.Id && x.ServiceCode == requestedCode, cancellationToken))
-                errors[nameof(model.ServiceCode)] = $"Mã dịch vụ '{requestedCode}' đã tồn tại.";
+            if (!errors.ContainsKey(nameof(model.ServiceCode)) &&
+                await _context.Services.AnyAsync(x => x.Id != model.Id && x.ServiceCode == requestedCode, cancellationToken))
+            {
+                errors[nameof(model.ServiceCode)] = "Mã dịch vụ đã tồn tại.";
+            }
         }
 
         if (string.IsNullOrWhiteSpace(requestedName))
@@ -326,7 +328,7 @@ public sealed class ServiceManagementService : IServiceManagementService
             errors[nameof(model.Note)] = "Ghi chú không được vượt quá 255 ký tự.";
 
         if (errors.Count > 0)
-            return (false, "Dữ liệu dịch vụ chưa hợp lệ.", errors);
+            return (false, null, errors);
 
         service.ServiceCode = requestedCode;
         service.ServiceName = requestedName;
@@ -344,9 +346,9 @@ public sealed class ServiceManagementService : IServiceManagementService
         }
         catch (DbUpdateException)
         {
-            return (false, "Không thể lưu thay đổi dịch vụ. Mã dịch vụ có thể đã tồn tại.", new Dictionary<string, string>
+            return (false, null, new Dictionary<string, string>
             {
-                [nameof(model.ServiceCode)] = "Mã dịch vụ đã tồn tại hoặc không hợp lệ."
+                [nameof(model.ServiceCode)] = "Mã dịch vụ đã tồn tại."
             });
         }
     }
@@ -367,7 +369,7 @@ public sealed class ServiceManagementService : IServiceManagementService
             if (!service.IsActive)
                 return (false, "Dịch vụ đã dừng hoạt động.");
             if (await HasActiveBookingsAsync(id, cancellationToken))
-                return (false, "Không thể dừng hoạt động vì dịch vụ đang được sử dụng bởi loại phòng có Booking đang hoạt động.");
+                return (false, "Không thể dừng hoạt động vì dịch vụ đang được sử dụng bởi loại phòng nằm trong lịch đặt phòng có trạng thái chờ xác nhận, chờ check in hoặc đang ở.");
 
             var now = DateTime.Now;
             service.IsActive = false;

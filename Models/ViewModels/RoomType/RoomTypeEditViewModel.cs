@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Hotel_Management_Website.Models.ViewModels.RoomType;
 
@@ -9,7 +9,7 @@ public sealed class RoomTypeEditViewModel : IValidatableObject
     [Display(Name = "Mã loại phòng")]
     [Required(ErrorMessage = "Vui lòng nhập mã loại phòng.")]
     [StringLength(50, ErrorMessage = "Mã loại phòng không được vượt quá {1} ký tự.")]
-    [RegularExpression(@"^\S+$", ErrorMessage = "Mã loại phòng không được chứa dấu cách hoặc khoảng trắng.")]
+    [RegularExpression(@"^[A-Za-z0-9]+$", ErrorMessage = "Mã loại phòng chỉ được bao gồm chữ cái và chữ số, không được chứa dấu cách hoặc ký tự đặc biệt.")]
     public string RoomTypeCode { get; set; } = string.Empty;
 
     [Display(Name = "Tên loại phòng")]
@@ -18,11 +18,13 @@ public sealed class RoomTypeEditViewModel : IValidatableObject
     public string RoomTypeName { get; set; } = string.Empty;
 
     [Display(Name = "Tổng người lớn")]
-    [Range(1, 100, ErrorMessage = "Tổng người lớn phải từ 1 đến 100.")]
+    [Range(1, 999999999, ErrorMessage = "Tổng người lớn phải lớn hơn 0 và nhỏ hơn 1 tỷ.")]
+    [RegularExpression(@"^\d+$", ErrorMessage = "Tổng người lớn phải là số nguyên.")]
     public int MaxAdults { get; set; }
 
     [Display(Name = "Tổng trẻ em")]
-    [Range(0, 100, ErrorMessage = "Tổng trẻ em phải từ 0 đến 100.")]
+    [Range(0, 999999999, ErrorMessage = "Tổng trẻ em phải lớn hơn hoặc bằng 0 và nhỏ hơn 1 tỷ.")]
+    [RegularExpression(@"^\d+$", ErrorMessage = "Tổng trẻ em phải là số nguyên.")]
     public int MaxChildren { get; set; }
 
     [Display(Name = "Giá một đêm")]

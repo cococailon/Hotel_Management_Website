@@ -1,4 +1,4 @@
-﻿@model Hotel_Management_Website.Models.ViewModels.Booking.BookingCreateViewModel
+@model Hotel_Management_Website.Models.ViewModels.Booking.BookingCreateViewModel
 
 @{
     ViewData["Title"] = "Tạo lịch đặt phòng";
@@ -68,7 +68,7 @@
             !string.IsNullOrWhiteSpace(Model.AvailabilityMessage);
     }
 
-    @if (hasTopErrors || hasFailedAvailabilityMessage)
+    @if (isStep1 && (hasTopErrors || hasFailedAvailabilityMessage))
     {
         <div class="alert alert-danger shadow-sm border-0 mb-4" role="alert">
             <div class="fw-semibold mb-1">
@@ -132,9 +132,6 @@
                     </div>
                     <div>
                         <h2 class="h6 mb-0 fw-semibold">Thời gian lưu trú</h2>
-                        <div class="small text-body-secondary">
-                            Giờ check in/check out được lấy tự động từ HotelSettings.
-                        </div>
                     </div>
                 </div>
             </div>
@@ -188,10 +185,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="small text-body-secondary">
-                        Hệ thống sẽ kiểm tra lại dữ liệu phòng trước khi lưu Booking.
-                    </div>
                 </div>
             </div>
 
@@ -208,7 +201,7 @@
                                max="9999"
                                id="step1TotalAdultsInput" />
                         <div class="form-text">
-                            Tổng người lớn phải lớn hơn 0. Việc phân người vào từng phòng sẽ thực hiện khi check in.
+                            Tổng người lớn phải lớn hơn 0.
                         </div>
                         <span asp-validation-for="TotalAdults" class="text-danger"></span>
                     </div>
@@ -224,7 +217,7 @@
                                max="9999"
                                id="step1TotalChildrenInput" />
                         <div class="form-text">
-                            Tổng trẻ em phải lớn hơn hoặc bằng 0. Việc phân trẻ vào từng phòng sẽ thực hiện khi check in.
+                            Tổng trẻ em phải lớn hơn hoặc bằng 0.
                         </div>
                         <span asp-validation-for="TotalChildren" class="text-danger"></span>
                     </div>
@@ -238,6 +231,7 @@
                                 <th class="text-center" style="width:120px">Phòng có thể đặt</th>
                                 <th style="width:130px">Số phòng</th>
                                 <th class="text-end" style="width:170px">Giá / đêm</th>
+                                <th class="text-end" style="width:190px">Tiền cọc / phòng / toàn kỳ</th>
                             </tr>
                         </thead>
 
@@ -262,14 +256,14 @@
                                             Tối đa / phòng:
                                             @room.MaxAdults NL · @room.MaxChildren TE
                                             <span class="ms-1">
-                                                · Cọc @room.DepositPercent.ToString("0.##")%
+                                                · Cọc @room.DepositPercent.ToString("#,##0.##", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))%
                                             </span>
                                         </div>
                                     </td>
 
                                     <td class="text-center">
-                                        <span class="badge text-bg-light border text-body booking-availability-badge">
-                                            @room.AvailableRoomCount
+                                        <span class="badge text-bg-gray-dark border text-body booking-availability-badge">
+                                            @room.AvailableRoomCount.ToString("#,##0.##", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))
                                         </span>
                                     </td>
 
@@ -289,7 +283,13 @@
 
                                     <td class="text-end text-nowrap">
                                         <span class="fw-semibold booking-room-night-price">
-                                            @room.PricePerNight.ToString("N0") ₫
+                                            @room.PricePerNight.ToString("#,##0.##", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) ₫
+                                        </span>
+                                    </td>
+
+                                    <td class="text-end text-nowrap">
+                                        <span class="fw-semibold">
+                                            @((room.PricePerNight * Model.Nights * room.DepositPercent / 100m).ToString("#,##0.##", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))) ₫
                                         </span>
                                     </td>
                                 </tr>
@@ -300,22 +300,20 @@
                             <tr class="table-light">
                                 <td colspan="2" class="fw-semibold">
                                     Tổng số phòng
-                                    <div class="small text-body-secondary fw-normal mt-1">
+                                    <div class="small text-dark fw-bold mt-1">
                                         Số đêm: <span id="step1Nights" class="fw-semibold">@Model.Nights.ToString("N0")</span>
                                     </div>
                                 </td>
                                 <td class="text-end">
                                     <span id="step1RoomCount" class="fw-semibold">@Model.RoomSelections.Sum(x => x.Quantity) phòng</span>
                                 </td>
-                                <td class="text-end">
-                                    <div>
-                                        <span class="small text-body-secondary">Tiền phòng:</span>
-                                        <span id="step1Estimate" class="fw-semibold">@Model.EstimatedRoomAmount.ToString("N0") ₫</span>
-                                    </div>
-                                    <div class="mt-1">
-                                        <span class="small text-body-secondary">Tổng tiền cọc:</span>
-                                        <span id="step1Deposit" class="fw-semibold">@Model.DepositAmount.ToString("N0") ₫</span>
-                                    </div>
+                                <td class="text-end text-nowrap">
+                                    <span class="small text-dark fw-bold">Tiền phòng:</span>
+                                    <span id="step1Estimate" class="fw-semibold">@Model.EstimatedRoomAmount.ToString("N0") ₫</span>
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <span class="small text-dark fw-bold">Tổng tiền cọc:</span>
+                                    <span id="step1Deposit" class="fw-semibold">@Model.DepositAmount.ToString("N0") ₫</span>
                                 </td>
                             </tr>
                         </tfoot>
@@ -355,7 +353,8 @@
           method="post"
           id="bookingCreateFinalForm"
           data-booking-create-form="final"
-          data-ajax="false">
+          data-ajax="false"
+          novalidate>
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="DraftId" />
 
@@ -367,9 +366,6 @@
                     </div>
                     <div>
                         <h2 class="h6 mb-0 fw-semibold">Kết quả bước 1</h2>
-                        <div class="small text-body-secondary">
-                            Các thông tin phòng được lưu server-side và sẽ được kiểm tra lại trước khi tạo.
-                        </div>
                     </div>
                 </div>
             </div>
@@ -378,7 +374,7 @@
                 <div class="row g-3">
                     <div class="col-12 col-md-3">
                         <div class="booking-create-summary-item">
-                            <div class="booking-create-summary-label">Check in</div>
+                            <div class="booking-create-summary-label">Check in dự kiến</div>
                             <div class="booking-create-summary-value">
                                 @Model.CheckInDate.ToString("dd/MM/yyyy")
                                 @Model.DefaultCheckInTime.ToString("HH\\:mm")
@@ -388,7 +384,7 @@
 
                     <div class="col-12 col-md-3">
                         <div class="booking-create-summary-item">
-                            <div class="booking-create-summary-label">Check out</div>
+                            <div class="booking-create-summary-label">Check out dự kiến</div>
                             <div class="booking-create-summary-value">
                                 @Model.CheckOutDate.ToString("dd/MM/yyyy")
                                 @Model.DefaultCheckOutTime.ToString("HH\\:mm")
@@ -450,10 +446,6 @@
                 </div>
 
                 <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 mt-3">
-                    <div class="small text-body-secondary">
-                        BookingRoom được tạo với RoomId = null, Adults = null và Children = null. Việc gán người vào từng phòng sẽ thực hiện khi check in.
-                    </div>
-
                     <a asp-controller="Booking"
                        asp-action="Create"
                        asp-route-bookingType="0"
@@ -475,9 +467,6 @@
                     </div>
                     <div>
                         <h2 class="h6 mb-0 fw-semibold">Thông tin đặt phòng</h2>
-                        <div class="small text-body-secondary">
-                            Mã đặt phòng có thể dùng mã tự sinh hoặc nhập mã riêng.
-                        </div>
                     </div>
                 </div>
             </div>
@@ -486,17 +475,26 @@
                 <div class="row g-3">
                     <input type="hidden" asp-for="BookingType" value="0" />
                     <div class="col-12 col-md-6">
-                        <label asp-for="BookingCode" class="form-label fw-semibold">
-                            Mã đặt phòng
-                        </label>
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <label asp-for="BookingCode" class="form-label fw-semibold mb-0">
+                                Mã đặt phòng
+                            </label>
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    id="generateBookingCodeButton">
+                                <i class="bi bi-magic me-1" aria-hidden="true"></i>
+                                Tự sinh mã
+                            </button>
+                        </div>
                         <input asp-for="BookingCode"
                                class="form-control font-monospace"
                                maxlength="50"
                                autocomplete="off"
-                               pattern="\S+"
+                               pattern="[A-Za-z0-9]+"
+                               title="Chỉ được chứa chữ hoa, chữ thường và số."
                                required />
                         <div class="form-text">
-                            Không được chứa khoảng trắng và không được trùng.
+                            Chỉ gồm chữ hoa, chữ thường và số; không dấu cách/ký tự đặc biệt; không được trùng.
                         </div>
                         <span asp-validation-for="BookingCode" class="text-danger"></span>
                     </div>
@@ -533,9 +531,6 @@
                     </div>
                     <div>
                         <h2 class="h6 mb-0 fw-semibold">Thông tin khách hàng</h2>
-                        <div class="small text-body-secondary">
-                            Mỗi Booking mới luôn tạo một khách hàng mới. Mã khách hàng được tự sinh và có thể chỉnh sửa.
-                        </div>
                     </div>
                 </div>
             </div>
@@ -543,17 +538,26 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-12 col-lg-6">
-                        <label asp-for="GuestCode" class="form-label fw-semibold">
-                            Mã khách hàng <span class="text-danger">*</span>
-                        </label>
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <label asp-for="GuestCode" class="form-label fw-semibold mb-0">
+                                Mã khách hàng <span class="text-danger">*</span>
+                            </label>
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    id="generateGuestCodeButton">
+                                <i class="bi bi-magic me-1" aria-hidden="true"></i>
+                                Tự sinh mã
+                            </button>
+                        </div>
                         <input asp-for="GuestCode"
                                id="guestCode"
                                class="form-control font-monospace"
-                               pattern="\S+"
+                               pattern="[A-Za-z0-9]+"
+                               title="Chỉ được chứa chữ hoa, chữ thường và số."
                                maxlength="50"
                                autocomplete="off"
                                required />
-                        <div class="form-text">Không được chứa dấu cách; mã phải chưa tồn tại.</div>
+                        <div class="form-text">Chỉ gồm chữ hoa, chữ thường và số; không dấu cách/ký tự đặc biệt; không được trùng.</div>
                         <span asp-validation-for="GuestCode" class="text-danger"></span>
                     </div>
 
@@ -599,10 +603,15 @@
                                id="guestPhone"
                                class="form-control"
                                maxlength="20"
-                               autocomplete="tel" />
+                               inputmode="tel"
+                               autocomplete="tel"
+                               title="Số điện thoại có thể nhập theo định dạng quốc tế, ví dụ +84912345678, +1 (202) 555-0123." />
                         <span asp-validation-for="GuestPhoneNumber"
                               class="text-danger guest-contact-validation"
                               data-guest-contact-validation="true"></span>
+                        <div class="form-text">
+                            Phải nhập ít nhất số điện thoại hoặc email. Có thể nhập số quốc tế, ví dụ: +84912345678 hoặc +1 (202) 555-0123.
+                        </div>
                     </div>
 
                     <div class="col-12 col-md-6">
@@ -611,7 +620,7 @@
                                id="guestEmail"
                                type="email"
                                class="form-control"
-                               maxlength="4000"
+                               maxlength="254"
                                autocomplete="email" />
                         <span asp-validation-for="GuestEmail" class="text-danger"></span>
                         <div class="form-text">Phải nhập ít nhất số điện thoại hoặc email.</div>
@@ -619,7 +628,13 @@
 
                     <div class="col-12 col-md-7">
                         <label asp-for="GuestIdentityNumber" class="form-label fw-semibold">Số giấy tờ</label>
-                        <input asp-for="GuestIdentityNumber" id="guestIdentityNumber" class="form-control" maxlength="50" />
+                        <input asp-for="GuestIdentityNumber"
+                               id="guestIdentityNumber"
+                               class="form-control"
+                               maxlength="50"
+                               autocomplete="off"
+                               title="CCCD/GPLX: 12 chữ số. Hộ chiếu: 5-20 chữ và số." />
+                        <div class="form-text mb-2">CCCD/GPLX: 12 chữ số. Hộ chiếu: 5-20 ký tự chữ và số.</div>
                         <span asp-validation-for="GuestIdentityNumber" class="text-danger"></span>
                     </div>
 
@@ -655,9 +670,6 @@
                     </div>
                     <div>
                         <h2 class="h6 mb-0 fw-semibold">Tiền cọc &amp; xác nhận thanh toán</h2>
-                        <div class="small text-body-secondary">
-                            Tiền cọc được tính lại từ giá phòng, số phòng, số đêm và DepositPercent của DB.
-                        </div>
                     </div>
                 </div>
             </div>
@@ -667,14 +679,14 @@
                     <div class="col-12 col-md-6">
                         <div class="booking-money-summary">
                             <div class="booking-money-label">Tổng tiền phòng dự kiến</div>
-                            <div class="booking-money-value">@Model.EstimatedRoomAmount.ToString("N0") ₫</div>
+                            <div class="booking-money-value">@Model.EstimatedRoomAmount.ToString("#,##0.##", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) ₫</div>
                         </div>
                     </div>
 
                     <div class="col-12 col-md-6">
                         <div class="booking-money-summary booking-money-summary-highlight">
                             <div class="booking-money-label">Tiền cọc phải trả</div>
-                            <div class="booking-money-value">@Model.DepositAmount.ToString("N0") ₫</div>
+                            <div class="booking-money-value">@Model.DepositAmount.ToString("#,##0.##", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) ₫</div>
                         </div>
                     </div>
                 </div>
@@ -750,7 +762,7 @@
                                        asp-for="DepositConfirmed"
                                        id="depositConfirmed" />
                                 <label class="form-check-label fw-semibold" for="depositConfirmed">
-                                    Tôi xác nhận đã nhận được @Model.DepositAmount.ToString("N0") ₫ tiền cọc theo phương thức thanh toán đã chọn.
+                                    Tôi xác nhận đã nhận được @Model.DepositAmount.ToString("#,##0.##", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) ₫ tiền cọc theo phương thức thanh toán đã chọn.
                                 </label>
                                 <div class="small text-body-secondary mt-1">
                                     Ngày thanh toán sẽ được ghi nhận tự động tại thời điểm tạo booking.
@@ -796,6 +808,29 @@
     </form>
     }
 </div>
+
+@if (isStep1 && ViewData.ModelState.ErrorCount > 0)
+{
+    <script>
+        (() => {
+            const canonicalUrl = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Url.Action("Create", "Booking", new
+                {
+                    bookingType = 0
+                }) ?? "/Booking/Create?bookingType=0"
+            ));
+
+            try {
+                const current = new URL(window.location.href);
+                if (current.pathname.toLowerCase().endsWith("/booking/preparecreate")) {
+                    window.history.replaceState(null, "", canonicalUrl);
+                }
+            } catch {
+                // Ignore history errors.
+            }
+        })();
+    </script>
+}
 
 @section Scripts
 {
@@ -988,6 +1023,43 @@
                 });
 
                 updateStepOneSummary();
+
+                // Khi POST bước 1 trả lại trang vì lỗi sức chứa tổng người,
+                // ưu tiên cuộn tới đúng trường đang có lỗi thay vì để trang đứng ở đầu.
+                const scrollToStepOneCapacityError = () => {
+                    const errorSelectors = [
+                        '[data-valmsg-for="TotalAdults"].field-validation-error',
+                        '[data-valmsg-for="TotalChildren"].field-validation-error'
+                    ];
+
+                    for (const selector of errorSelectors) {
+                        const validationMessage = document.querySelector(selector);
+                        if (!validationMessage || !validationMessage.textContent?.trim()) {
+                            continue;
+                        }
+
+                        const field = document.querySelector(
+                            validationMessage.dataset.valmsgFor === "TotalAdults"
+                                ? "#step1TotalAdultsInput"
+                                : "#step1TotalChildrenInput"
+                        );
+
+                        const target = field?.closest(".col-12.col-md-6") || validationMessage;
+
+                        window.requestAnimationFrame(() => {
+                            window.requestAnimationFrame(() => {
+                                target.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "center"
+                                });
+                            });
+                        });
+
+                        return;
+                    }
+                };
+
+                scrollToStepOneCapacityError();
             }
         })();
     </script>
@@ -997,13 +1069,11 @@
             "use strict";
 
             const finalForm = document.getElementById("bookingCreateFinalForm");
-            const referenceWrap = document.getElementById("referenceCodeWrap");
-            const referenceInput = document.getElementById("referenceCode");
-            const transferRadio = document.getElementById("paymentTransfer");
-            const cashRadio = document.getElementById("paymentCash");
-            const depositConfirmed = document.getElementById("depositConfirmed");
-            const depositAmount = Number("@Model.DepositAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)");
+            if (!finalForm) {
+                return;
+            }
 
+            const bookingCode = document.getElementById("BookingCode");
             const guestCode = document.getElementById("guestCode");
             const guestName = document.getElementById("guestName");
             const guestDob = document.getElementById("guestDob");
@@ -1011,171 +1081,702 @@
             const guestAddress = document.getElementById("guestAddress");
             const guestPhone = document.getElementById("guestPhone");
             const guestEmail = document.getElementById("guestEmail");
+            const guestIdentityNumber = document.getElementById("guestIdentityNumber");
+            const guestIdentityType = document.getElementById("guestIdentityType");
+            const guestNote = document.getElementById("guestNote");
+            const bookingNote = document.getElementById("BookingNote");
+            const transferRadio = document.getElementById("paymentTransfer");
+            const cashRadio = document.getElementById("paymentCash");
+            const referenceWrap = document.getElementById("referenceCodeWrap");
+            const referenceInput = document.getElementById("referenceCode");
+            const paymentDate = document.getElementById("paymentDate");
+            const depositConfirmed = document.getElementById("depositConfirmed");
+            const depositAmount = Number("@Model.DepositAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)");
+
+            const serverErrorSnapshots = new Map();
+
+            const getMessageElement = input => {
+                if (!input?.name) return null;
+                return finalForm.querySelector(`[data-valmsg-for="${CSS.escape(input.name)}"]`);
+            };
+
+            const getValue = input => {
+                if (!input) return "";
+                if (input.type === "checkbox" || input.type === "radio") {
+                    return input.checked ? "true" : "false";
+                }
+                return String(input.value ?? "");
+            };
+
+            const setFieldError = (input, message) => {
+                if (!input) return;
+                const messageElement = getMessageElement(input);
+                input.classList.add("is-invalid");
+                input.setAttribute("aria-invalid", "true");
+                if (messageElement) {
+                    messageElement.textContent = message;
+                    messageElement.classList.remove("field-validation-valid");
+                    messageElement.classList.add("field-validation-error");
+                }
+            };
+
+            const clearFieldError = input => {
+                if (!input) return;
+                const messageElement = getMessageElement(input);
+                input.classList.remove("is-invalid");
+                input.removeAttribute("aria-invalid");
+                if (messageElement) {
+                    messageElement.textContent = "";
+                    messageElement.classList.remove("field-validation-error");
+                    messageElement.classList.add("field-validation-valid");
+                }
+            };
+
+            const isValidCode = value => /^[A-Za-z0-9]+$/.test(value);
+
+            const validateCode = (input, label) => {
+                const value = input?.value.trim() ?? "";
+                if (!value) {
+                    setFieldError(input, `${label} không được để trống.`);
+                    return false;
+                }
+                if (!isValidCode(value)) {
+                    setFieldError(input, `${label} chỉ được bao gồm chữ hoa, chữ thường và số, không chứa dấu cách và ký tự đặc biệt.`);
+                    return false;
+                }
+                if (value.length > 50) {
+                    setFieldError(input, `${label} không được vượt quá 50 ký tự.`);
+                    return false;
+                }
+                clearFieldError(input);
+                return true;
+            };
+
+            const validateOptionalMax = (input, label, max) => {
+                const value = input?.value.trim() ?? "";
+                if (value.length > max) {
+                    setFieldError(input, `${label} không được vượt quá ${max} ký tự.`);
+                    return false;
+                }
+                clearFieldError(input);
+                return true;
+            };
+
+            const validateStep2FrontEnd = () => {
+                const orderedChecks = [
+                    () => validateCode(bookingCode, "Mã đặt phòng"),
+                    () => validateOptionalMax(bookingNote, "Ghi chú Booking", 255),
+                    () => validateCode(guestCode, "Mã khách hàng"),
+                    () => {
+                        const value = guestName?.value.trim() ?? "";
+                        if (!value) {
+                            setFieldError(guestName, "Tên khách hàng không được để trống.");
+                            return false;
+                        }
+                        if (value.length > 100) {
+                            setFieldError(guestName, "Tên khách hàng không được vượt quá 100 ký tự.");
+                            return false;
+                        }
+                        clearFieldError(guestName);
+                        return true;
+                    },
+                    () => {
+                        const value = guestDob?.value ?? "";
+                        if (!value) {
+                            clearFieldError(guestDob);
+                            return true;
+                        }
+                        const date = new Date(`${value}T00:00:00`);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        if (Number.isNaN(date.getTime()) || date > today) {
+                            setFieldError(guestDob, "Ngày sinh không được lớn hơn ngày hiện tại.");
+                            return false;
+                        }
+                        clearFieldError(guestDob);
+                        return true;
+                    },
+                    () => {
+                        const value = guestSex?.value ?? "";
+                        if (value !== "" && !["0", "1", "2"].includes(value)) {
+                            setFieldError(guestSex, "Giới tính khách hàng không hợp lệ.");
+                            return false;
+                        }
+                        clearFieldError(guestSex);
+                        return true;
+                    },
+                    () => validateOptionalMax(guestAddress, "Địa chỉ", 255),
+                    () => {
+                        const value = guestPhone?.value.trim() ?? "";
+                        const emailValue = guestEmail?.value.trim() ?? "";
+
+                        if (!value && !emailValue) {
+                            setFieldError(guestPhone, "Khách hàng phải có ít nhất số điện thoại hoặc email.");
+                            setFieldError(guestEmail, "Khách hàng phải có ít nhất số điện thoại hoặc email.");
+                            return false;
+                        }
+
+                        if (!value) {
+                            clearFieldError(guestPhone);
+                            return true;
+                        }
+
+                        // Chấp nhận số điện thoại quốc tế và các cách ghi phổ biến:
+                        // +84 912345678, +1 (202) 555-0123, 0084 912345678...
+                        // Sau khi bỏ khoảng trắng, dấu chấm, gạch ngang, ngoặc:
+                        // số phải có 7-15 chữ số, phù hợp giới hạn đánh số quốc tế.
+                        let normalized = value.replace(/[\s().-]/g, "");
+                        if (normalized.startsWith("00")) {
+                            normalized = "+" + normalized.slice(2);
+                        }
+
+                        const valid = normalized.startsWith("+")
+                            ? /^\+[1-9][0-9]{6,14}$/.test(normalized)
+                            : /^[0-9]{7,15}$/.test(normalized);
+
+                        if (!valid) {
+                            setFieldError(
+                                guestPhone,
+                                "Số điện thoại không hợp lệ. Có thể nhập số quốc tế; sau khi chuẩn hóa phải có 7-15 chữ số."
+                            );
+                            return false;
+                        }
+
+                        if (value.length > 30) {
+                            setFieldError(guestPhone, "Số điện thoại nhập vào không được vượt quá 30 ký tự.");
+                            return false;
+                        }
+
+                        clearFieldError(guestPhone);
+                        return true;
+                    },
+                    () => {
+                        const value = guestEmail?.value.trim() ?? "";
+                        if (!value) {
+                            clearFieldError(guestEmail);
+                            return true;
+                        }
+
+                        if (
+                            value.length > 254 ||
+                            !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(value)
+                        ) {
+                            setFieldError(guestEmail, "Email không đúng định dạng.");
+                            return false;
+                        }
+
+                        clearFieldError(guestEmail);
+                        return true;
+                    },
+                    () => {
+                        const value = guestIdentityNumber?.value.trim() ?? "";
+                        const type = guestIdentityType?.value ?? "";
+
+                        if (!value) {
+                            clearFieldError(guestIdentityNumber);
+                            return true;
+                        }
+
+                        if (value.length > 50) {
+                            setFieldError(guestIdentityNumber, "Số giấy tờ không được vượt quá 50 ký tự.");
+                            return false;
+                        }
+
+                        if (!["0", "1", "2"].includes(type)) {
+                            setFieldError(
+                                guestIdentityType,
+                                "Vui lòng chọn loại giấy tờ khi nhập số giấy tờ."
+                            );
+                            return false;
+                        }
+
+                        switch (type) {
+                            case "0":
+                                if (!/^\d{12}$/.test(value)) {
+                                    setFieldError(
+                                        guestIdentityNumber,
+                                        "CCCD phải gồm đúng 12 chữ số."
+                                    );
+                                    return false;
+                                }
+                                break;
+
+                            case "1":
+                                if (!/^\d{12}$/.test(value)) {
+                                    setFieldError(
+                                        guestIdentityNumber,
+                                        "Giấy phép lái xe phải gồm đúng 12 chữ số."
+                                    );
+                                    return false;
+                                }
+                                break;
+
+                            case "2":
+                                if (!/^[A-Za-z0-9]{5,20}$/.test(value)) {
+                                    setFieldError(
+                                        guestIdentityNumber,
+                                        "Hộ chiếu phải gồm 5-20 ký tự chữ và số, không chứa dấu cách hoặc ký tự đặc biệt."
+                                    );
+                                    return false;
+                                }
+                                break;
+                        }
+
+                        clearFieldError(guestIdentityNumber);
+                        clearFieldError(guestIdentityType);
+                        return true;
+                    },
+                    () => {
+                        const number = guestIdentityNumber?.value.trim() ?? "";
+                        const type = guestIdentityType?.value ?? "";
+
+                        if (number && !["0", "1", "2"].includes(type)) {
+                            setFieldError(
+                                guestIdentityType,
+                                "Vui lòng chọn loại giấy tờ khi nhập số giấy tờ."
+                            );
+                            return false;
+                        }
+
+                        if (type && !["0", "1", "2"].includes(type)) {
+                            setFieldError(
+                                guestIdentityType,
+                                "Loại giấy tờ khách hàng không hợp lệ."
+                            );
+                            return false;
+                        }
+
+                        clearFieldError(guestIdentityType);
+                        return true;
+                    },
+                    () => validateOptionalMax(guestNote, "Ghi chú khách hàng", 255),
+                    () => {
+                        if (depositAmount <= 0) {
+                            clearFieldError(cashRadio);
+                            return true;
+                        }
+                        if (!cashRadio?.checked && !transferRadio?.checked) {
+                            setFieldError(cashRadio, "Vui lòng chọn phương thức thanh toán tiền cọc.");
+                            return false;
+                        }
+                        clearFieldError(cashRadio);
+                        clearFieldError(transferRadio);
+                        return true;
+                    },
+                    () => {
+                        if (depositAmount <= 0) {
+                            return true;
+                        }
+                        if (!paymentDate?.value) {
+                            setFieldError(paymentDate, "Vui lòng chọn thời gian thanh toán tiền cọc.");
+                            return false;
+                        }
+                        const payment = new Date(paymentDate.value);
+                        const step2Start = paymentDate.dataset.step2Start
+                            ? new Date(paymentDate.dataset.step2Start)
+                            : null;
+                        if (step2Start && payment < step2Start) {
+                            setFieldError(paymentDate, "Thời gian thanh toán tiền cọc không được trước thời điểm bắt đầu bước 2.");
+                            return false;
+                        }
+                        if (payment > new Date()) {
+                            setFieldError(paymentDate, "Thời gian thanh toán tiền cọc không được lớn hơn thời điểm submit bước 2.");
+                            return false;
+                        }
+                        clearFieldError(paymentDate);
+                        return true;
+                    },
+                    () => {
+                        if (depositAmount <= 0) return true;
+                        if (!depositConfirmed?.checked) {
+                            setFieldError(depositConfirmed, "Vui lòng xác nhận đã nhận được tiền cọc.");
+                            return false;
+                        }
+                        clearFieldError(depositConfirmed);
+                        return true;
+                    },
+                    () => {
+                        if (depositAmount <= 0 || !transferRadio?.checked) return true;
+                        const value = referenceInput?.value.trim() ?? "";
+                        if (!value) {
+                            setFieldError(referenceInput, "Mã giao dịch là bắt buộc khi thanh toán chuyển khoản.");
+                            return false;
+                        }
+                        if (value.length > 100) {
+                            setFieldError(referenceInput, "Mã giao dịch không được vượt quá 100 ký tự.");
+                            return false;
+                        }
+                        clearFieldError(referenceInput);
+                        return true;
+                    }
+                ];
+
+                let firstInvalid = null;
+                for (const check of orderedChecks) {
+                    const valid = check();
+                    if (!valid && !firstInvalid) {
+                        const candidates = finalForm.querySelectorAll(".is-invalid");
+                        firstInvalid = candidates.length > 0 ? candidates[0] : null;
+                    }
+                }
+
+                // Có thể cả Phone + Email cùng lỗi. Lấy phần tử sớm nhất theo DOM.
+                const invalids = Array.from(finalForm.querySelectorAll(".is-invalid"));
+                if (invalids.length > 0) {
+                    firstInvalid = invalids[0];
+                }
+
+                if (firstInvalid) {
+                    focusAndScroll(firstInvalid);
+                    return false;
+                }
+
+                return true;
+            };
+
+            const focusAndScroll = element => {
+                if (!element) return;
+                window.requestAnimationFrame(() => {
+                    element.scrollIntoView({ behavior: "smooth", block: "center" });
+                    window.setTimeout(() => {
+                        try {
+                            element.focus({ preventScroll: true });
+                        } catch {
+                            element.focus();
+                        }
+                    }, 250);
+                });
+            };
+
+            const clearServerErrorIfChanged = input => {
+                if (!input) return;
+                const snapshot = serverErrorSnapshots.get(input);
+                if (snapshot === undefined) return;
+                if (getValue(input) !== snapshot) {
+                    serverErrorSnapshots.delete(input);
+                    clearFieldError(input);
+                }
+            };
+
+            const captureServerErrors = () => {
+                const messages = Array.from(finalForm.querySelectorAll("[data-valmsg-for]"));
+                let firstErrorInput = null;
+                for (const message of messages) {
+                    const text = message.textContent?.trim() || "";
+                    if (!text) continue;
+                    const fieldName = message.getAttribute("data-valmsg-for");
+                    const input = finalForm.querySelector(`[name="${CSS.escape(fieldName)}"]`);
+                    if (!input || input.type === "hidden") continue;
+                    serverErrorSnapshots.set(input, getValue(input));
+                    input.classList.add("is-invalid");
+                    input.setAttribute("aria-invalid", "true");
+                    message.classList.remove("field-validation-valid");
+                    message.classList.add("field-validation-error");
+                    if (!firstErrorInput) firstErrorInput = input;
+                }
+                if (firstErrorInput) {
+                    focusAndScroll(firstErrorInput);
+                }
+            };
+
+            const validateLivePhone = () => {
+                const value = guestPhone?.value.trim() ?? "";
+                const emailValue = guestEmail?.value.trim() ?? "";
+                if (!value) {
+                    if (!emailValue) {
+                        setFieldError(guestPhone, "Khách hàng phải có ít nhất số điện thoại hoặc email.");
+                        setFieldError(guestEmail, "Khách hàng phải có ít nhất số điện thoại hoặc email.");
+                        return false;
+                    }
+                    clearFieldError(guestPhone);
+                    return true;
+                }
+
+                let normalized = value.replace(/[\s().-]/g, "");
+                if (normalized.startsWith("00")) normalized = "+" + normalized.slice(2);
+                const valid = normalized.startsWith("+")
+                    ? /^\+[1-9][0-9]{6,14}$/.test(normalized)
+                    : /^[0-9]{7,15}$/.test(normalized);
+
+                if (!valid) {
+                    setFieldError(guestPhone, "Số điện thoại không hợp lệ. Có thể nhập số quốc tế; sau khi chuẩn hóa phải có 7-15 chữ số.");
+                    return false;
+                }
+                if (value.length > 30) {
+                    setFieldError(guestPhone, "Số điện thoại nhập vào không được vượt quá 30 ký tự.");
+                    return false;
+                }
+                clearFieldError(guestPhone);
+                if (!emailValue) clearFieldError(guestEmail);
+                return true;
+            };
+
+            const validateLiveEmail = () => {
+                const value = guestEmail?.value.trim() ?? "";
+                if (!value) {
+                    clearFieldError(guestEmail);
+                    if (!guestPhone?.value.trim()) {
+                        setFieldError(guestPhone, "Khách hàng phải có ít nhất số điện thoại hoặc email.");
+                        return false;
+                    }
+                    return true;
+                }
+                if (value.length > 254 || !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(value)) {
+                    setFieldError(guestEmail, "Email không đúng định dạng hoặc vượt quá 254 ký tự.");
+                    return false;
+                }
+                clearFieldError(guestEmail);
+                if (!guestPhone?.value.trim()) clearFieldError(guestPhone);
+                return true;
+            };
+
+            const validateLiveIdentity = () => {
+                const number = guestIdentityNumber?.value.trim() ?? "";
+                const type = guestIdentityType?.value ?? "";
+                if (!number) {
+                    clearFieldError(guestIdentityNumber);
+                    clearFieldError(guestIdentityType);
+                    return true;
+                }
+                if (!['0', '1', '2'].includes(type)) {
+                    setFieldError(guestIdentityType, "Vui lòng chọn loại giấy tờ khi nhập số giấy tờ.");
+                    return false;
+                }
+                if (number.length > 50) {
+                    setFieldError(guestIdentityNumber, "Số giấy tờ không được vượt quá 50 ký tự.");
+                    return false;
+                }
+                if (type === "0" && !/^\d{12}$/.test(number)) {
+                    setFieldError(guestIdentityNumber, "CCCD phải gồm đúng 12 chữ số.");
+                    return false;
+                }
+                if (type === "1" && !/^\d{12}$/.test(number)) {
+                    setFieldError(guestIdentityNumber, "Giấy phép lái xe phải gồm đúng 12 chữ số.");
+                    return false;
+                }
+                if (type === "2" && !/^[A-Za-z0-9]{5,20}$/.test(number)) {
+                    setFieldError(guestIdentityNumber, "Hộ chiếu phải gồm 5-20 ký tự chữ và số, không chứa dấu cách hoặc ký tự đặc biệt.");
+                    return false;
+                }
+                clearFieldError(guestIdentityNumber);
+                clearFieldError(guestIdentityType);
+                return true;
+            };
+
+            const validateLivePaymentDate = () => {
+                if (depositAmount <= 0) {
+                    clearFieldError(paymentDate);
+                    return true;
+                }
+                if (!paymentDate?.value) {
+                    setFieldError(paymentDate, "Vui lòng chọn thời gian thanh toán tiền cọc.");
+                    return false;
+                }
+                const payment = new Date(paymentDate.value);
+                const step2Start = paymentDate.dataset.step2Start ? new Date(paymentDate.dataset.step2Start) : null;
+                if (step2Start && payment < step2Start) {
+                    setFieldError(paymentDate, "Thời gian thanh toán tiền cọc không được trước thời điểm bắt đầu bước 2.");
+                    return false;
+                }
+                if (payment > new Date()) {
+                    setFieldError(paymentDate, "Thời gian thanh toán tiền cọc không được lớn hơn thời điểm hiện tại.");
+                    return false;
+                }
+                clearFieldError(paymentDate);
+                return true;
+            };
+
+            const validateLiveReference = () => {
+                if (depositAmount <= 0 || !transferRadio?.checked) {
+                    clearFieldError(referenceInput);
+                    return true;
+                }
+                const value = referenceInput?.value.trim() ?? "";
+                if (!value) {
+                    setFieldError(referenceInput, "Mã giao dịch là bắt buộc khi thanh toán chuyển khoản.");
+                    return false;
+                }
+                if (value.length > 100) {
+                    setFieldError(referenceInput, "Mã giao dịch không được vượt quá 100 ký tự.");
+                    return false;
+                }
+                clearFieldError(referenceInput);
+                return true;
+            };
+
+            const validateLiveName = () => {
+                const value = guestName?.value.trim() ?? "";
+                if (!value) {
+                    setFieldError(guestName, "Tên khách hàng không được để trống.");
+                    return false;
+                }
+                if (value.length > 100) {
+                    setFieldError(guestName, "Tên khách hàng không được vượt quá 100 ký tự.");
+                    return false;
+                }
+                clearFieldError(guestName);
+                return true;
+            };
+
+            const validateLiveCode = (input, label) => validateCode(input, label);
 
             const updateReferenceVisibility = () => {
                 const show = Boolean(transferRadio?.checked);
+
                 referenceWrap?.classList.toggle("d-none", !show);
 
                 if (referenceInput) {
                     referenceInput.required = show;
+
+                    // Nếu chuyển từ Chuyển khoản sang Tiền mặt,
+                    // lỗi "Mã giao dịch bắt buộc" không còn áp dụng nữa.
+                    // Phải xóa cả lỗi hiển thị và snapshot lỗi server,
+                    // nếu không validateStep2FrontEnd() vẫn thấy referenceInput.is-invalid
+                    // và sẽ chặn modal xác nhận.
+                    if (!show) {
+                        serverErrorSnapshots.delete(referenceInput);
+                        clearFieldError(referenceInput);
+                        referenceInput.setCustomValidity("");
+                    }
                 }
             };
 
-            const contactValidationMessage =
-                "Khách hàng phải có ít nhất số điện thoại hoặc email.";
-
-            const guestContactValidation =
-                document.querySelector('[data-guest-contact-validation="true"]');
-
-            const clearGuestContactValidation = () => {
-                if (guestContactValidation) {
-                    guestContactValidation.textContent = "";
-                    guestContactValidation.classList.remove("field-validation-error");
-                    guestContactValidation.classList.add("field-validation-valid");
+            const requestGeneratedCode = async (url, input, title) => {
+                if (!input) return;
+                try {
+                    const response = await fetch(url, {
+                        method: "GET",
+                        headers: { "Accept": "application/json" },
+                        credentials: "same-origin"
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (!data?.code) {
+                        throw new Error("Mã trả về không hợp lệ.");
+                    }
+                    input.value = data.code;
+                    input.dispatchEvent(new Event("input", { bubbles: true }));
+                    input.dispatchEvent(new Event("change", { bubbles: true }));
+                    serverErrorSnapshots.delete(input);
+                    clearFieldError(input);
+                } catch (error) {
+                    console.error(error);
+                    window.HotelUI?.toast?.("danger", title, `Không thể tự sinh mã. Vui lòng thử lại.`);
                 }
-
-                guestPhone?.classList.remove("is-invalid");
-                guestEmail?.classList.remove("is-invalid");
             };
 
-            const showGuestContactValidation = () => {
-                if (guestContactValidation) {
-                    guestContactValidation.textContent = contactValidationMessage;
-                    guestContactValidation.classList.remove("field-validation-valid");
-                    guestContactValidation.classList.add("field-validation-error");
-                }
-
-                guestPhone?.classList.add("is-invalid");
-                guestEmail?.classList.add("is-invalid");
-                guestPhone?.focus();
-            };
+            updateReferenceVisibility();
 
             document.querySelectorAll('input[name="PaymentMethod"]').forEach(input => {
                 input.addEventListener("change", updateReferenceVisibility);
             });
 
-            updateReferenceVisibility();
+            const generateBookingCodeButton = document.getElementById("generateBookingCodeButton");
+            const generateGuestCodeButton = document.getElementById("generateGuestCodeButton");
 
-            if (depositAmount > 0) {
-                if (cashRadio) cashRadio.required = true;
-                if (depositConfirmed) depositConfirmed.required = true;
-            }
+            generateBookingCodeButton?.addEventListener("click", () =>
+                requestGeneratedCode(
+                    "@Url.Action("GetNextBookingCode", "Booking")",
+                    bookingCode,
+                    "Tự sinh mã đặt phòng"
+                ));
 
-            if (finalForm) {
-                let confirmed = false;
+            generateGuestCodeButton?.addEventListener("click", () =>
+                requestGeneratedCode(
+                    "@Url.Action("GetNextGuestCode", "Booking")",
+                    guestCode,
+                    "Tự sinh mã khách hàng"
+                ));
 
-                finalForm.addEventListener("submit", event => {
-                    if (confirmed) {
-                        return;
+            [
+                bookingCode, bookingNote, guestCode, guestName, guestDob, guestSex,
+                guestAddress, guestPhone, guestEmail, guestIdentityNumber,
+                guestIdentityType, guestNote, cashRadio, transferRadio,
+                paymentDate, depositConfirmed, referenceInput
+            ].filter(Boolean).forEach(input => {
+                input.addEventListener("input", () => clearServerErrorIfChanged(input));
+                input.addEventListener("change", () => clearServerErrorIfChanged(input));
+                input.addEventListener("focusout", () => clearServerErrorIfChanged(input), true);
+            });
+
+            bookingCode?.addEventListener("input", () => validateLiveCode(bookingCode, "Mã đặt phòng"));
+            bookingNote?.addEventListener("input", () => validateOptionalMax(bookingNote, "Ghi chú Booking", 255));
+            guestCode?.addEventListener("input", () => validateLiveCode(guestCode, "Mã khách hàng"));
+            guestName?.addEventListener("input", validateLiveName);
+            guestDob?.addEventListener("input", () => {
+                const value = guestDob.value;
+                if (!value) { clearFieldError(guestDob); return; }
+                const date = new Date(`${value}T00:00:00`);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                if (Number.isNaN(date.getTime()) || date > today) setFieldError(guestDob, "Ngày sinh không được lớn hơn ngày hiện tại.");
+                else clearFieldError(guestDob);
+            });
+            guestSex?.addEventListener("change", () => {
+                if (guestSex.value && !["0","1","2"].includes(guestSex.value)) setFieldError(guestSex, "Giới tính khách hàng không hợp lệ.");
+                else clearFieldError(guestSex);
+            });
+            guestAddress?.addEventListener("input", () => validateOptionalMax(guestAddress, "Địa chỉ", 255));
+            guestPhone?.addEventListener("input", validateLivePhone);
+            guestEmail?.addEventListener("input", validateLiveEmail);
+            guestIdentityNumber?.addEventListener("input", validateLiveIdentity);
+            guestIdentityType?.addEventListener("change", validateLiveIdentity);
+            guestNote?.addEventListener("input", () => validateOptionalMax(guestNote, "Ghi chú khách hàng", 255));
+            paymentDate?.addEventListener("input", validateLivePaymentDate);
+            referenceInput?.addEventListener("input", validateLiveReference);
+            depositConfirmed?.addEventListener("change", () => {
+                if (depositAmount <= 0 || depositConfirmed.checked) clearFieldError(depositConfirmed);
+                else setFieldError(depositConfirmed, "Vui lòng xác nhận đã nhận được tiền cọc.");
+            });
+            [cashRadio, transferRadio].filter(Boolean).forEach(input => input.addEventListener("change", () => {
+                updateReferenceVisibility();
+                clearFieldError(cashRadio);
+                clearFieldError(transferRadio);
+                validateLiveReference();
+            }));
+
+            let confirmed = false;
+            finalForm.addEventListener("submit", event => {
+                if (confirmed) {
+                    return;
+                }
+
+                event.preventDefault();
+                updateReferenceVisibility();
+
+                if (!validateStep2FrontEnd()) {
+                    return;
+                }
+
+                const doSubmit = () => {
+                    confirmed = true;
+                    const button = document.getElementById("bookingCreateSubmitButton");
+                    if (button && window.HotelUI?.setButtonLoading) {
+                        window.HotelUI.setButtonLoading(button, true, "Đang tạo...");
                     }
+                    finalForm.submit();
+                };
 
-                    event.preventDefault();
+                const confirm = window.HotelUI?.showConfirm;
+                if (typeof confirm === "function") {
+                    confirm({
+                        title: "Xác nhận tạo lịch đặt phòng",
+                        message: "Bạn có chắc chắn muốn tạo lịch đặt phòng với các thông tin hiện tại?",
+                        note: depositAmount > 0
+                            ? ""
+                            : "",
+                        variant: "primary",
+                        confirmText: "Tạo lịch đặt phòng",
+                        onConfirm: doSubmit
+                    });
+                } else {
+                    doSubmit();
+                }
+            });
 
-                    updateReferenceVisibility();
-
-                    const paymentDate = document.getElementById("paymentDate");
-                    if (depositAmount > 0 && paymentDate) {
-                        paymentDate.required = true;
-                    }
-
-                    // 1) Basic validation first: required, type/format and range.
-                    if (!finalForm.checkValidity()) {
-                        finalForm.reportValidity();
-                        const invalid = finalForm.querySelector(":invalid");
-                        invalid?.scrollIntoView({ behavior: "smooth", block: "center" });
-                        invalid?.focus({ preventScroll: true });
-                        return;
-                    }
-
-                    // 2) Business validation only after basic validation has passed.
-                    if (!(guestPhone?.value.trim() || guestEmail?.value.trim())) {
-                        showGuestContactValidation();
-                        return;
-                    }
-
-                    clearGuestContactValidation();
-
-                    if (depositAmount > 0) {
-                        if (paymentDate?.value) {
-                            const payment = new Date(paymentDate.value);
-                            const step2StartText = paymentDate.dataset.step2Start;
-                            if (step2StartText) {
-                                const step2Start = new Date(step2StartText);
-                                if (payment < step2Start) {
-                                    paymentDate.focus();
-                                    window.HotelUI?.toast?.(
-                                        "warning",
-                                        "Thời gian thanh toán không hợp lệ",
-                                        "Thời gian thanh toán cọc không được trước thời điểm bắt đầu bước 2."
-                                    );
-                                    return;
-                                }
-                            }
-
-                            if (payment > new Date()) {
-                                paymentDate.focus();
-                                window.HotelUI?.toast?.(
-                                    "warning",
-                                    "Thời gian thanh toán không hợp lệ",
-                                    "Thời gian thanh toán cọc không được lớn hơn thời điểm submit bước 2."
-                                );
-                                return;
-                            }
-                        }
-
-                        if (!depositConfirmed?.checked) {
-                            depositConfirmed?.focus();
-                            window.HotelUI?.toast?.(
-                                "warning",
-                                "Chưa xác nhận tiền cọc",
-                                "Vui lòng xác nhận đã nhận được tiền cọc trước khi tạo booking."
-                            );
-                            return;
-                        }
-
-                        if (transferRadio?.checked && !referenceInput?.value.trim()) {
-                            referenceInput?.focus();
-                            window.HotelUI?.toast?.(
-                                "warning",
-                                "Thiếu mã giao dịch",
-                                "Thanh toán chuyển khoản bắt buộc phải có mã giao dịch."
-                            );
-                            return;
-                        }
-                    }
-
-                    const doSubmit = () => {
-                        confirmed = true;
-                        const button = document.getElementById("bookingCreateSubmitButton");
-
-                        if (button && window.HotelUI?.setButtonLoading) {
-                            window.HotelUI.setButtonLoading(
-                                button,
-                                true,
-                                "Đang tạo..."
-                            );
-                        }
-
-                        finalForm.submit();
-                    };
-
-                    const confirm = window.HotelUI?.showConfirm;
-                    if (typeof confirm === "function") {
-                        confirm({
-                            title: "Xác nhận tạo lịch đặt phòng",
-                            message: "Bạn có chắc chắn muốn tạo lịch đặt phòng với các thông tin hiện tại?",
-                            note: depositAmount > 0
-                                ? "Hệ thống sẽ ghi nhận tiền cọc và thời điểm thanh toán ngay khi tạo thành công."
-                                : "Tiền cọc bằng 0 nên hệ thống sẽ không ghi nhận phương thức thanh toán cọc.",
-                            variant: "primary",
-                            confirmText: "Tạo lịch đặt phòng",
-                            onConfirm: doSubmit
-                        });
-                    } else {
-                        doSubmit();
-                    }
-                });
-            }
+            captureServerErrors();
         })();
     </script>
 }

@@ -108,7 +108,6 @@ public sealed class AmenityService : IAmenityService
             .ToListAsync(cancellationToken);
 
         var maxNumber = 0;
-        var width = 1;
 
         foreach (var raw in codes)
         {
@@ -121,12 +120,10 @@ public sealed class AmenityService : IAmenityService
             }
 
             maxNumber = Math.Max(maxNumber, number);
-            width = Math.Max(width, match.Groups["number"].Value.Length);
         }
 
         var next = maxNumber + 1;
-        width = Math.Max(width, next.ToString().Length);
-        return $"TN{next.ToString($"D{width}")}";
+        return $"TN{next}";
     }
 
     public async Task<AmenityDetailsViewModel?> GetDetailsAsync(
@@ -180,18 +177,18 @@ public sealed class AmenityService : IAmenityService
         var code = (model.AmenityCode ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(code))
         {
-            code = await GetNextAmenityCodeAsync(cancellationToken);
+            errors[nameof(model.AmenityCode)] = "Vui lòng nhập mã tiện nghi.";
         }
-        else if (code.Any(char.IsWhiteSpace))
+        else if (!Regex.IsMatch(code, "^[A-Za-z0-9]+$"))
         {
-            errors[nameof(model.AmenityCode)] = "Mã tiện nghi không được chứa dấu cách hoặc khoảng trắng.";
+            errors[nameof(model.AmenityCode)] = "Mã tiện nghi chỉ được chứa chữ hoa, chữ thường và số, không chứa dấu cách hoặc ký tự đặc biệt.";
         }
 
         if (code.Length > 50)
             errors[nameof(model.AmenityCode)] = "Mã tiện nghi không được vượt quá 50 ký tự.";
 
         if (await _context.Amenities.AnyAsync(x => x.AmenityCode == code, cancellationToken))
-            errors[nameof(model.AmenityCode)] = $"Mã tiện nghi '{code}' đã tồn tại.";
+            errors[nameof(model.AmenityCode)] = "Mã tiện nghi đã tồn tại.";
 
         if (string.IsNullOrWhiteSpace(model.AmenityName))
             errors[nameof(model.AmenityName)] = "Vui lòng nhập tên tiện nghi.";
@@ -300,8 +297,8 @@ public sealed class AmenityService : IAmenityService
         {
             if (string.IsNullOrWhiteSpace(requestedCode))
                 errors[nameof(model.AmenityCode)] = "Vui lòng nhập mã tiện nghi.";
-            else if (requestedCode.Any(char.IsWhiteSpace))
-                errors[nameof(model.AmenityCode)] = "Mã tiện nghi không được chứa dấu cách hoặc khoảng trắng.";
+            else if (!Regex.IsMatch(requestedCode, "^[A-Za-z0-9]+$"))
+                errors[nameof(model.AmenityCode)] = "Mã tiện nghi chỉ được chứa chữ hoa, chữ thường và số, không chứa dấu cách hoặc ký tự đặc biệt.";
 
             if (requestedCode.Length > 50)
                 errors[nameof(model.AmenityCode)] = "Mã tiện nghi không được vượt quá 50 ký tự.";
@@ -310,7 +307,7 @@ public sealed class AmenityService : IAmenityService
                     x => x.Id != model.Id && x.AmenityCode == requestedCode,
                     cancellationToken))
             {
-                errors[nameof(model.AmenityCode)] = $"Mã tiện nghi '{requestedCode}' đã tồn tại.";
+                errors[nameof(model.AmenityCode)] = "Mã tiện nghi đã tồn tại.";
             }
 
             if (string.IsNullOrWhiteSpace(requestedName))
@@ -372,7 +369,7 @@ public sealed class AmenityService : IAmenityService
                 return (false, "Tiện nghi đã dừng hoạt động.");
 
             if (await HasActiveBookingsAsync(id, cancellationToken))
-                return (false, "Không thể dừng hoạt động vì tiện nghi đang được sử dụng bởi loại phòng có Booking đang hoạt động.");
+                return (false, "Không thể dừng hoạt động vì tiện nghi đang đang được sử dụng bởi loại phòng nằm trong lịch đặt phòng có trạng thái là chờ xác nhận, chờ check in hoặc đang ở.");
 
             var now = DateTime.Now;
             amenity.IsActive = false;

@@ -1,3 +1,5 @@
+@using Hotel_Management_Website.Security
+
 @{
     ViewData["Title"] = "Trang chủ Lễ Tân";
     Layout = "~/Views/Shared/_ReceptionLayout.cshtml";
@@ -8,34 +10,178 @@
         ?? "Lễ Tân";
 }
 
-<div class="container-fluid">
+@section Styles
+{
+    <style>
+        .reception-section-icon {
+            width: 46px;
+            height: 46px;
+            min-width: 46px;
+            border-radius: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(var(--bs-primary-rgb), 0.10);
+            color: var(--bs-primary);
+            font-size: 1.35rem;
+        }
 
-    <div class="row justify-content-center">
+        .reception-home-action-card {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
 
-        <div class="col-lg-8">
+            .reception-home-action-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--bs-box-shadow-lg) !important;
+            }
 
-            <div class="card shadow-sm">
+        .reception-home-action-icon {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bs-tertiary-bg);
+            color: var(--bs-primary);
+            font-size: 1.4rem;
+        }
 
-                <div class="card-body text-center py-5">
+        .reception-home-action-description {
+            min-height: 48px;
+        }
+    </style>
+}
 
-                    <div class="mb-4">
-                        <i class="bi bi-person-badge fs-1"></i>
+@await Html.PartialAsync(
+"~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Trang chủ Lễ Tân",
+        Description = "Quản lý khách hàng, đặt phòng, nhận phòng, trả phòng, hóa đơn và các nghiệp vụ phục vụ khách lưu trú.",
+        Icon = "bi-person-badge"
+    })
+
+<div class="row g-4">
+
+    <!-- ===================================================== -->
+    <!-- WELCOME -->
+    <!-- ===================================================== -->
+
+    <div class="col-12 col-xl-8">
+
+        <section class="card border-0 shadow-sm h-100">
+
+            <div class="card-body p-4 p-lg-5">
+
+                <div class="d-flex align-items-start gap-3">
+
+                    <div class="reception-section-icon flex-shrink-0"
+                         aria-hidden="true">
+                        <i class="bi bi-person-badge"></i>
                     </div>
 
-                    <h1 class="display-6 fw-semibold">
-                        Chào mừng, @fullName
-                    </h1>
+                    <div class="min-width-0">
 
-                    <p class="text-body-secondary fs-5 mb-0">
-                        Bạn đã đăng nhập với quyền
-                        <strong>Lễ Tân</strong>.
-                    </p>
+                        <div class="small text-body-secondary mb-1">
+                            Khu vực Lễ Tân
+                        </div>
 
-                    <p class="text-body-secondary mt-2">
-                        Đây là trang chủ của khu vực lễ tân khách sạn.
+                        <h1 class="h4 fw-semibold mb-2">
+                            Chào mừng, @fullName
+                        </h1>
+
+                        <p class="text-body-secondary mb-0">
+                            Bạn có thể tiếp nhận khách, tạo và xử lý lịch đặt phòng,
+                            quản lý thông tin khách hàng, check-in, check-out,
+                            dịch vụ sử dụng và thanh toán hóa đơn.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- MAIN TASK -->
+    <!-- ===================================================== -->
+
+    <div class="col-12 col-xl-4">
+
+        <section class="card border-0 shadow-sm h-100">
+
+            <div class="card-body d-flex flex-column justify-content-center gap-3 p-4">
+
+                <div>
+
+                    <div class="small text-body-secondary">
+                        Nghiệp vụ chính
+                    </div>
+
+                    <h2 class="h5 fw-semibold mb-1">
+                        Quản lý đặt phòng
+                    </h2>
+
+                    <p class="text-body-secondary small mb-0">
+                        Tạo đặt phòng, tiếp nhận khách tại quầy,
+                        check-in, check-out và xử lý các trạng thái lưu trú.
                     </p>
 
                 </div>
+
+                <a asp-controller="Booking"
+                   asp-action="Index"
+                   class="btn btn-primary">
+
+                    <i class="bi bi-calendar-check me-1"
+                       aria-hidden="true"></i>
+
+                    Mở quản lý đặt phòng
+
+                </a>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- QUICK ACTIONS -->
+<!-- ========================================================= -->
+
+<section class="card border-0 shadow-sm mt-4">
+
+    <div class="card-header bg-body border-bottom py-3">
+
+        <div class="d-flex align-items-center gap-3">
+
+            <div class="reception-section-icon"
+                 aria-hidden="true">
+
+                <i class="bi bi-lightning-charge"></i>
+
+            </div>
+
+            <div>
+
+                <h2 class="h5 mb-1 fw-semibold">
+                    Nghiệp vụ thường dùng
+                </h2>
+
+                <p class="text-body-secondary small mb-0">
+                    Truy cập nhanh các chức năng Lễ Tân sử dụng thường xuyên.
+                </p>
 
             </div>
 
@@ -43,4 +189,149 @@
 
     </div>
 
-</div>
+
+    <div class="card-body">
+
+        <div class="row g-3">
+
+
+            <!-- ================================================= -->
+            <!-- CREATE BOOKING -->
+            <!-- ================================================= -->
+
+            <div class="col-12 col-md-6 col-xl-3">
+
+                <a asp-controller="Booking"
+                   asp-action="Create"
+                   class="card h-100 border reception-home-action-card text-decoration-none">
+
+                    <div class="card-body p-4">
+
+                        <div class="reception-home-action-icon mb-3"
+                             aria-hidden="true">
+
+                            <i class="bi bi-calendar-plus"></i>
+
+                        </div>
+
+                        <h3 class="h6 fw-semibold text-body mb-2">
+                            Tạo lịch đặt phòng
+                        </h3>
+
+                        <p class="small text-body-secondary mb-0 reception-home-action-description">
+                            Tạo lịch đặt trước hoặc tiếp nhận khách trực tiếp tại quầy.
+                        </p>
+
+                    </div>
+
+                </a>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- GUEST -->
+            <!-- ================================================= -->
+
+            <div class="col-12 col-md-6 col-xl-3">
+
+                <a asp-controller="Guest"
+                   asp-action="Index"
+                   class="card h-100 border reception-home-action-card text-decoration-none">
+
+                    <div class="card-body p-4">
+
+                        <div class="reception-home-action-icon mb-3"
+                             aria-hidden="true">
+
+                            <i class="bi bi-person-vcard"></i>
+
+                        </div>
+
+                        <h3 class="h6 fw-semibold text-body mb-2">
+                            Khách hàng
+                        </h3>
+
+                        <p class="small text-body-secondary mb-0 reception-home-action-description">
+                            Tra cứu và cập nhật thông tin khách hàng đang lưu trú hoặc đã từng lưu trú.
+                        </p>
+
+                    </div>
+
+                </a>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- BILL -->
+            <!-- ================================================= -->
+
+            <div class="col-12 col-md-6 col-xl-3">
+
+                <a asp-controller="Bill"
+                   asp-action="Index"
+                   class="card h-100 border reception-home-action-card text-decoration-none">
+
+                    <div class="card-body p-4">
+
+                        <div class="reception-home-action-icon mb-3"
+                             aria-hidden="true">
+
+                            <i class="bi bi-receipt"></i>
+
+                        </div>
+
+                        <h3 class="h6 fw-semibold text-body mb-2">
+                            Hóa đơn
+                        </h3>
+
+                        <p class="small text-body-secondary mb-0 reception-home-action-description">
+                            Tra cứu hóa đơn, xem chi tiết thanh toán và kiểm tra trạng thái thanh toán.
+                        </p>
+
+                    </div>
+
+                </a>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- ROOMS -->
+            <!-- ================================================= -->
+
+            <div class="col-12 col-md-6 col-xl-3">
+
+                <a asp-controller="Room"
+                   asp-action="Index"
+                   class="card h-100 border reception-home-action-card text-decoration-none">
+
+                    <div class="card-body p-4">
+
+                        <div class="reception-home-action-icon mb-3"
+                             aria-hidden="true">
+
+                            <i class="bi bi-door-open"></i>
+
+                        </div>
+
+                        <h3 class="h6 fw-semibold text-body mb-2">
+                            Phòng
+                        </h3>
+
+                        <p class="small text-body-secondary mb-0 reception-home-action-description">
+                            Theo dõi phòng và thông tin loại phòng phục vụ việc bố trí khách.
+                        </p>
+
+                    </div>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>

@@ -72,6 +72,7 @@ public sealed class BookingEditViewModel
 
 public sealed class BookingEditGuestViewModel
 {
+    [RegularExpression("^[A-Za-z0-9]+$", ErrorMessage = "Mã khách hàng chỉ được bao gồm chữ hoa, chữ thường và số, không chứa dấu cách và ký tự đặc biệt.")]
     [StringLength(50, ErrorMessage = "Mã khách hàng không được vượt quá 50 ký tự.")]
     public string GuestCode { get; set; } = string.Empty;
 
@@ -87,10 +88,10 @@ public sealed class BookingEditGuestViewModel
     [StringLength(255, ErrorMessage = "Địa chỉ không được vượt quá 255 ký tự.")]
     public string? Address { get; set; }
 
-    [StringLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự.")]
+    [StringLength(30, ErrorMessage = "Số điện thoại nhập vào không được vượt quá 30 ký tự.")]
     public string? PhoneNumber { get; set; }
 
-    [StringLength(4000, ErrorMessage = "Email không được vượt quá 4000 ký tự.")]
+    [StringLength(254, ErrorMessage = "Email không được vượt quá 254 ký tự.")]
     [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
     public string? Email { get; set; }
 

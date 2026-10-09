@@ -1,4 +1,4 @@
-﻿@model Hotel_Management_Website.Models.ViewModels.Room.RoomCreateViewModel
+@model Hotel_Management_Website.Models.ViewModels.Room.RoomCreateViewModel
 
 @{
     ViewData["Title"] = "Tạo phòng";
@@ -30,8 +30,6 @@
 
         @Html.AntiForgeryToken()
 
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
-
         <section class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-body border-bottom">
                 <div class="d-flex align-items-center gap-3">
@@ -46,9 +44,17 @@
             <div class="card-body">
                 <div class="row g-4">
                     <div class="col-12 col-md-6">
-                        <label asp-for="RoomCode" class="form-label required">Mã phòng</label>
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <label asp-for="RoomCode" class="form-label required mb-0">Mã phòng</label>
+                            <button type="button"
+                                    id="generateRoomCodeButton"
+                                    class="btn btn-outline-primary btn-sm"
+                                    data-endpoint="@Url.Action("GetNextRoomCode", "Room")">
+                                <i class="bi bi-magic me-1" aria-hidden="true"></i>Tự sinh mã
+                            </button>
+                        </div>
                         <input asp-for="RoomCode" id="roomCreateCode" class="form-control" maxlength="50" autocomplete="off" />
-                        <div class="form-text">Để trống để hệ thống tự sinh theo P + số lớn nhất + 1. Nếu nhập tay, không được chứa khoảng trắng.</div>
+                        <div class="form-text">Mã chỉ được bao gồm chữ hoa, chữ thường và số; không chứa dấu cách hoặc ký tự đặc biệt và không được trùng.</div>
                         <span asp-validation-for="RoomCode" class="text-danger"></span>
                     </div>
 
@@ -85,7 +91,8 @@
                             <option value="">-- Chọn loại phòng --</option>
                             @foreach (var type in Model.AvailableRoomTypes)
                             {
-                                <option value="@type.Id" data-active="@type.IsActive.ToString().ToLowerInvariant()">
+                                <option value="@type.Id" data-active="@type.IsActive.ToString().ToLowerInvariant()"
+                                        data-selectable="@type.IsSelectable.ToString().ToLowerInvariant()">
                                     @type.Code - @type.Name
                                 </option>
                             }
@@ -94,19 +101,13 @@
                     </div>
 
                     <div class="col-12 col-md-6">
-                        <label class="form-label">Trạng thái phòng</label>
-                        <div class="room-form-readonly-box">
-                            <span class="badge text-bg-success">Trống</span>
-                            <span class="small text-body-secondary">Phòng mới tạo luôn bắt đầu ở tình trạng Trống.</span>
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <div class="form-check form-switch room-active-switch">
-                            <input asp-for="IsActive" class="form-check-input" id="roomIsActive" />
-                            <label asp-for="IsActive" class="form-check-label fw-semibold">Đang hoạt động</label>
-                        </div>
-                        <div class="form-text">Nếu phòng đang hoạt động, chỉ được chọn loại phòng đang hoạt động.</div>
+                        <label asp-for="IsActive" class="form-label required">Trạng thái hoạt động</label>
+                        <select asp-for="IsActive" id="roomIsActive" class="form-select">
+                            <option value="true">Đang hoạt động</option>
+                            <option value="false">Dừng hoạt động</option>
+                        </select>
+                        <div class="form-text">Phòng đang hoạt động chỉ được chọn loại phòng đang hoạt động; phòng dừng hoạt động có thể chọn cả hai.</div>
+                        <span asp-validation-for="IsActive" class="text-danger"></span>
                     </div>
 
                     <div class="col-12">

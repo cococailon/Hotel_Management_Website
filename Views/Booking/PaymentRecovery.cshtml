@@ -1,0 +1,561 @@
+@model Hotel_Management_Website.Models.ViewModels.Booking.BookingPaymentRecoveryViewModel
+
+@{
+    ViewData["Title"] = "Tiếp nhận thanh toán lại";
+    Layout = User.IsInRole("Reception") ? "~/Views/Shared/_ReceptionLayout.cshtml" : "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/booking-flow.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync(
+    "~/Views/Shared/UI/_PageHeader.cshtml",
+    new Hotel_Management_Website.Models.ViewModels.UI.PageHeaderViewModel
+    {
+        Title = "Thanh toán lại",
+        Description = $"Booking {Model.BookingCode} · tiếp nhận khoản thanh toán còn thiếu sau khi check out thất bại.",
+        Icon = "bi-credit-card-2-front"
+    })
+
+<div class="booking-flow-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-2 mb-4">
+        <a asp-controller="Booking" asp-action="Flow" asp-route-id="@Model.BookingId" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Quay lại quản lý luồng
+        </a>
+        <a asp-controller="Booking" asp-action="Details" asp-route-id="@Model.BookingId" class="btn btn-outline-primary">
+            <i class="bi bi-eye me-1" aria-hidden="true"></i>Xem chi tiết
+        </a>
+    </div>
+
+    @{
+        var topErrors = ViewData.ModelState
+            .Where(x => string.IsNullOrWhiteSpace(x.Key))
+            .SelectMany(x => x.Value?.Errors.Select(e => e.ErrorMessage) ?? Enumerable.Empty<string>())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    @if (topErrors.Count > 0)
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-4" role="alert">
+            <div class="fw-semibold mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Vui lòng kiểm tra lại thông tin.</div>
+            <ul class="mb-0 ps-4">
+                @foreach (var error in topErrors) { <li>@error</li> }
+            </ul>
+        </div>
+    }
+
+    <form asp-controller="Booking" asp-action="PaymentRecovery" method="post" id="paymentRecoveryForm" novalidate data-ajax="false">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="BookingId" />
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-flow-section-icon"><i class="bi bi-person-vcard"></i></div>
+                    <div><h2 class="h6 mb-0 fw-semibold">Thông tin khách hàng</h2><div class="small text-body-secondary">Các trường khách hàng dưới đây đều bắt buộc, trừ Email và ghi chú khách hàng.</div></div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestCode" class="form-label fw-semibold">Mã khách hàng <span class="text-danger">*</span></label>
+                        <input asp-for="GuestCode" id="recoveryGuestCode" class="form-control font-monospace" maxlength="50" autocomplete="off" />
+                        <span asp-validation-for="GuestCode" class="text-danger" data-error-for="GuestCode"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestName" class="form-label fw-semibold">Tên khách hàng <span class="text-danger">*</span></label>
+                        <input asp-for="GuestName" id="recoveryGuestName" class="form-control" maxlength="100" autocomplete="name" />
+                        <span asp-validation-for="GuestName" class="text-danger" data-error-for="GuestName"></span>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestDateOfBirth" class="form-label fw-semibold">Ngày sinh <span class="text-danger">*</span></label>
+                        <input asp-for="GuestDateOfBirth" id="recoveryGuestDob" type="date" class="form-control" />
+                        <span asp-validation-for="GuestDateOfBirth" class="text-danger" data-error-for="GuestDateOfBirth"></span>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestSex" class="form-label fw-semibold">Giới tính <span class="text-danger">*</span></label>
+                        <select asp-for="GuestSex" id="recoveryGuestSex" class="form-select">
+                            <option value="">-- Chọn giới tính --</option><option value="0">Nam</option><option value="1">Nữ</option><option value="2">Khác</option>
+                        </select>
+                        <span asp-validation-for="GuestSex" class="text-danger" data-error-for="GuestSex"></span>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="GuestAddress" class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
+                        <textarea asp-for="GuestAddress" id="recoveryGuestAddress" class="form-control" rows="2" maxlength="255"></textarea>
+                        <span asp-validation-for="GuestAddress" class="text-danger" data-error-for="GuestAddress"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestPhoneNumber" class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+                        <input asp-for="GuestPhoneNumber" id="recoveryGuestPhone" class="form-control" maxlength="30" inputmode="tel" autocomplete="tel" />
+                        <span asp-validation-for="GuestPhoneNumber" class="text-danger" data-error-for="GuestPhoneNumber"></span>
+                        <div class="form-text">Bắt buộc. Hỗ trợ số điện thoại quốc tế.</div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="GuestEmail" class="form-label fw-semibold">Email</label>
+                        <input asp-for="GuestEmail" id="recoveryGuestEmail" type="email" class="form-control" maxlength="254" autocomplete="email" />
+                        <span asp-validation-for="GuestEmail" class="text-danger" data-error-for="GuestEmail"></span>
+                    </div>
+                    <div class="col-12 col-md-7">
+                        <label asp-for="GuestIdentityNumber" class="form-label fw-semibold">Số giấy tờ <span class="text-danger">*</span></label>
+                        <input asp-for="GuestIdentityNumber" id="recoveryIdentityNumber" class="form-control" maxlength="50" autocomplete="off" />
+                        <span asp-validation-for="GuestIdentityNumber" class="text-danger" data-error-for="GuestIdentityNumber"></span>
+                        <div class="form-text">CCCD/GPLX: 12 chữ số. Hộ chiếu: 5–20 chữ và số.</div>
+                    </div>
+                    <div class="col-12 col-md-5">
+                        <label asp-for="GuestIdentityType" class="form-label fw-semibold">Loại giấy tờ <span class="text-danger">*</span></label>
+                        <select asp-for="GuestIdentityType" id="recoveryIdentityType" class="form-select">
+                            <option value="">-- Chọn loại giấy tờ --</option><option value="0">CCCD</option><option value="1">Giấy phép lái xe</option><option value="2">Hộ chiếu</option>
+                        </select>
+                        <span asp-validation-for="GuestIdentityType" class="text-danger" data-error-for="GuestIdentityType"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="GuestNote" class="form-label fw-semibold">Ghi chú khách hàng</label>
+                        <textarea asp-for="GuestNote" id="recoveryGuestNote" class="form-control recovery-note" rows="2" maxlength="255"></textarea>
+                        <span asp-validation-for="GuestNote" class="text-danger" data-error-for="GuestNote"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-flow-section-icon">
+                        <i class="bi bi-journal-text" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Thông tin lịch đặt phòng</h2>
+                        <div class="small text-body-secondary">Kiểm tra mã đặt phòng và cập nhật ghi chú của lịch đặt phòng nếu cần.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-5">
+                        <div class="booking-flow-label">Mã đặt phòng</div>
+                        <div class="booking-flow-value font-monospace">@Model.BookingCode</div>
+                    </div>
+                    <div class="col-12 col-md-7">
+                        <label asp-for="BookingNote" class="form-label fw-semibold">Ghi chú lịch đặt phòng</label>
+                        <textarea asp-for="BookingNote" id="recoveryBookingNote" class="form-control recovery-note" rows="2" maxlength="255"></textarea>
+                        <span asp-validation-for="BookingNote" class="text-danger" data-error-for="BookingNote"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-flow-section-icon">
+                        <i class="bi bi-door-open" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 mb-0 fw-semibold">Dịch vụ, phí phát sinh và thông tin phòng</h2>
+                        <div class="small text-body-secondary">Chỉ chỉnh sửa các ghi chú đã có; số tiền dịch vụ và phí phát sinh giữ nguyên theo Bill của lần check out thất bại.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                @foreach (var room in Model.Rooms.Select((value, index) => new { value, index }))
+                {
+                    <div class="booking-checkout-room-card border rounded-3 p-3 mb-4">
+                        <input type="hidden" asp-for="Rooms[room.index].BookingRoomId" />
+
+                        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+                            <div>
+                                <div class="fw-semibold booking-breakable">
+                                    <span class="font-monospace">@room.value.RoomTypeCode</span> · @room.value.RoomTypeName
+                                </div>
+                                <div class="small text-body-secondary mt-1">
+                                    Phòng: @(string.IsNullOrWhiteSpace(room.value.RoomCode) ? "Chưa xác định" : room.value.RoomCode)
+                                    @if (!string.IsNullOrWhiteSpace(room.value.RoomName))
+                                    {
+                                        <span class="mx-1">·</span><span>@room.value.RoomName</span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="small text-body-secondary align-self-lg-center">
+                                <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>
+                                Chỉ cho phép sửa ghi chú
+                            </div>
+                        </div>
+                    <div class="mb-4">
+                        <label asp-for="Rooms[room.index].Note" class="form-label fw-semibold">Ghi chú phòng trong lịch đặt phòng</label>
+                        <textarea asp-for="Rooms[room.index].Note" class="form-control recovery-note" rows="2" maxlength="255"></textarea>
+                        <span asp-validation-for="Rooms[room.index].Note" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="fw-semibold mb-2">Dịch vụ đã sử dụng</div>
+                        <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead><tr><th style="min-width:250px">Dịch vụ</th><th style="width:190px">Thời gian sử dụng</th><th style="width:170px" class="text-end">Thành tiền</th><th style="min-width:240px">Ghi chú</th></tr></thead>
+                            <tbody>
+                            @if (room.value.Services.Count == 0)
+                            {
+                                <tr><td colspan="4" class="text-center text-body-secondary py-3">Không có dịch vụ được sử dụng.</td></tr>
+                            }
+                            else
+                            {
+                                @foreach (var service in room.value.Services.Select((value, index) => new { value, index }))
+                                {
+                                    <tr>
+                                        <td>
+                                            <input type="hidden" asp-for="Rooms[room.index].Services[service.index].Id" />
+                                            <div class="fw-semibold">@service.value.ServiceName</div>
+                                            <div class="small font-monospace text-body-secondary">@service.value.ServiceCode</div>
+                                        </td>
+                                        <td>@service.value.UsedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td class="text-end">@service.value.TotalPrice.ToString("N2", System.Globalization.CultureInfo.CurrentCulture)</td>
+                                        <td>
+                                            <textarea asp-for="Rooms[room.index].Services[service.index].Note" class="form-control recovery-note" rows="2" maxlength="255"></textarea>
+                                            <span asp-validation-for="Rooms[room.index].Services[service.index].Note" class="text-danger"></span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="fw-semibold mb-2">Phí phát sinh</div>
+                        <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead><tr><th style="min-width:220px">Phí phát sinh</th><th style="width:190px">Loại phí</th><th style="width:160px" class="text-end">Thành tiền</th><th style="min-width:240px">Ghi chú</th></tr></thead>
+                            <tbody>
+                            @if (room.value.Fees.Count == 0)
+                            {
+                                <tr><td colspan="4" class="text-center text-body-secondary py-3">Không có phí phát sinh.</td></tr>
+                            }
+                            else
+                            {
+                                @foreach (var fee in room.value.Fees.Select((value, index) => new { value, index }))
+                                {
+                                    <tr>
+                                        <td><input type="hidden" asp-for="Rooms[room.index].Fees[fee.index].Id" /><div class="fw-semibold">@fee.value.FeeName</div></td>
+                                        <td>@(fee.value.FeeType switch { 0 => "Mua đồ hộ", 1 => "Hỏng hóc/mất mát", 2 => "Khác", _ => "Không xác định" })</td>
+                                        <td class="text-end">@fee.value.TotalFee.ToString("N2", System.Globalization.CultureInfo.CurrentCulture)</td>
+                                        <td>
+                                            <textarea asp-for="Rooms[room.index].Fees[fee.index].Description" class="form-control recovery-note" rows="2" maxlength="255"></textarea>
+                                            <span asp-validation-for="Rooms[room.index].Fees[fee.index].Description" class="text-danger"></span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-body border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="booking-flow-section-icon"><i class="bi bi-receipt"></i></div>
+                    <div><h2 class="h6 mb-0 fw-semibold">Thanh toán hóa đơn</h2><div class="small text-body-secondary">Sử dụng chính Bill đã tạo khi check out thất bại; không tạo Bill mới.</div></div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-4"><div class="booking-flow-label">Mã hóa đơn</div><div class="booking-flow-value font-monospace">@Model.BillCode</div></div>
+                    <div class="col-12 col-md-4"><div class="booking-flow-label">Tổng tiền</div><div class="booking-flow-value">@Model.TotalAmount.ToString("N2", System.Globalization.CultureInfo.CurrentCulture)</div></div>
+                    <div class="col-12 col-md-4"><div class="booking-flow-label">Còn phải thanh toán</div><div class="booking-flow-value fw-semibold">@Model.FinalAmount.ToString("N2", System.Globalization.CultureInfo.CurrentCulture)</div></div>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="BillNote" class="form-label fw-semibold">Ghi chú hóa đơn</label>
+                    <textarea asp-for="BillNote" id="recoveryBillNote" class="form-control recovery-note" rows="3" maxlength="255"></textarea>
+                    <span asp-validation-for="BillNote" class="text-danger" data-error-for="BillNote"></span>
+                </div>
+
+                <div class="border rounded-3 p-3">
+                    <div class="form-check mb-2">
+                        <input asp-for="PaymentReceived" class="form-check-input" id="recoveryPaymentReceived" />
+                        <label asp-for="PaymentReceived" class="form-check-label fw-semibold">Xác nhận đã nhận đủ tiền thanh toán</label>
+                    </div>
+                    <span asp-validation-for="PaymentReceived" id="paymentReceivedError" class="text-danger small d-block mb-3"></span>
+
+                    <div id="paymentFields" class="row g-3 d-none">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold">Phương thức thanh toán <span class="text-danger">*</span></label>
+                            <div class="d-flex flex-wrap gap-3 pt-2">
+                                <div class="form-check"><input class="form-check-input" type="radio" asp-for="PaymentMethod" value="0" id="recoveryCash" /><label class="form-check-label" for="recoveryCash">Tiền mặt</label></div>
+                                <div class="form-check"><input class="form-check-input" type="radio" asp-for="PaymentMethod" value="1" id="recoveryTransfer" /><label class="form-check-label" for="recoveryTransfer">Chuyển khoản</label></div>
+                            </div>
+                            <span asp-validation-for="PaymentMethod" id="paymentMethodError" class="text-danger small d-block mt-1"></span>
+                        </div>
+                        <div id="referenceCodeWrap" class="col-12 col-md-6 d-none">
+                            <label asp-for="ReferenceCode" class="form-label fw-semibold">Mã giao dịch <span class="text-danger">*</span></label>
+                            <input asp-for="ReferenceCode" id="recoveryReferenceCode" class="form-control" maxlength="100" autocomplete="off" />
+                            <span asp-validation-for="ReferenceCode" class="text-danger" data-error-for="ReferenceCode"></span>
+                        </div>
+                    </div>
+                <div class="alert alert-info mt-4 mb-0">
+                    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                    Thời gian thanh toán được hệ thống ghi nhận tự động tại thời điểm xác nhận thành công.
+                </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mb-4">
+            <a asp-controller="Booking" asp-action="Flow" asp-route-id="@Model.BookingId" class="btn btn-outline-secondary">Quay lại</a>
+            <button type="submit" class="btn btn-primary" id="paymentRecoverySubmit">
+                <span class="ui-button-content"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i> Xác nhận thanh toán</span>
+                <span class="ui-button-loading d-none"><span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Đang xử lý...</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const finalAmountText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.FinalAmount.ToString("N2", System.Globalization.CultureInfo.CurrentCulture)));
+            const bookingCodeText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BookingCode));
+            const form = document.getElementById("paymentRecoveryForm");
+            if (!form) return;
+
+            const paymentReceived = document.getElementById("recoveryPaymentReceived");
+            const paymentFields = document.getElementById("paymentFields");
+            const referenceWrap = document.getElementById("referenceCodeWrap");
+            const referenceInput = document.getElementById("recoveryReferenceCode");
+            const methodError = document.getElementById("paymentMethodError");
+            const receivedError = document.getElementById("paymentReceivedError");
+
+            const findErrorSpan = fieldName => form.querySelector(`[data-error-for="${fieldName}"]`);
+            const setFieldError = (fieldName, input, message) => {
+                if (message) {
+                    input?.classList.add("is-invalid");
+                    input?.setCustomValidity(message);
+                } else {
+                    input?.classList.remove("is-invalid");
+                    input?.setCustomValidity("");
+                }
+                const span = findErrorSpan(fieldName);
+                if (span) span.textContent = message || "";
+                return Boolean(message);
+            };
+
+            const normalizePhone = raw => {
+                let value = (raw || "").trim().replace(/[\s.\-()]/g, "");
+                if (value.startsWith("00")) value = "+" + value.slice(2);
+                return value;
+            };
+
+            const validatePhone = () => {
+                const input = document.getElementById("recoveryGuestPhone");
+                const value = normalizePhone(input?.value);
+                let message = "";
+                if (!value) message = "Số điện thoại là bắt buộc.";
+                else if (value.length > 30) message = "Số điện thoại nhập vào không được vượt quá 30 ký tự.";
+                else if (value.startsWith("+")) {
+                    const digits = value.slice(1);
+                    if (!/^\d+$/.test(digits) || digits.length < 7 || digits.length > 15 || digits.startsWith("0")) message = "Số điện thoại không hợp lệ. Sau khi chuẩn hóa phải có 7-15 chữ số.";
+                } else if (!/^\d+$/.test(value) || value.length < 7 || value.length > 15) {
+                    message = "Số điện thoại không hợp lệ. Sau khi chuẩn hóa phải có 7-15 chữ số.";
+                }
+                return setFieldError("GuestPhoneNumber", input, message);
+            };
+
+            const validateEmail = () => {
+                const input = document.getElementById("recoveryGuestEmail");
+                const value = (input?.value || "").trim();
+                let message = "";
+                if (value.length > 254) message = "Email không được vượt quá 254 ký tự.";
+                else if (value && !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(value)) message = "Email không đúng định dạng.";
+                return setFieldError("GuestEmail", input, message);
+            };
+
+            const validateIdentity = () => {
+                const number = document.getElementById("recoveryIdentityNumber");
+                const type = document.getElementById("recoveryIdentityType");
+                const value = (number?.value || "").trim();
+                const selected = type?.value || "";
+                let numberMessage = "";
+                let typeMessage = "";
+
+                if (!value) numberMessage = "Số giấy tờ là bắt buộc.";
+                else if (value.length > 50) numberMessage = "Số giấy tờ không được vượt quá 50 ký tự.";
+                else if (!selected) typeMessage = "Vui lòng chọn loại giấy tờ.";
+                else if (selected === "0" && !/^\d{12}$/.test(value)) numberMessage = "CCCD phải gồm đúng 12 chữ số.";
+                else if (selected === "1" && !/^\d{12}$/.test(value)) numberMessage = "Giấy phép lái xe phải gồm đúng 12 chữ số.";
+                else if (selected === "2" && !/^[A-Za-z0-9]{5,20}$/.test(value)) numberMessage = "Hộ chiếu phải gồm 5-20 ký tự chữ và số.";
+
+                const numberError = setFieldError("GuestIdentityNumber", number, numberMessage);
+                const typeSpan = findErrorSpan("GuestIdentityType");
+                if (typeMessage) {
+                    type?.classList.add("is-invalid");
+                    type?.setCustomValidity(typeMessage);
+                    if (typeSpan) typeSpan.textContent = typeMessage;
+                } else {
+                    type?.classList.remove("is-invalid");
+                    type?.setCustomValidity("");
+                    if (typeSpan) typeSpan.textContent = "";
+                }
+                return numberError || Boolean(typeMessage);
+            };
+
+            const validateBasicGuests = () => {
+                let invalid = false;
+                const code = document.getElementById("recoveryGuestCode");
+                const name = document.getElementById("recoveryGuestName");
+                const dob = document.getElementById("recoveryGuestDob");
+                const sex = document.getElementById("recoveryGuestSex");
+                const address = document.getElementById("recoveryGuestAddress");
+                const note = document.getElementById("recoveryGuestNote");
+
+                invalid = setFieldError("GuestCode", code, !code?.value.trim() ? "Mã khách hàng không được để trống." : !/^[A-Za-z0-9]+$/.test(code.value.trim()) ? "Mã khách hàng chỉ được bao gồm chữ và số, không chứa dấu cách và ký tự đặc biệt." : code.value.trim().length > 50 ? "Mã khách hàng không được vượt quá 50 ký tự." : "") || invalid;
+                invalid = setFieldError("GuestName", name, !name?.value.trim() ? "Tên khách hàng là bắt buộc." : name.value.trim().length > 100 ? "Tên khách hàng không được vượt quá 100 ký tự." : "") || invalid;
+                invalid = setFieldError("GuestDateOfBirth", dob, !dob?.value ? "Ngày sinh là bắt buộc." : new Date(dob.value + "T00:00:00") > new Date(new Date().toDateString()) ? "Ngày sinh không được lớn hơn ngày hiện tại." : "") || invalid;
+                invalid = setFieldError("GuestSex", sex, !sex?.value ? "Giới tính là bắt buộc." : "") || invalid;
+                invalid = setFieldError("GuestAddress", address, !address?.value.trim() ? "Địa chỉ là bắt buộc." : address.value.trim().length > 255 ? "Địa chỉ không được vượt quá 255 ký tự." : "") || invalid;
+                invalid = validatePhone() || invalid;
+                invalid = validateEmail() || invalid;
+                invalid = validateIdentity() || invalid;
+                invalid = setFieldError("GuestNote", note, note?.value.trim().length > 255 ? "Ghi chú khách hàng không được vượt quá 255 ký tự." : "") || invalid;
+                return invalid;
+            };
+
+            const validateNotes = () => {
+                let invalid = false;
+                form.querySelectorAll(".recovery-note").forEach(input => {
+                    const message = input.value.trim().length > 255 ? "Ghi chú không được vượt quá 255 ký tự." : "";
+                    if (message) invalid = true;
+                    input.classList.toggle("is-invalid", Boolean(message));
+                    input.setCustomValidity(message);
+                });
+                return invalid;
+            };
+
+            const updateReference = () => {
+                const method = form.querySelector('input[name="PaymentMethod"]:checked')?.value;
+                const show = Boolean(paymentReceived?.checked && method === "1");
+                referenceWrap?.classList.toggle("d-none", !show);
+                if (!show && referenceInput) {
+                    referenceInput.value = "";
+                    referenceInput.classList.remove("is-invalid");
+                    referenceInput.setCustomValidity("");
+                    const span = findErrorSpan("ReferenceCode");
+                    if (span) span.textContent = "";
+                }
+            };
+
+            const updatePaymentFields = () => {
+                const received = Boolean(paymentReceived?.checked);
+                paymentFields?.classList.toggle("d-none", !received);
+                if (!received && receivedError) receivedError.textContent = "";
+                if (!received && methodError) methodError.textContent = "";
+                updateReference();
+            };
+
+            const validatePayment = () => {
+                let invalid = false;
+                if (!paymentReceived?.checked) {
+                    if (receivedError) receivedError.textContent = "Bạn phải xác nhận đã nhận được tiền thanh toán.";
+                    invalid = true;
+                } else if (receivedError) receivedError.textContent = "";
+
+                const method = form.querySelector('input[name="PaymentMethod"]:checked')?.value;
+                if (paymentReceived?.checked && !method) {
+                    if (methodError) methodError.textContent = "Vui lòng chọn phương thức thanh toán.";
+                    invalid = true;
+                } else if (methodError) methodError.textContent = "";
+
+                const reference = (referenceInput?.value || "").trim();
+                if (paymentReceived?.checked && method === "1") {
+                    if (!reference) {
+                        setFieldError("ReferenceCode", referenceInput, "Mã giao dịch là bắt buộc khi thanh toán chuyển khoản.");
+                        invalid = true;
+                    } else if (reference.length > 100) {
+                        setFieldError("ReferenceCode", referenceInput, "Mã giao dịch không được vượt quá 100 ký tự.");
+                        invalid = true;
+                    } else {
+                        setFieldError("ReferenceCode", referenceInput, "");
+                    }
+                }
+                return invalid;
+            };
+
+            const validateAll = () => {
+                let hasError = false;
+                hasError = validateBasicGuests() || hasError;
+                hasError = validateNotes() || hasError;
+                hasError = validatePayment() || hasError;
+
+                const invalids = Array.from(form.querySelectorAll(".is-invalid"));
+                if (invalids.length > 0) hasError = true;
+                if (hasError) {
+                    const firstInvalid = invalids[0];
+                    if (firstInvalid) {
+                        window.requestAnimationFrame(() => {
+                            firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+                            window.setTimeout(() => {
+                                try { firstInvalid.focus({ preventScroll: true }); } catch { firstInvalid.focus(); }
+                            }, 250);
+                        });
+                    }
+                    return false;
+                }
+                return true;
+            };
+
+            ["recoveryGuestCode", "recoveryGuestName", "recoveryGuestDob", "recoveryGuestSex", "recoveryGuestAddress", "recoveryGuestPhone", "recoveryGuestEmail", "recoveryIdentityNumber", "recoveryGuestNote", "recoveryBookingNote", "recoveryBillNote"].forEach(id => {
+                const input = document.getElementById(id);
+                input?.addEventListener(id.includes("Sex") ? "change" : "input", () => {
+                    if (["recoveryGuestPhone"].includes(id)) validatePhone();
+                    else if (id === "recoveryGuestEmail") validateEmail();
+                    else if (id === "recoveryIdentityNumber") validateIdentity();
+                    else validateBasicGuests();
+                    validateNotes();
+                });
+            });
+
+            document.getElementById("recoveryIdentityType")?.addEventListener("change", validateIdentity);
+            form.querySelectorAll(".recovery-note").forEach(input => input.addEventListener("input", validateNotes));
+            paymentReceived?.addEventListener("change", updatePaymentFields);
+            form.querySelectorAll('input[name="PaymentMethod"]').forEach(input => input.addEventListener("change", () => {
+                if (methodError) methodError.textContent = "";
+                updateReference();
+            }));
+            referenceInput?.addEventListener("input", validatePayment);
+
+            form.addEventListener("submit", event => {
+                event.preventDefault();
+                if (!validateAll()) return;
+
+                const submit = () => {
+                    const button = document.getElementById("paymentRecoverySubmit");
+                    if (button && window.HotelUI?.setButtonLoading) window.HotelUI.setButtonLoading(button, true, "Đang xử lý...");
+                    form.submit();
+                };
+
+                const showConfirm = window.HotelUI?.showConfirm;
+                if (typeof showConfirm === "function") {
+                    showConfirm({
+                        title: "Xác nhận thanh toán lại",
+                        message: `Xác nhận đã nhận ${finalAmountText} VNĐ và hoàn tất Booking ${bookingCodeText}?`,
+                        note: "Hệ thống sẽ cập nhật chính Bill hiện tại từ Thanh toán thất bại sang Thanh toán thành công và chuyển Booking sang Đã check out. Phòng đã được giải phóng trước đó sẽ không bị mở lại.",
+                        variant: "primary",
+                        confirmText: "Xác nhận thanh toán",
+                        onConfirm: submit
+                    });
+                } else submit();
+            });
+
+            updatePaymentFields();
+        })();
+    </script>
+}

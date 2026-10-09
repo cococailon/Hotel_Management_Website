@@ -77,7 +77,7 @@
                 inputId: "amenityDeactivateId",
                 title: "Xác nhận dừng hoạt động",
                 message: `Bạn có chắc muốn dừng hoạt động ${name} không?`,
-                note: "Sau khi dừng, toàn bộ RoomTypeAmenities tương ứng đang hoạt động sẽ được chuyển sang dừng hoạt động.",
+                note: "Sau khi dừng, toàn bộ Tiện nghi của Loại phòng tương ứng đang hoạt động sẽ được chuyển sang dừng hoạt động.",
                 confirmText: "Dừng hoạt động",
                 variant: "warning"
             },
@@ -86,7 +86,7 @@
                 inputId: "amenityDeleteId",
                 title: "Xác nhận xóa tiện nghi",
                 message: `Bạn có chắc muốn xóa ${name} không?`,
-                note: "Chỉ tiện nghi đã dừng hoạt động và không còn liên quan tới loại phòng có Booking hoạt động mới được xóa.",
+                note: "Chỉ tiện nghi đã dừng hoạt động và loại phòng của nó không nằm trong lịch đặt phòng có trạng thái là chờ xác nhận, chờ check in hoặc đang ở thì mới được xóa.",
                 confirmText: "Xóa tiện nghi",
                 variant: "danger"
             }

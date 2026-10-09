@@ -66,15 +66,7 @@ public sealed class RoomTypeService : IRoomTypeService
                 DepositPercent = x.DepositPercent,
                 Area = x.Area,
                 IsActive = x.IsActive,
-                LastModifiedAt = x.LastModifiedAt,
-                HasActiveBookings = _context.BookingRooms.Any(br =>
-                    !br.IsDeleted &&
-                    br.RoomTypeId == x.Id &&
-                    !br.Booking.IsDeleted &&
-                    (br.Booking.Status == 0 || br.Booking.Status == 1 || br.Booking.Status == 2)),
-                HasUndeletedRooms = _context.Rooms.Any(room =>
-                    !room.IsDeleted &&
-                    room.RoomTypeId == x.Id)
+                LastModifiedAt = x.LastModifiedAt
             })
             .ToListAsync(cancellationToken);
 
@@ -389,18 +381,40 @@ public sealed class RoomTypeService : IRoomTypeService
         model.Note = NormalizeOptional(model.Note);
 
         if (string.IsNullOrWhiteSpace(model.RoomTypeCode))
-            errors[nameof(model.RoomTypeCode)] = "Mã loại phòng không được để trống.";
-        else if (model.RoomTypeCode.Any(char.IsWhiteSpace))
-            errors[nameof(model.RoomTypeCode)] = "Mã loại phòng không được chứa dấu cách hoặc khoảng trắng.";
+        {
+            errors[nameof(model.RoomTypeCode)] = "Vui lòng nhập mã loại phòng.";
+        }
+        else
+        {
+            if (model.RoomTypeCode.Length > 50)
+            {
+                errors[nameof(model.RoomTypeCode)] = "Mã loại phòng không được vượt quá 50 ký tự.";
+            }
+            else if (!Regex.IsMatch(model.RoomTypeCode, @"^[A-Za-z0-9]+$"))
+            {
+                errors[nameof(model.RoomTypeCode)] =
+                    "Mã loại phòng chỉ được bao gồm chữ cái và chữ số, không được chứa dấu cách hoặc ký tự đặc biệt.";
+            }
 
-        if (model.RoomTypeCode.Length > 50)
-            errors[nameof(model.RoomTypeCode)] = "Mã loại phòng không được vượt quá 50 ký tự.";
+            if (!errors.ContainsKey(nameof(model.RoomTypeCode)))
+            {
+                var duplicateCode = await _context.RoomTypes.AnyAsync(
+                    x => x.RoomTypeCode == model.RoomTypeCode,
+                    cancellationToken);
+
+                if (duplicateCode)
+                    errors[nameof(model.RoomTypeCode)] = "Mã loại phòng đã tồn tại.";
+            }
+        }
 
         if (string.IsNullOrWhiteSpace(model.RoomTypeName))
             errors[nameof(model.RoomTypeName)] = "Vui lòng nhập tên loại phòng.";
 
-        if (await _context.RoomTypes.AnyAsync(x => x.RoomTypeCode == model.RoomTypeCode, cancellationToken))
-            errors[nameof(model.RoomTypeCode)] = "Mã loại phòng đã tồn tại.";
+        if (model.MaxAdults <= 0 || model.MaxAdults >= 1_000_000_000)
+            errors[nameof(model.MaxAdults)] = "Tổng người lớn phải lớn hơn 0 và nhỏ hơn 1 tỷ.";
+
+        if (model.MaxChildren < 0 || model.MaxChildren >= 1_000_000_000)
+            errors[nameof(model.MaxChildren)] = "Tổng trẻ em phải lớn hơn hoặc bằng 0 và nhỏ hơn 1 tỷ.";
 
         foreach (var item in model.Amenities)
         {
@@ -1048,7 +1062,7 @@ public sealed class RoomTypeService : IRoomTypeService
         return result.Values.ToList();
     }
 
-    private static string NormalizeCode(string? code) => (code ?? string.Empty).Trim().ToUpperInvariant();
+    private static string NormalizeCode(string? code) => (code ?? string.Empty).Trim();
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
